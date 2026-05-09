@@ -1,0 +1,316 @@
+-- CarPapi PostgreSQL schema.
+--
+-- This file is the structural source of truth. Idempotent: every CREATE
+-- uses IF NOT EXISTS, every ALTER TABLE / FK is guarded, every constraint
+-- is a no-op on re-run. Apply with:
+--
+--   PGPASSWORD=carpapi psql -h localhost -p 5433 -U carpapi -d carpapi \
+--     -f carpapi/db/schema.sql
+--
+-- or via the adapter CLI:  python -m carpapi.db init
+--
+-- Namespaces (PostgreSQL schemas) are intentional — they let us grant
+-- read-only roles per domain later (analytics on monitor.*, etc.):
+--
+--   public   — core entities (listings, dealers, sources, listing_groups)
+--   ingest   — pipeline operational state (ingest_runs, raw_payloads, rejection_log)
+--   monitor  — telemetry + reporting (scrape_monitor_reports, daily_reports)
+--   ai       — TokenCache + LLM call audit (token_cache, ai_calls)
+--
+-- The 'listings' table is OWNED by the carapi_pipeline package's
+-- SQLAlchemy model (carapi_pipeline.models.Listing). This file only
+-- ADDS columns to it via ALTER TABLE IF EXISTS — it does not redefine
+-- the table.
+
+-- --------------------------------------------------------------------- --
+-- Schemas
+-- --------------------------------------------------------------------- --
+
+CREATE SCHEMA IF NOT EXISTS ingest;
+CREATE SCHEMA IF NOT EXISTS monitor;
+CREATE SCHEMA IF NOT EXISTS ai;
+
+-- Always-needed extensions. pgcrypto for gen_random_uuid().
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- --------------------------------------------------------------------- --
+-- public.listing_groups
+--   One row per "same physical car listed on multiple sites" cluster.
+--   carpapi_pipeline.dedupe.build_dedupe_key already groups identical
+--   listings within a single dedup key; this table groups across
+--   dedup keys (e.g. private-party + dealer relisting same VIN with
+--   slightly different prices).
+-- --------------------------------------------------------------------- --
+
+CREATE TABLE IF NOT EXISTS public.listing_groups (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    canonical_vin   TEXT,
+    canonical_make  TEXT,
+    canonical_model TEXT,
+    canonical_trim  TEXT,
+    canonical_year  INTEGER,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_listing_groups_canonical_vin
+    ON public.listing_groups (canonical_vin)
+    WHERE canonical_vin IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS ix_listing_groups_make_model_year
+    ON public.listing_groups (canonical_make, canonical_model, canonical_year);
+
+-- Add the listing_group_id FK column to public.listings if it's missing.
+-- The listings table is created by carapi_pipeline.models.init_schema.
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables
+               WHERE table_schema = 'public' AND table_name = 'listings') THEN
+        ALTER TABLE public.listings
+            ADD COLUMN IF NOT EXISTS listing_group_id UUID;
+        BEGIN
+            ALTER TABLE public.listings
+                ADD CONSTRAINT fk_listings_group_id
+                FOREIGN KEY (listing_group_id)
+                REFERENCES public.listing_groups(id)
+                ON DELETE SET NULL;
+        EXCEPTION
+            WHEN duplicate_object THEN NULL;
+            WHEN invalid_foreign_key THEN NULL;
+        END;
+        CREATE INDEX IF NOT EXISTS ix_listings_listing_group_id
+            ON public.listings (listing_group_id);
+    END IF;
+END
+$$;
+
+-- --------------------------------------------------------------------- --
+-- public.dealers
+--   The roster. Seeded from output/dealers_final.json + extended with
+--   discovered CMS data (carpapi.scrapers.discover_cms output).
+-- --------------------------------------------------------------------- --
+
+CREATE TABLE IF NOT EXISTS public.dealers (
+    id                       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    slug                     TEXT NOT NULL UNIQUE,
+    name                     TEXT NOT NULL,
+    homepage_url             TEXT,
+    inventory_url            TEXT,
+    cms                      TEXT,
+    cms_signals              JSONB,
+    robots_allows_inventory  BOOLEAN,
+    region                   TEXT,
+    city                     TEXT,
+    postal_code              TEXT,
+    latitude                 DOUBLE PRECISION,
+    longitude                DOUBLE PRECISION,
+    makes_carried            TEXT[],
+    status                   TEXT NOT NULL DEFAULT 'active'
+                             CHECK (status IN ('active', 'paused', 'blocked')),
+    last_scraped_at          TIMESTAMPTZ,
+    enrolled_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    notes                    TEXT,
+    created_at               TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at               TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS ix_dealers_cms          ON public.dealers (cms);
+CREATE INDEX IF NOT EXISTS ix_dealers_region_status ON public.dealers (region, status);
+CREATE INDEX IF NOT EXISTS ix_dealers_makes_gin    ON public.dealers USING gin (makes_carried);
+
+-- --------------------------------------------------------------------- --
+-- public.sources
+--   Registry of every data source (replaces CARAPI_SOURCE_PRIORITY env var).
+-- --------------------------------------------------------------------- --
+
+CREATE TABLE IF NOT EXISTS public.sources (
+    id              TEXT PRIMARY KEY,
+    name            TEXT NOT NULL,
+    type            TEXT NOT NULL
+                    CHECK (type IN ('api', 'feed', 'scrape', 'fixture')),
+    priority        INTEGER NOT NULL DEFAULT 0,
+    enabled         BOOLEAN NOT NULL DEFAULT true,
+    license_terms   TEXT,
+    ingest_cadence  INTERVAL NOT NULL DEFAULT INTERVAL '1 day',
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS ix_sources_enabled ON public.sources (enabled);
+
+-- --------------------------------------------------------------------- --
+-- ingest.ingest_runs
+--   One row per run_ingest_batch() invocation.
+-- --------------------------------------------------------------------- --
+
+CREATE TABLE IF NOT EXISTS ingest.ingest_runs (
+    id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    source_id         TEXT NOT NULL REFERENCES public.sources(id) DEFERRABLE INITIALLY DEFERRED,
+    batch_id          UUID,
+    started_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+    finished_at       TIMESTAMPTZ,
+    status            TEXT NOT NULL
+                      CHECK (status IN ('running', 'success', 'failed', 'partial')),
+    counts            JSONB,
+    error_summary     JSONB,
+    duration_seconds  NUMERIC(12, 3),
+    run_kind          TEXT NOT NULL DEFAULT 'scheduled'
+                      CHECK (run_kind IN ('scheduled', 'manual', 'backfill', 'fixture'))
+);
+
+CREATE INDEX IF NOT EXISTS ix_ingest_runs_source_started
+    ON ingest.ingest_runs (source_id, started_at DESC);
+CREATE INDEX IF NOT EXISTS ix_ingest_runs_status
+    ON ingest.ingest_runs (status, started_at DESC);
+
+-- --------------------------------------------------------------------- --
+-- ingest.raw_payloads
+--   Pointer table for raw scrape artifacts (S3 URI lookup by external_id
+--   per source). Survivor of normalization+upsert points at listing.
+-- --------------------------------------------------------------------- --
+
+CREATE TABLE IF NOT EXISTS ingest.raw_payloads (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    source_id       TEXT NOT NULL,
+    ingest_run_id   UUID,
+    external_id     TEXT NOT NULL,
+    s3_uri          TEXT,
+    raw_checksum    TEXT,
+    fetched_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    listing_id      UUID
+);
+
+CREATE INDEX IF NOT EXISTS ix_raw_payloads_run
+    ON ingest.raw_payloads (ingest_run_id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_raw_payloads_s3_uri
+    ON ingest.raw_payloads (s3_uri)
+    WHERE s3_uri IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_raw_payloads_source_external
+    ON ingest.raw_payloads (source_id, external_id);
+
+-- --------------------------------------------------------------------- --
+-- ingest.rejection_log
+--   Records that failed normalization or schema validation.
+-- --------------------------------------------------------------------- --
+
+CREATE TABLE IF NOT EXISTS ingest.rejection_log (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    ingest_run_id   UUID,
+    source_id       TEXT NOT NULL,
+    raw_payload_id  UUID,
+    reason          TEXT NOT NULL,
+    error_class     TEXT,
+    snippet         TEXT,
+    rejected_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS ix_rejection_log_source_time
+    ON ingest.rejection_log (source_id, rejected_at DESC);
+
+-- --------------------------------------------------------------------- --
+-- monitor.scrape_monitor_reports
+--   Output of carpapi.monitor.scrape_monitor.analyze() — one row per
+--   scrape run per source.
+-- --------------------------------------------------------------------- --
+
+CREATE TABLE IF NOT EXISTS monitor.scrape_monitor_reports (
+    id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    ingest_run_id     UUID,
+    source_id         TEXT NOT NULL,
+    record_count      INTEGER NOT NULL,
+    null_rates        JSONB,
+    duplicate_rate    NUMERIC(6, 4),
+    http_error_rate   NUMERIC(6, 4),
+    flags             TEXT[],
+    healthy           BOOLEAN NOT NULL,
+    created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS ix_scrape_monitor_source_time
+    ON monitor.scrape_monitor_reports (source_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS ix_scrape_monitor_unhealthy
+    ON monitor.scrape_monitor_reports (created_at DESC) WHERE healthy = false;
+
+-- --------------------------------------------------------------------- --
+-- monitor.daily_reports
+--   Aggregated daily report (carapi-daily-report output) — one row per
+--   date.
+-- --------------------------------------------------------------------- --
+
+CREATE TABLE IF NOT EXISTS monitor.daily_reports (
+    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    report_date   DATE NOT NULL UNIQUE,
+    summary       JSONB,
+    per_source    JSONB,
+    markdown      TEXT,
+    generated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- --------------------------------------------------------------------- --
+-- ai.token_cache
+--   Production analog of the SQLite TokenCache (single entry point for
+--   all Claude calls per ai-cache-rules.md). The Python TokenCache
+--   class still drives the lookup; only the backend changes when this
+--   table is in use.
+-- --------------------------------------------------------------------- --
+
+CREATE TABLE IF NOT EXISTS ai.token_cache (
+    key               TEXT PRIMARY KEY,           -- sha256 hex
+    value             TEXT NOT NULL,
+    model             TEXT,
+    max_tokens        INTEGER,
+    skill             TEXT,
+    raw_size          INTEGER,
+    compressed_size   INTEGER,
+    hit_count         INTEGER NOT NULL DEFAULT 0,
+    created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+    expires_at        TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS ix_token_cache_expires_at
+    ON ai.token_cache (expires_at);
+CREATE INDEX IF NOT EXISTS ix_token_cache_skill_time
+    ON ai.token_cache (skill, created_at DESC);
+
+-- --------------------------------------------------------------------- --
+-- ai.ai_calls
+--   Audit log of LLM calls (cache MISSES that hit a real model).
+--   Cost / latency tracking lives here.
+-- --------------------------------------------------------------------- --
+
+CREATE TABLE IF NOT EXISTS ai.ai_calls (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    skill           TEXT,
+    model           TEXT,
+    max_tokens      INTEGER,
+    input_tokens    INTEGER,
+    output_tokens   INTEGER,
+    cost_usd        NUMERIC(10, 6),
+    latency_ms      INTEGER,
+    pii_rejected    BOOLEAN NOT NULL DEFAULT false,
+    error           TEXT,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS ix_ai_calls_time
+    ON ai.ai_calls (created_at DESC);
+CREATE INDEX IF NOT EXISTS ix_ai_calls_skill_time
+    ON ai.ai_calls (skill, created_at DESC);
+CREATE INDEX IF NOT EXISTS ix_ai_calls_errors
+    ON ai.ai_calls (created_at DESC) WHERE error IS NOT NULL;
+
+-- --------------------------------------------------------------------- --
+-- Grants — safe to re-run.
+-- --------------------------------------------------------------------- --
+
+GRANT USAGE ON SCHEMA ingest, monitor, ai TO carpapi;
+
+GRANT SELECT, INSERT, UPDATE, DELETE
+    ON ALL TABLES IN SCHEMA public, ingest, monitor, ai TO carpapi;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public, ingest, monitor, ai TO carpapi;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public, ingest, monitor, ai
+    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO carpapi;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public, ingest, monitor, ai
+    GRANT USAGE, SELECT ON SEQUENCES TO carpapi;
