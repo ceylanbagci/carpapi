@@ -1,6 +1,11 @@
+.env
 migrations/
 db.sqlite3
 .DS_Store
+output/
+.claude/
+input/google_api.json
+
 # Pycharm folder
 .idea/
 
@@ -10,6 +15,7 @@ __pycache__/
 *$py.class
 *.pyo
 *.pyc
+
 # C extensions
 *.so
 
@@ -79,5 +85,3 @@ venv/
 # environment options
 environment.py
 development.py
-
-
