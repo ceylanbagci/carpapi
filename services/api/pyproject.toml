@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "carapi-api"
+version = "0.1.0"
+description = "CarPapi BFF: orchestrator + validated listing queries"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "fastapi>=0.110",
+  "uvicorn[standard]>=0.29",
+  "jsonschema>=4.22",
+  "sqlalchemy>=2.0",
+  "psycopg[binary]>=3.1",
+  "pgvector>=0.2.5",
+]
+
+[project.optional-dependencies]
+dev = ["httpx>=0.27", "pytest>=8.0"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["carapi_api*"]

@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://carpapi.local/schema/car_query.schema.json",
+  "title": "CarQuery",
+  "description": "Validated structured query produced by the LLM planner (parameters only — never raw SQL strings from clients).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "make": { "type": ["string", "null"] },
+    "model": { "type": ["string", "null"] },
+    "body_style": { "type": ["string", "null"] },
+    "year_min": { "type": ["integer", "null"] },
+    "year_max": { "type": ["integer", "null"] },
+    "price_max": { "type": ["number", "null"] },
+    "price_min": { "type": ["number", "null"] },
+    "mileage_max": { "type": ["number", "null"] },
+    "region": { "type": ["string", "null"] },
+    "zip_code": {
+      "type": ["string", "null"],
+      "pattern": "^\\d{5}$",
+      "description": "5-digit US ZIP code; combined with radius_miles for proximity search."
+    },
+    "radius_miles": {
+      "type": ["number", "null"],
+      "minimum": 1,
+      "maximum": 500,
+      "description": "Search radius in miles around zip_code centroid. Requires zip_code."
+    },
+    "limit": { "type": "integer", "minimum": 1, "maximum": 50, "default": 10 },
+    "semantic_query": {
+      "type": ["string", "null"],
+      "description": "Optional text for vector/RAG leg."
+    }
+  }
+}

@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: carapi
+      POSTGRES_PASSWORD: carapi
+      POSTGRES_DB: carapi
+    ports:
+      - "5432:5432"
+    volumes:
+      - carpapi_pg:/var/lib/postgresql/data
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+
+volumes:
+  carpapi_pg:

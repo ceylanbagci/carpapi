@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "carapi-pipeline"
+version = "0.1.0"
+description = "CarPapi ingestion: scrape → raw → normalize → dedupe → Postgres"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "sqlalchemy>=2.0",
+  "psycopg[binary]>=3.1",
+  "jsonschema>=4.22",
+  "pgvector>=0.2.5",
+  "boto3>=1.34",
+]
+
+[project.scripts]
+carapi-run-pipeline = "carapi_pipeline.cli:main"
+carapi-daily-report = "carapi_pipeline.daily_report:main"
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.4"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["carapi_pipeline*"]
