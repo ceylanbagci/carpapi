@@ -131,16 +131,29 @@ def run_for_dealer(
         dealer_slug=dealer_slug, cms=cms, inventory_url=inventory_url
     )
 
-    # 2. CMS routing — only Dealer.com is implemented today.
-    if cms != "dealer.com":
+    # 2. CMS routing.
+    # Known-blocked CMSes we never try (per scraper-rules.md):
+    #   - dealeron: robots.txt explicitly disallows inventory paths
+    #   - dealer_inspire: 403s plain HTTP; project policy disallows
+    #     escalating past bot defenses
+    if cms in ("dealeron", "dealer_inspire"):
         result.skipped_reason = (
-            f"no adapter for CMS {cms!r} yet (only dealer.com is implemented)"
+            f"CMS {cms!r} is policy-blocked "
+            "(robots.txt disallow / bot defense)"
         )
         return result
 
     if not inventory_url:
         result.skipped_reason = "dealer has no inventory_url; run discover_cms first"
         return result
+
+    # For 'unknown' CMS we still try the Dealer.com adapter — many
+    # 'unknown' dealers turn out to be Dealer.com themes that didn't
+    # match the fingerprints. Adapter handles the case gracefully (0
+    # listings → marked unhealthy by scrape_monitor, not crash).
+    # Other known/different adapters can be wired here.
+    adapter_cms = cms if cms == "dealer.com" else "dealer.com (try)"
+    log.info("[%s] using dealer.com adapter (cms=%s)", dealer_slug, adapter_cms)
 
     # 3. Robots check — always honor it, even if discovery already said allow.
     rp = _robots_for(inventory_url)
