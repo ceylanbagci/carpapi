@@ -1,5 +1,16 @@
 # Monitoring Rules
 
+## Default cadence — once per day
+All scheduled jobs (scrape runs, monitoring report, dedup audit, eval re-runs) default to **once per day**, off-peak. Do not schedule recurring jobs at a higher frequency without an explicit reason documented per-job. Hourly or sub-hourly cadences add cost and noise without proportional value at MVP scale.
+
+Per-source overrides can land in [runbooks/daily-schedule.md](../runbooks/daily-schedule.md) when there's a real freshness need (e.g., hot-inventory tier). Default stays daily until then.
+
+## Two monitoring layers
+1. **Per-pipeline statistical checks** — runs immediately after each scraper, no AI. Implementation: [carpapi/monitor/scrape_monitor.py](../carpapi/monitor/scrape_monitor.py). Threshold-based: record count, null rates per field, within-batch duplicate rate, HTTP error rate.
+2. **Daily aggregated report** — runs once per day, reads accumulated EMF metrics, renders the per-source markdown summary. Implementation: [pipeline/carapi_pipeline/daily_report.py](../pipeline/carapi_pipeline/daily_report.py).
+
+Neither layer uses an LLM. If a future "AI summary of overnight runs" is wanted, it goes through [ai-cache-rules.md](ai-cache-rules.md) and only consumes the report's anonymized aggregates — never raw records.
+
 ## Authoritative
 - Schedule: [runbooks/daily-schedule.md](../runbooks/daily-schedule.md)
 - Failure response: [runbooks/scrape-failures.md](../runbooks/scrape-failures.md)

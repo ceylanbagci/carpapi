@@ -6,16 +6,26 @@ Three independent evals that gate changes to the pure-Python core. None require 
 |---|---|---|
 | Query planner | `run_planner_eval.py` | NL message → CarQuery filters (orchestrator regex MVP; same fixtures will gate the LLM planner) |
 | Zero-result relaxation | `run_relaxation_eval.py` | `relax_query()` priority order: radius → price → mileage → year |
-| PII redaction | `run_pii_redaction_eval.py` | Phone + email patterns stripped from free-text fields |
+| PII redaction (pipeline) | `run_pii_redaction_eval.py` | Phone + email patterns stripped from free-text fields before persistence |
+| Token cache | `run_token_cache_eval.py` | `TokenCache` hit/miss, PII guard rejection, missing-`llm_call` failure mode, key varies by model/max_tokens |
+| Scrape monitor | `run_scrape_monitor_eval.py` | Statistical thresholds: zero records, null-rate ceilings, within-batch dup rate, HTTP error rate |
 
 ## Running
 
 From the repo root:
 
 ```bash
+for f in eval/run_*_eval.py; do python "$f" || break; done
+```
+
+Or individually:
+
+```bash
 python eval/run_planner_eval.py
 python eval/run_relaxation_eval.py
 python eval/run_pii_redaction_eval.py
+python eval/run_token_cache_eval.py
+python eval/run_scrape_monitor_eval.py
 ```
 
 Each exits 0 on full pass, 1 on any failure (mismatched fields printed).
