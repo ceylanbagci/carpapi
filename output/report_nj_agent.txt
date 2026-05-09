@@ -1,69 +1,56 @@
 ==================================================
-  DealerRater NJ — All Makes Agent Report
-  Run at: 2026-04-11 09:50:58
+  DealerRater NJ — Dealers Final Report
+  Source: output/dealers_final.json
+  Generated: 2026-05-09 08:14:16
 ==================================================
 Make                            Dealers
 --------------------------------------------------
-Ford ✅                                61
-Chevrolet   ✅                         53
-Dodge  ✅                              49
-Ram     ✅                             49
-Chrysler   ✅                          47
-Jeep    ✅                             45
-Buick    ✅                            39
-GMC      ✅                            38
-Nissan                               36
-Honda                                34
-Toyota ✅                              32
-Kia                                  30
-Subaru                               29
-Volkswagen                           28
-Hyundai                              22
-Lincoln                              22
-BMW                                  19
-Mazda                                19
-Audi                                 18
-Cadillac                             18
-Acura                                14
-Mercedes-Benz                        14
-Mitsubishi                           13
-Volvo                                13
-Polaris                              12
-INFINITI                             11
-Lexus  ✅                              11
-Saturn                               11
-Jaguar                               10
-Porsche                              10
-Genesis                              10
-Harley-Davidson                       9
-Pontiac                               9
-Land Rover                            8
-Maserati                              7
-Saab                                  7
-Suzuki                                7
-Leasing Company                       7
-Alfa Romeo                            6
-FIAT                                  6
-Recreational Vehicles                 5
-MINI                                  4
-Bentley                               3
-Mercury                               3
-Aston Martin                          2
-Isuzu                                 2
-Lamborghini                           2
-Lotus                                 2
-Polestar                              2
-Rolls Royce                           2
-smart                                 2
-Ferrari                               1
-INEOS                                 1
-Karma                                 1
-McLaren                               1
-Scion                                 1
+Ford                                45
+Ram                                 35
+Chevrolet                           32
+Buick                               31
+Dodge                               27
+Honda                               27
+Chrysler                            26
+GMC                                 26
+Jeep                                26
+Audi                                18
+BMW                                 18
+Toyota                              18
+Cadillac                            16
+Nissan                              15
+Acura  *                            14
+Subaru                              13
+Kia                                 11
+Lexus                               11
+Volkswagen                          11
+Lincoln                             10
+Hyundai                              9
+Mercedes-Benz                        9
+Mazda                                7
+INFINITI                             6
+Maserati                             5
+Mitsubishi                           4
+Volvo                                3
+Jaguar                               2
+Land Rover                           2
+Porsche                              2
+Aston Martin                         2
+Alfa Romeo                           1
+Bentley                              1
+FIAT                                 1
+Genesis                              1
+Karma                                1
+Lamborghini                          1
+Lotus                                1
+MINI                                 1
+Rolls Royce                          1
+Saab                                 1
 --------------------------------------------------
-
-No dealers (70 makes): Tesla, AC, Am General, American Motors, Auburn, Austin, Austin-Healey, Avanti Motors, Bremen, Bricklin, Bugatti, Checker, Citroen, Cord, Crosley, Daewoo, Daihatsu, Datsun, Delahaye, Delorean, Desoto, DeTomaso, Eagle, Edsel, Essex, Excalibur, Facel-Vega, Fisker, GAZ, Geo, Griffith, Hudson, Hummer, Hupmobile, International, Jensen, Kaiser, Koenigsegg, Lancia, LaSalle, Lucid, Maybach, Merkur, MG, Morgan, Morris, Nash, Oldsmobile, Opel, Packard, Pagani, Panoz, Peugeot, Pierce-Arrow, Plymouth, Qvale, Rambler, Renault, Rivian, Rover, Saleen, Spyker, Studebaker, Sunbeam, Triumph, TVR, VinFast, Willys, Yamaha, Used Car Dealers
-
+TOTAL                              491
 ==================================================
-  TOTAL DEALERS: 917
+  Distinct makes:               41
+  Websites needing verification: 1
 ==================================================
+
+  * = at least one dealer's website still needs verification.
