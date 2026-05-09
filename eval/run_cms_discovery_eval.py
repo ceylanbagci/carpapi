@@ -79,6 +79,20 @@ DETECT_CASES = [
         '</body></html>',
         "dealer.com",
     ),
+    (
+        "dealer.com via images.dealer.com asset host (caught by regex)",
+        '<html><head>'
+        '<link rel="dns-prefetch" href="https://images.dealer.com/">'
+        '</head><body></body></html>',
+        "dealer.com",
+    ),
+    (
+        "dealer.com via prsnbaa.dealer.com personalization (caught by regex)",
+        '<html><body>'
+        '<script src="https://prsnbaa.dealer.com/personalization.js"></script>'
+        '</body></html>',
+        "dealer.com",
+    ),
 ]
 
 
@@ -120,6 +134,38 @@ JSONLD_CASES = [
         "empty",
         "",
         False,
+    ),
+    (
+        "JSON-LD with whitespace after colon — must still match",
+        '<script type="application/ld+json">{"@context": "https://schema.org",'
+        '  "@type": "Vehicle", "name": "2022 Camry"}</script>',
+        True,
+    ),
+    (
+        "Vehicle nested inside @graph",
+        '<script type="application/ld+json">{"@graph":['
+        '{"@type":"AutoDealer","name":"x"},{"@type":"Vehicle","name":"y"}]}'
+        "</script>",
+        True,
+    ),
+    (
+        "Vehicle inside ItemList children",
+        '<script type="application/ld+json">'
+        '{"@type":"ItemList","itemListElement":['
+        '{"@type":"ListItem","position":1,"item":'
+        '{"@type":"Vehicle","name":"2021 CR-V"}}]}</script>',
+        True,
+    ),
+    (
+        "type as a list including Vehicle",
+        '<script type="application/ld+json">'
+        '{"@type":["Product","Vehicle"],"name":"truck"}</script>',
+        True,
+    ),
+    (
+        "single-quoted script type attribute",
+        "<script type='application/ld+json'>{\"@type\":\"Vehicle\"}</script>",
+        True,
     ),
 ]
 

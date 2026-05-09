@@ -67,13 +67,21 @@ INVENTORY_PATHS = (
 # CMS fingerprints. Each entry: (cms_id, signals).
 # A "signal" hits when its substring appears in the page.
 # `weight` lets stronger signals win on ties.
+#
+# For Dealer.com specifically we also use a regex check below to catch any
+# `*.dealer.com` asset host (images, cdn, static, prsnbaa etc.); the
+# substring entries here are kept for backwards-compat and to score
+# multiple-signal pages higher.
 CMS_FINGERPRINTS: tuple[tuple[str, tuple[tuple[str, int], ...]], ...] = (
     (
         "dealer.com",
         (
             ("cdn.dealer.com", 5),
+            ("images.dealer.com", 5),
             ("static.cdn.dealer.com", 5),
             ('content="Dealer.com"', 4),
+            ("brand: 'Dealer.com'", 4),  # appears in window.ddc bootstrap blocks
+            ("ddc-schemaorg", 4),
             ("/dealer-com/", 3),
             ("dealercom_session", 3),
             ("dealercom-shoppertools", 4),
@@ -133,11 +141,20 @@ CMS_FINGERPRINTS: tuple[tuple[str, tuple[tuple[str, int], ...]], ...] = (
     ),
 )
 
-# Detect schema.org Vehicle / Car JSON-LD content. We avoid full JSON
-# parsing here — substring check is sufficient for "is there at least one
-# Vehicle block on this page". The deeper extraction happens later in
-# per-CMS adapters.
-_VEHICLE_JSONLD_HINTS = ('"@type":"Vehicle"', '"@type":"Car"', "@type\": \"Vehicle\"")
+# Regex for Dealer.com asset hosts (catches images.dealer.com,
+# prsnbaa.dealer.com, etc. — Cox uses many subdomains).
+_DEALER_DOT_COM_HOST_RE = re.compile(
+    r"\b[a-z0-9][a-z0-9-]*\.dealer\.com\b", re.IGNORECASE
+)
+
+# Schema.org Vehicle / Car detection. We pull every JSON-LD block and
+# parse it (JSON is cheap). Substring matching is unreliable due to
+# whitespace, key ordering, @graph nesting, etc.
+_JSONLD_BLOCK_RE = re.compile(
+    r'<script\s+[^>]*type=["\']application/ld\+json["\'][^>]*>(.*?)</script>',
+    re.DOTALL | re.IGNORECASE,
+)
+_VEHICLE_TYPES = {"Vehicle", "Car", "Motorcycle", "MotorVehicle"}
 
 
 @dataclass
@@ -263,12 +280,20 @@ def detect_cms(html: str) -> tuple[str, list[str]]:
         return "unknown", []
     scores: dict[str, int] = {}
     matched_signals: dict[str, list[str]] = {}
-    lower = html  # CSS classes / hosts are case-sensitive in our patterns
     for cms_id, signals in CMS_FINGERPRINTS:
         for needle, weight in signals:
-            if needle in lower:
+            if needle in html:
                 scores[cms_id] = scores.get(cms_id, 0) + weight
                 matched_signals.setdefault(cms_id, []).append(needle)
+
+    # Catch-all for *.dealer.com asset hosts that the literal-string
+    # signals miss (Cox uses many subdomains).
+    dotcom_hosts = set(_DEALER_DOT_COM_HOST_RE.findall(html))
+    if dotcom_hosts:
+        scores["dealer.com"] = scores.get("dealer.com", 0) + 4
+        matched_signals.setdefault("dealer.com", []).append(
+            f"hostnames:{','.join(sorted(dotcom_hosts)[:3])}"
+        )
 
     if not scores:
         return "unknown", []
@@ -276,10 +301,54 @@ def detect_cms(html: str) -> tuple[str, list[str]]:
     return winner, sorted(set(matched_signals[winner]))
 
 
+def _extract_jsonld_objects(html: str) -> list:
+    """Pull every <script type=application/ld+json> block and JSON-parse it.
+
+    Skips blocks that don't parse (some sites embed templated/escaped JS in
+    a JSON-LD-typed script). Returns a flat list of dict/list nodes.
+    """
+    out: list = []
+    for raw in _JSONLD_BLOCK_RE.findall(html):
+        text = raw.strip()
+        # Some Cox/Dealer.com pages emit double-escaped JSON; try a couple of
+        # common cleanups.
+        for candidate in (text, text.replace("&quot;", '"')):
+            try:
+                obj = json.loads(candidate)
+            except json.JSONDecodeError:
+                continue
+            out.append(obj)
+            break
+    return out
+
+
+def _walk_for_vehicle_type(node) -> bool:
+    """True iff any descendant has @type matching a Vehicle/Car schema."""
+    if isinstance(node, dict):
+        t = node.get("@type")
+        if isinstance(t, str) and t in _VEHICLE_TYPES:
+            return True
+        if isinstance(t, list) and any(s in _VEHICLE_TYPES for s in t if isinstance(s, str)):
+            return True
+        for v in node.values():
+            if _walk_for_vehicle_type(v):
+                return True
+    elif isinstance(node, list):
+        for v in node:
+            if _walk_for_vehicle_type(v):
+                return True
+    return False
+
+
 def looks_like_vehicle_jsonld(html: str) -> bool:
+    """True iff the page has at least one JSON-LD block with @type Vehicle/Car
+    (anywhere in the tree, including @graph arrays and ItemList children)."""
     if not html:
         return False
-    return any(hint in html for hint in _VEHICLE_JSONLD_HINTS)
+    for obj in _extract_jsonld_objects(html):
+        if _walk_for_vehicle_type(obj):
+            return True
+    return False
 
 
 def discover_inventory_url(homepage_url: str, homepage_html: str) -> Optional[str]:
