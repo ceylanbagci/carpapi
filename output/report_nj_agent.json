@@ -1,0 +1,636 @@
+{
+  "timestamp": "2026-04-11 09:50:58",
+  "total": 917,
+  "by_make": [
+    {
+      "make": "Acura",
+      "make_id": "1",
+      "count": 14
+    },
+    {
+      "make": "Audi",
+      "make_id": "4",
+      "count": 18
+    },
+    {
+      "make": "BMW",
+      "make_id": "6",
+      "count": 19
+    },
+    {
+      "make": "Buick",
+      "make_id": "7",
+      "count": 39
+    },
+    {
+      "make": "Cadillac",
+      "make_id": "8",
+      "count": 18
+    },
+    {
+      "make": "Chevrolet",
+      "make_id": "9",
+      "count": 53
+    },
+    {
+      "make": "Chrysler",
+      "make_id": "10",
+      "count": 47
+    },
+    {
+      "make": "Dodge",
+      "make_id": "13",
+      "count": 49
+    },
+    {
+      "make": "Ford",
+      "make_id": "15",
+      "count": 61
+    },
+    {
+      "make": "GMC",
+      "make_id": "16",
+      "count": 38
+    },
+    {
+      "make": "Honda",
+      "make_id": "17",
+      "count": 34
+    },
+    {
+      "make": "Hyundai",
+      "make_id": "19",
+      "count": 22
+    },
+    {
+      "make": "INFINITI",
+      "make_id": "20",
+      "count": 11
+    },
+    {
+      "make": "Jaguar",
+      "make_id": "22",
+      "count": 10
+    },
+    {
+      "make": "Jeep",
+      "make_id": "23",
+      "count": 45
+    },
+    {
+      "make": "Kia",
+      "make_id": "24",
+      "count": 30
+    },
+    {
+      "make": "Land Rover",
+      "make_id": "26",
+      "count": 8
+    },
+    {
+      "make": "Lexus",
+      "make_id": "27",
+      "count": 11
+    },
+    {
+      "make": "Lincoln",
+      "make_id": "28",
+      "count": 22
+    },
+    {
+      "make": "Mazda",
+      "make_id": "31",
+      "count": 19
+    },
+    {
+      "make": "Mercedes-Benz",
+      "make_id": "32",
+      "count": 14
+    },
+    {
+      "make": "Mitsubishi",
+      "make_id": "35",
+      "count": 13
+    },
+    {
+      "make": "Nissan",
+      "make_id": "36",
+      "count": 36
+    },
+    {
+      "make": "Porsche",
+      "make_id": "40",
+      "count": 10
+    },
+    {
+      "make": "Ram",
+      "make_id": "66",
+      "count": 49
+    },
+    {
+      "make": "Subaru",
+      "make_id": "44",
+      "count": 29
+    },
+    {
+      "make": "Tesla",
+      "make_id": "78",
+      "count": 0
+    },
+    {
+      "make": "Toyota",
+      "make_id": "46",
+      "count": 32
+    },
+    {
+      "make": "Volkswagen",
+      "make_id": "47",
+      "count": 28
+    },
+    {
+      "make": "Volvo",
+      "make_id": "48",
+      "count": 13
+    },
+    {
+      "make": "AC",
+      "make_id": "82",
+      "count": 0
+    },
+    {
+      "make": "Alfa Romeo",
+      "make_id": "2",
+      "count": 6
+    },
+    {
+      "make": "Am General",
+      "make_id": "83",
+      "count": 0
+    },
+    {
+      "make": "American Motors",
+      "make_id": "84",
+      "count": 0
+    },
+    {
+      "make": "Aston Martin",
+      "make_id": "3",
+      "count": 2
+    },
+    {
+      "make": "Auburn",
+      "make_id": "143",
+      "count": 0
+    },
+    {
+      "make": "Austin",
+      "make_id": "85",
+      "count": 0
+    },
+    {
+      "make": "Austin-Healey",
+      "make_id": "86",
+      "count": 0
+    },
+    {
+      "make": "Avanti Motors",
+      "make_id": "87",
+      "count": 0
+    },
+    {
+      "make": "Bentley",
+      "make_id": "5",
+      "count": 3
+    },
+    {
+      "make": "Bremen",
+      "make_id": "132",
+      "count": 0
+    },
+    {
+      "make": "Bricklin",
+      "make_id": "130",
+      "count": 0
+    },
+    {
+      "make": "Bugatti",
+      "make_id": "88",
+      "count": 0
+    },
+    {
+      "make": "Checker",
+      "make_id": "126",
+      "count": 0
+    },
+    {
+      "make": "Citroen",
+      "make_id": "119",
+      "count": 0
+    },
+    {
+      "make": "Cord",
+      "make_id": "140",
+      "count": 0
+    },
+    {
+      "make": "Crosley",
+      "make_id": "123",
+      "count": 0
+    },
+    {
+      "make": "Daewoo",
+      "make_id": "89",
+      "count": 0
+    },
+    {
+      "make": "Daihatsu",
+      "make_id": "57",
+      "count": 0
+    },
+    {
+      "make": "Datsun",
+      "make_id": "90",
+      "count": 0
+    },
+    {
+      "make": "Delahaye",
+      "make_id": "139",
+      "count": 0
+    },
+    {
+      "make": "Delorean",
+      "make_id": "92",
+      "count": 0
+    },
+    {
+      "make": "Desoto",
+      "make_id": "93",
+      "count": 0
+    },
+    {
+      "make": "DeTomaso",
+      "make_id": "91",
+      "count": 0
+    },
+    {
+      "make": "Eagle",
+      "make_id": "122",
+      "count": 0
+    },
+    {
+      "make": "Edsel",
+      "make_id": "94",
+      "count": 0
+    },
+    {
+      "make": "Essex",
+      "make_id": "141",
+      "count": 0
+    },
+    {
+      "make": "Excalibur",
+      "make_id": "133",
+      "count": 0
+    },
+    {
+      "make": "Facel-Vega",
+      "make_id": "131",
+      "count": 0
+    },
+    {
+      "make": "Ferrari",
+      "make_id": "14",
+      "count": 1
+    },
+    {
+      "make": "FIAT",
+      "make_id": "53",
+      "count": 6
+    },
+    {
+      "make": "Fisker",
+      "make_id": "72",
+      "count": 0
+    },
+    {
+      "make": "GAZ",
+      "make_id": "134",
+      "count": 0
+    },
+    {
+      "make": "Genesis",
+      "make_id": "76",
+      "count": 10
+    },
+    {
+      "make": "Geo",
+      "make_id": "95",
+      "count": 0
+    },
+    {
+      "make": "Griffith",
+      "make_id": "142",
+      "count": 0
+    },
+    {
+      "make": "Harley-Davidson",
+      "make_id": "79",
+      "count": 9
+    },
+    {
+      "make": "Hudson",
+      "make_id": "96",
+      "count": 0
+    },
+    {
+      "make": "Hummer",
+      "make_id": "97",
+      "count": 0
+    },
+    {
+      "make": "Hupmobile",
+      "make_id": "135",
+      "count": 0
+    },
+    {
+      "make": "INEOS",
+      "make_id": "129",
+      "count": 1
+    },
+    {
+      "make": "International",
+      "make_id": "98",
+      "count": 0
+    },
+    {
+      "make": "Isuzu",
+      "make_id": "21",
+      "count": 2
+    },
+    {
+      "make": "Jensen",
+      "make_id": "99",
+      "count": 0
+    },
+    {
+      "make": "Kaiser",
+      "make_id": "100",
+      "count": 0
+    },
+    {
+      "make": "Karma",
+      "make_id": "77",
+      "count": 1
+    },
+    {
+      "make": "Koenigsegg",
+      "make_id": "127",
+      "count": 0
+    },
+    {
+      "make": "Lamborghini",
+      "make_id": "25",
+      "count": 2
+    },
+    {
+      "make": "Lancia",
+      "make_id": "124",
+      "count": 0
+    },
+    {
+      "make": "LaSalle",
+      "make_id": "101",
+      "count": 0
+    },
+    {
+      "make": "Lotus",
+      "make_id": "29",
+      "count": 2
+    },
+    {
+      "make": "Lucid",
+      "make_id": "102",
+      "count": 0
+    },
+    {
+      "make": "Maserati",
+      "make_id": "30",
+      "count": 7
+    },
+    {
+      "make": "Maybach",
+      "make_id": "63",
+      "count": 0
+    },
+    {
+      "make": "McLaren",
+      "make_id": "67",
+      "count": 1
+    },
+    {
+      "make": "Mercury",
+      "make_id": "33",
+      "count": 3
+    },
+    {
+      "make": "Merkur",
+      "make_id": "118",
+      "count": 0
+    },
+    {
+      "make": "MG",
+      "make_id": "103",
+      "count": 0
+    },
+    {
+      "make": "MINI",
+      "make_id": "34",
+      "count": 4
+    },
+    {
+      "make": "Morgan",
+      "make_id": "104",
+      "count": 0
+    },
+    {
+      "make": "Morris",
+      "make_id": "121",
+      "count": 0
+    },
+    {
+      "make": "Nash",
+      "make_id": "105",
+      "count": 0
+    },
+    {
+      "make": "Oldsmobile",
+      "make_id": "106",
+      "count": 0
+    },
+    {
+      "make": "Opel",
+      "make_id": "64",
+      "count": 0
+    },
+    {
+      "make": "Packard",
+      "make_id": "107",
+      "count": 0
+    },
+    {
+      "make": "Pagani",
+      "make_id": "108",
+      "count": 0
+    },
+    {
+      "make": "Panoz",
+      "make_id": "38",
+      "count": 0
+    },
+    {
+      "make": "Peugeot",
+      "make_id": "54",
+      "count": 0
+    },
+    {
+      "make": "Pierce-Arrow",
+      "make_id": "138",
+      "count": 0
+    },
+    {
+      "make": "Plymouth",
+      "make_id": "109",
+      "count": 0
+    },
+    {
+      "make": "Polaris",
+      "make_id": "80",
+      "count": 12
+    },
+    {
+      "make": "Polestar",
+      "make_id": "110",
+      "count": 2
+    },
+    {
+      "make": "Pontiac",
+      "make_id": "39",
+      "count": 9
+    },
+    {
+      "make": "Qvale",
+      "make_id": "120",
+      "count": 0
+    },
+    {
+      "make": "Rambler",
+      "make_id": "136",
+      "count": 0
+    },
+    {
+      "make": "Recreational Vehicles",
+      "make_id": "70",
+      "count": 5
+    },
+    {
+      "make": "Renault",
+      "make_id": "111",
+      "count": 0
+    },
+    {
+      "make": "Rivian",
+      "make_id": "112",
+      "count": 0
+    },
+    {
+      "make": "Rolls Royce",
+      "make_id": "41",
+      "count": 2
+    },
+    {
+      "make": "Rover",
+      "make_id": "125",
+      "count": 0
+    },
+    {
+      "make": "Saab",
+      "make_id": "42",
+      "count": 7
+    },
+    {
+      "make": "Saleen",
+      "make_id": "113",
+      "count": 0
+    },
+    {
+      "make": "Saturn",
+      "make_id": "43",
+      "count": 11
+    },
+    {
+      "make": "Scion",
+      "make_id": "56",
+      "count": 1
+    },
+    {
+      "make": "smart",
+      "make_id": "65",
+      "count": 2
+    },
+    {
+      "make": "Spyker",
+      "make_id": "128",
+      "count": 0
+    },
+    {
+      "make": "Studebaker",
+      "make_id": "114",
+      "count": 0
+    },
+    {
+      "make": "Sunbeam",
+      "make_id": "115",
+      "count": 0
+    },
+    {
+      "make": "Suzuki",
+      "make_id": "45",
+      "count": 7
+    },
+    {
+      "make": "Triumph",
+      "make_id": "116",
+      "count": 0
+    },
+    {
+      "make": "TVR",
+      "make_id": "144",
+      "count": 0
+    },
+    {
+      "make": "VinFast",
+      "make_id": "137",
+      "count": 0
+    },
+    {
+      "make": "Willys",
+      "make_id": "117",
+      "count": 0
+    },
+    {
+      "make": "Yamaha",
+      "make_id": "55",
+      "count": 0
+    },
+    {
+      "make": "Leasing Company",
+      "make_id": "0",
+      "count": 7
+    },
+    {
+      "make": "Used Car Dealers",
+      "make_id": "0",
+      "count": 0
+    }
+  ]
+}

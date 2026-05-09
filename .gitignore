@@ -2,7 +2,6 @@
 migrations/
 db.sqlite3
 .DS_Store
-output/
 .claude/
 input/google_api.json
 

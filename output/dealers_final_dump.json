@@ -1,0 +1,3293 @@
+[
+  {
+    "name": "Autosport Acura of Denville",
+    "make": "Acura",
+    "make_id": "1",
+    "state": "new-jersey",
+    "dealership_website": "https://www.acuraofdenville.com/"
+  },
+  {
+    "name": "Precision Acura of Princeton",
+    "make": "Acura",
+    "make_id": "1",
+    "state": "new-jersey",
+    "dealership_website": "https://www.precisionacura.com"
+  },
+  {
+    "name": "Clinton Acura",
+    "make": "Acura",
+    "make_id": "1",
+    "state": "new-jersey",
+    "dealership_website": "http://www.clintonacura.com/index2.htm"
+  },
+  {
+    "name": "DCH Montclair Acura",
+    "make": "Acura",
+    "make_id": "1",
+    "state": "new-jersey",
+    "dealership_website": "http://www.dchmontclairacura.com/"
+  },
+  {
+    "name": "Acura of Ramsey",
+    "make": "Acura",
+    "make_id": "1",
+    "state": "new-jersey",
+    "dealership_website": "http://www.ramseyacura.com/index.htm"
+  },
+  {
+    "name": "Springfield Acura",
+    "make": "Acura",
+    "make_id": "1",
+    "state": "new-jersey",
+    "dealership_website": "http://www.springfieldacura.com"
+  },
+  {
+    "name": "Acura Turnersville",
+    "make": "Acura",
+    "make_id": "1",
+    "state": "new-jersey",
+    "dealership_website": "VERIFY: www.acuraturnersville.com",
+    "website_needs_verification": true
+  },
+  {
+    "name": "Elite Acura",
+    "make": "Acura",
+    "make_id": "1",
+    "state": "new-jersey",
+    "dealership_website": "https://www.eliteacura.com/"
+  },
+  {
+    "name": "Key Acura of Atlantic City",
+    "make": "Acura",
+    "make_id": "1",
+    "state": "new-jersey",
+    "dealership_website": "https://www.keyacuraofatlanticcity.com/"
+  },
+  {
+    "name": "Bill Vince's Bridgewater Acura",
+    "make": "Acura",
+    "make_id": "1",
+    "state": "new-jersey",
+    "dealership_website": "https://www.bridgewateracura.com/"
+  },
+  {
+    "name": "Open Road Acura of Wayne",
+    "make": "Acura",
+    "make_id": "1",
+    "state": "new-jersey",
+    "dealership_website": "https://www.openroadacuraofwayne.com/"
+  },
+  {
+    "name": "Open Road Acura of East Brunswick",
+    "make": "Acura",
+    "make_id": "1",
+    "state": "new-jersey",
+    "dealership_website": "https://www.openroadacuraofeastbrunswick.com/"
+  },
+  {
+    "name": "Park Ave Acura",
+    "make": "Acura",
+    "make_id": "1",
+    "state": "new-jersey",
+    "dealership_website": "https://www.parkaveacura.com/"
+  },
+  {
+    "name": "Acura of Ocean",
+    "make": "Acura",
+    "make_id": "1",
+    "state": "new-jersey",
+    "dealership_website": "https://www.acuraofocean.com/"
+  },
+  {
+    "name": "Audi Turnersville",
+    "make": "Audi",
+    "make_id": "4",
+    "state": "new-jersey",
+    "dealership_website": "https://www.auditurnersville.com/"
+  },
+  {
+    "name": "Paul Miller Audi",
+    "make": "Audi",
+    "make_id": "4",
+    "state": "new-jersey",
+    "dealership_website": "http://paulmiller.com"
+  },
+  {
+    "name": "Audi Englewood",
+    "make": "Audi",
+    "make_id": "4",
+    "state": "new-jersey",
+    "dealership_website": "https://www.audienglewood.com/"
+  },
+  {
+    "name": "Ray Catena Audi Freehold",
+    "make": "Audi",
+    "make_id": "4",
+    "state": "new-jersey",
+    "dealership_website": "http://www.audifreehold.com/index.htm"
+  },
+  {
+    "name": "Audi Meadowlands",
+    "make": "Audi",
+    "make_id": "4",
+    "state": "new-jersey",
+    "dealership_website": "https://www.audimeadowlands.com/"
+  },
+  {
+    "name": "Bell Audi",
+    "make": "Audi",
+    "make_id": "4",
+    "state": "new-jersey",
+    "dealership_website": "http://www.bellaudi.com"
+  },
+  {
+    "name": "Audi Millburn",
+    "make": "Audi",
+    "make_id": "4",
+    "state": "new-jersey",
+    "dealership_website": "https://www.audimillburn.com/"
+  },
+  {
+    "name": "Atlantic Chrysler Dodge Jeep RAM",
+    "make": "Audi",
+    "make_id": "4",
+    "state": "new-jersey",
+    "dealership_website": "https://www.atlanticchryslerjeep.net/"
+  },
+  {
+    "name": "Audi Eatontown",
+    "make": "Audi",
+    "make_id": "4",
+    "state": "new-jersey",
+    "dealership_website": "https://www.audieatontown.com/"
+  },
+  {
+    "name": "Porsche Audi Volkswagen of Flemington",
+    "make": "Audi",
+    "make_id": "4",
+    "state": "new-jersey",
+    "dealership_website": "https://www.porscheflemington.com/"
+  },
+  {
+    "name": "Audi Princeton",
+    "make": "Audi",
+    "make_id": "4",
+    "state": "new-jersey",
+    "dealership_website": "https://www.audiprinceton.com/en/"
+  },
+  {
+    "name": "Jack Daniels Audi Paramus",
+    "make": "Audi",
+    "make_id": "4",
+    "state": "new-jersey",
+    "dealership_website": "https://www.jackdanielsparamusaudi.com/"
+  },
+  {
+    "name": "Jack Daniels Audi of Upper Saddle River",
+    "make": "Audi",
+    "make_id": "4",
+    "state": "new-jersey",
+    "dealership_website": "https://www.jackdanielsusraudi.com/en/"
+  },
+  {
+    "name": "Audi Toms River",
+    "make": "Audi",
+    "make_id": "4",
+    "state": "new-jersey",
+    "dealership_website": "https://www.auditomsriver.com/"
+  },
+  {
+    "name": "Audi Mendham",
+    "make": "Audi",
+    "make_id": "4",
+    "state": "new-jersey",
+    "dealership_website": "https://www.mendhamaudi.com/"
+  },
+  {
+    "name": "Cherry Hill Imports",
+    "make": "Audi",
+    "make_id": "4",
+    "state": "new-jersey",
+    "dealership_website": "https://www.cherryhillaudi.com/"
+  },
+  {
+    "name": "Audi Bridgewater",
+    "make": "Audi",
+    "make_id": "4",
+    "state": "new-jersey",
+    "dealership_website": "https://www.audibridgewater.com/en/"
+  },
+  {
+    "name": "Audi Newton",
+    "make": "Audi",
+    "make_id": "4",
+    "state": "new-jersey",
+    "dealership_website": "https://www.audinewton.com/en/"
+  },
+  {
+    "name": "Flemington BMW",
+    "make": "BMW",
+    "make_id": "6",
+    "state": "new-jersey",
+    "dealership_website": "http://www.flemingtonbmw.com/"
+  },
+  {
+    "name": "BMW of Freehold",
+    "make": "BMW",
+    "make_id": "6",
+    "state": "new-jersey",
+    "dealership_website": "http://www.bmwoffreehold.com/"
+  },
+  {
+    "name": "BMW of Bridgewater",
+    "make": "BMW",
+    "make_id": "6",
+    "state": "new-jersey",
+    "dealership_website": "https://www.bmwofbridgewater.com/"
+  },
+  {
+    "name": "BMW of Tenafly",
+    "make": "BMW",
+    "make_id": "6",
+    "state": "new-jersey",
+    "dealership_website": "http://www.bmwoftenafly.com"
+  },
+  {
+    "name": "BMW of Ramsey",
+    "make": "BMW",
+    "make_id": "6",
+    "state": "new-jersey",
+    "dealership_website": "https://www.bmwramsey.com/"
+  },
+  {
+    "name": "BMW of Springfield - New Jersey",
+    "make": "BMW",
+    "make_id": "6",
+    "state": "new-jersey",
+    "dealership_website": "http://www.bmwofspringfieldnj.com"
+  },
+  {
+    "name": "Circle BMW",
+    "make": "BMW",
+    "make_id": "6",
+    "state": "new-jersey",
+    "dealership_website": "https://www.circlebmw.com/"
+  },
+  {
+    "name": "BMW of Turnersville",
+    "make": "BMW",
+    "make_id": "6",
+    "state": "new-jersey",
+    "dealership_website": "https://www.bmwofturnersville.com/"
+  },
+  {
+    "name": "Park Ave BMW",
+    "make": "BMW",
+    "make_id": "6",
+    "state": "new-jersey",
+    "dealership_website": "https://www.parkavebmw.com/"
+  },
+  {
+    "name": "Princeton BMW",
+    "make": "BMW",
+    "make_id": "6",
+    "state": "new-jersey",
+    "dealership_website": "https://www.princetonbmw.com/"
+  },
+  {
+    "name": "BMW of Atlantic City",
+    "make": "BMW",
+    "make_id": "6",
+    "state": "new-jersey",
+    "dealership_website": "https://www.bmwatlanticcity.com/"
+  },
+  {
+    "name": "Open Road BMW of Roxbury",
+    "make": "BMW",
+    "make_id": "6",
+    "state": "new-jersey",
+    "dealership_website": "https://bmwrox.com/"
+  },
+  {
+    "name": "BMW of Newton",
+    "make": "BMW",
+    "make_id": "6",
+    "state": "new-jersey",
+    "dealership_website": "https://www.bmwnewton.com/"
+  },
+  {
+    "name": "BMW of Bloomfield",
+    "make": "BMW",
+    "make_id": "6",
+    "state": "new-jersey",
+    "dealership_website": "https://www.bmwofbloomfield.com/"
+  },
+  {
+    "name": "BMW of Mt. Laurel",
+    "make": "BMW",
+    "make_id": "6",
+    "state": "new-jersey",
+    "dealership_website": "https://www.bmwofmtlaurel.com/"
+  },
+  {
+    "name": "Open Road BMW",
+    "make": "BMW",
+    "make_id": "6",
+    "state": "new-jersey",
+    "dealership_website": "https://www.bmwedison.com/"
+  },
+  {
+    "name": "Paul Miller BMW",
+    "make": "BMW",
+    "make_id": "6",
+    "state": "new-jersey",
+    "dealership_website": "https://www.paulmillerbmw.com/"
+  },
+  {
+    "name": "BMW of Morristown",
+    "make": "BMW",
+    "make_id": "6",
+    "state": "new-jersey",
+    "dealership_website": "https://www.morristownbmw.com/"
+  },
+  {
+    "name": "Jim Curley Buick GMC",
+    "make": "Buick",
+    "make_id": "7",
+    "state": "new-jersey",
+    "dealership_website": "https://www.jimcurley.com/"
+  },
+  {
+    "name": "Malouf GMC",
+    "make": "Buick",
+    "make_id": "7",
+    "state": "new-jersey",
+    "dealership_website": "https://www.maloufbpg.com/"
+  },
+  {
+    "name": "Performance Buick GMC",
+    "make": "Buick",
+    "make_id": "7",
+    "state": "new-jersey",
+    "dealership_website": "https://www.performancebuickgmc.com/"
+  },
+  {
+    "name": "North Bergen Buick GMC",
+    "make": "Buick",
+    "make_id": "7",
+    "state": "new-jersey",
+    "dealership_website": "https://www.northbergenbuickgmc.com/"
+  },
+  {
+    "name": "Barlow Buick GMC",
+    "make": "Buick",
+    "make_id": "7",
+    "state": "new-jersey",
+    "dealership_website": "http://www.barlowautogroup.com"
+  },
+  {
+    "name": "Pellegrino Buick GMC",
+    "make": "Buick",
+    "make_id": "7",
+    "state": "new-jersey",
+    "dealership_website": "http://www.pellegrinopbg.com"
+  },
+  {
+    "name": "Pointe Buick GMC",
+    "make": "Buick",
+    "make_id": "7",
+    "state": "new-jersey",
+    "dealership_website": "http://www.pointebuickgmc.com"
+  },
+  {
+    "name": "Quality Chevrolet Buick GMC",
+    "make": "Buick",
+    "make_id": "7",
+    "state": "new-jersey",
+    "dealership_website": "https://www.qualitychevybuickgmc.com/"
+  },
+  {
+    "name": "Coleman Buick GMC",
+    "make": "Buick",
+    "make_id": "7",
+    "state": "new-jersey",
+    "dealership_website": "http://www.colemanautos.com/"
+  },
+  {
+    "name": "Sawyer Lyons Buick GMC of Randolph",
+    "make": "Buick",
+    "make_id": "7",
+    "state": "new-jersey",
+    "dealership_website": "https://www.sawyerlyonsbuickgmc.com/"
+  },
+  {
+    "name": "Freehold Buick GMC",
+    "make": "Buick",
+    "make_id": "7",
+    "state": "new-jersey",
+    "dealership_website": "http://www.freeholdautos.com"
+  },
+  {
+    "name": "T&T Coast Buick GMC",
+    "make": "Buick",
+    "make_id": "7",
+    "state": "new-jersey",
+    "dealership_website": "http://www.ttcoastauto.com/HomePage"
+  },
+  {
+    "name": "Green Brook Buick GMC",
+    "make": "Buick",
+    "make_id": "7",
+    "state": "new-jersey",
+    "dealership_website": "http://www.greenbrookauto.com"
+  },
+  {
+    "name": "Burke Motor Group",
+    "make": "Buick",
+    "make_id": "7",
+    "state": "new-jersey",
+    "dealership_website": "http://www.burkemotorgroup.com/"
+  },
+  {
+    "name": "Schumacher Chevrolet Buick of Boonton",
+    "make": "Buick",
+    "make_id": "7",
+    "state": "new-jersey",
+    "dealership_website": "https://www.schumacherchevybuickboonton.com/"
+  },
+  {
+    "name": "McGuire Buick GMC Little Falls",
+    "make": "Buick",
+    "make_id": "7",
+    "state": "new-jersey",
+    "dealership_website": "http://www.mcguireautogroup.com"
+  },
+  {
+    "name": "Ciocca Chevrolet GMC of Atlantic City",
+    "make": "Buick",
+    "make_id": "7",
+    "state": "new-jersey",
+    "dealership_website": "https://www.cioccaatlanticcity.com/"
+  },
+  {
+    "name": "Royal Buick GMC",
+    "make": "Buick",
+    "make_id": "7",
+    "state": "new-jersey",
+    "dealership_website": "https://www.royaladvantage.com/"
+  },
+  {
+    "name": "Ciocca Chevrolet GMC of Flemington",
+    "make": "Buick",
+    "make_id": "7",
+    "state": "new-jersey",
+    "dealership_website": "https://www.cioccachevroletgmcofflemington.com/"
+  },
+  {
+    "name": "Bridgeton Chevrolet Cadillac GMC Chrysler Dodge Jeep Ram",
+    "make": "Buick",
+    "make_id": "7",
+    "state": "new-jersey",
+    "dealership_website": "https://www.bridgetonautomall.com/"
+  },
+  {
+    "name": "Buick GMC of Mahwah",
+    "make": "Buick",
+    "make_id": "7",
+    "state": "new-jersey",
+    "dealership_website": "https://www.buickgmcofmahwah.com/"
+  },
+  {
+    "name": "Maxon Buick GMC",
+    "make": "Buick",
+    "make_id": "7",
+    "state": "new-jersey",
+    "dealership_website": "https://www.maxonbuickgmc.com/"
+  },
+  {
+    "name": "Burns Buick GMC",
+    "make": "Buick",
+    "make_id": "7",
+    "state": "new-jersey",
+    "dealership_website": "https://www.burnsbuickgmc.com/"
+  },
+  {
+    "name": "F.C. Kerbeck Buick GMC",
+    "make": "Buick",
+    "make_id": "7",
+    "state": "new-jersey",
+    "dealership_website": "https://www.kerbeckbuickgmc.com/"
+  },
+  {
+    "name": "Miller Buick GMC",
+    "make": "Buick",
+    "make_id": "7",
+    "state": "new-jersey",
+    "dealership_website": "https://www.performancebuickgmcwoodbridge.com/"
+  },
+  {
+    "name": "Mcguire Pontiac Buick GMC",
+    "make": "Buick",
+    "make_id": "7",
+    "state": "new-jersey",
+    "dealership_website": "https://www.mcguireautogroup.net/"
+  },
+  {
+    "name": "Performance Buick GMC of Woodbridge",
+    "make": "Buick",
+    "make_id": "7",
+    "state": "new-jersey",
+    "dealership_website": "https://www.performancebuickgmcwoodbridge.com/"
+  },
+  {
+    "name": "Arena Buick-Pontiac-GMC",
+    "make": "Buick",
+    "make_id": "7",
+    "state": "new-jersey",
+    "dealership_website": "http://arenabuickgmc.com/"
+  },
+  {
+    "name": "Straub Motors",
+    "make": "Buick",
+    "make_id": "7",
+    "state": "new-jersey",
+    "dealership_website": "http://straubmotors.com/"
+  },
+  {
+    "name": "Delaessio",
+    "make": "Buick",
+    "make_id": "7",
+    "state": "new-jersey",
+    "dealership_website": "https://www.schumacherchevybuickboonton.com/"
+  },
+  {
+    "name": "T&T Coast GMC",
+    "make": "Buick",
+    "make_id": "7",
+    "state": "new-jersey",
+    "dealership_website": "https://www.ttcoastgmc.com/"
+  },
+  {
+    "name": "Gold Coast Cadillac",
+    "make": "Cadillac",
+    "make_id": "8",
+    "state": "new-jersey",
+    "dealership_website": "https://www.goldcoastcadillac.com/"
+  },
+  {
+    "name": "Malouf Chevrolet Cadillac",
+    "make": "Cadillac",
+    "make_id": "8",
+    "state": "new-jersey",
+    "dealership_website": "http://www.maloufchevrolet.com"
+  },
+  {
+    "name": "Brogan Cadillac Totowa",
+    "make": "Cadillac",
+    "make_id": "8",
+    "state": "new-jersey",
+    "dealership_website": "http://www.brogancad.com/"
+  },
+  {
+    "name": "Coleman Cadillac",
+    "make": "Cadillac",
+    "make_id": "8",
+    "state": "new-jersey",
+    "dealership_website": "http://www.colemancadillacnj.com/"
+  },
+  {
+    "name": "Pine Belt Cadillac",
+    "make": "Cadillac",
+    "make_id": "8",
+    "state": "new-jersey",
+    "dealership_website": "http://www.pinebeltcadillac.com/"
+  },
+  {
+    "name": "Cadillac of Mahwah",
+    "make": "Cadillac",
+    "make_id": "8",
+    "state": "new-jersey",
+    "dealership_website": "http://www.cadillacofmahwah.com"
+  },
+  {
+    "name": "Freehold Buick GMC",
+    "make": "Cadillac",
+    "make_id": "8",
+    "state": "new-jersey",
+    "dealership_website": "http://www.freeholdautos.com"
+  },
+  {
+    "name": "McGuire Cadillac",
+    "make": "Cadillac",
+    "make_id": "8",
+    "state": "new-jersey",
+    "dealership_website": "https://www.mcguirecadillac.com/"
+  },
+  {
+    "name": "Chevrolet/Cadillac of Turnersville",
+    "make": "Cadillac",
+    "make_id": "8",
+    "state": "new-jersey",
+    "dealership_website": "https://www.chevroletofturnersville.com/"
+  },
+  {
+    "name": "Holman Cadillac",
+    "make": "Cadillac",
+    "make_id": "8",
+    "state": "new-jersey",
+    "dealership_website": "https://www.holmancadillac.com/"
+  },
+  {
+    "name": "Crown Cadillac",
+    "make": "Cadillac",
+    "make_id": "8",
+    "state": "new-jersey",
+    "dealership_website": "https://www.crowncadillac.com/"
+  },
+  {
+    "name": "Trinity Cadillac",
+    "make": "Cadillac",
+    "make_id": "8",
+    "state": "new-jersey",
+    "dealership_website": "https://www.trinitycadillac.com/"
+  },
+  {
+    "name": "Open Road Cadillac",
+    "make": "Cadillac",
+    "make_id": "8",
+    "state": "new-jersey",
+    "dealership_website": "https://www.morristowncadillac.com/"
+  },
+  {
+    "name": "Johnson GMC Cadillac",
+    "make": "Cadillac",
+    "make_id": "8",
+    "state": "new-jersey",
+    "dealership_website": "https://www.johnsoncadillacnj.com/"
+  },
+  {
+    "name": "Ciocca Cadillac of Atlantic City",
+    "make": "Cadillac",
+    "make_id": "8",
+    "state": "new-jersey",
+    "dealership_website": "https://www.cioccacadillacofatlanticcity.com/"
+  },
+  {
+    "name": "Cadillac of Turnersville",
+    "make": "Cadillac",
+    "make_id": "8",
+    "state": "new-jersey",
+    "dealership_website": "https://www.cadillacofturnersville.com/"
+  },
+  {
+    "name": "Lester Glenn Chevrolet",
+    "make": "Chevrolet",
+    "make_id": "9",
+    "state": "new-jersey",
+    "dealership_website": "https://www.lesterglennchevrolet.com/?utm_source=DealerRater&utm_medium=profile&utm_campaign=website"
+  },
+  {
+    "name": "Lester Glenn Chevrolet of Freehold",
+    "make": "Chevrolet",
+    "make_id": "9",
+    "state": "new-jersey",
+    "dealership_website": "https://www.lesterglennchevroletfreehold.com/?utm_source=DealerRater&utm_medium=profile&utm_campaign=website"
+  },
+  {
+    "name": "Bennett Chevrolet",
+    "make": "Chevrolet",
+    "make_id": "9",
+    "state": "new-jersey",
+    "dealership_website": "http://www.bennettchevy.com/"
+  },
+  {
+    "name": "Pine Belt Chevrolet",
+    "make": "Chevrolet",
+    "make_id": "9",
+    "state": "new-jersey",
+    "dealership_website": "http://www.pinebeltchevrolet.com/"
+  },
+  {
+    "name": "Malouf Chevrolet Cadillac",
+    "make": "Chevrolet",
+    "make_id": "9",
+    "state": "new-jersey",
+    "dealership_website": "http://www.maloufchevrolet.com"
+  },
+  {
+    "name": "Elkins Chevrolet",
+    "make": "Chevrolet",
+    "make_id": "9",
+    "state": "new-jersey",
+    "dealership_website": "http://www.elkinschevrolet.com"
+  },
+  {
+    "name": "Pellegrino Chevrolet",
+    "make": "Chevrolet",
+    "make_id": "9",
+    "state": "new-jersey",
+    "dealership_website": "http://www.pellegrinochevrolet.com"
+  },
+  {
+    "name": "Burlington Chevrolet",
+    "make": "Chevrolet",
+    "make_id": "9",
+    "state": "new-jersey",
+    "dealership_website": "https://www.burlingtonchevy.com/"
+  },
+  {
+    "name": "Motion Chevrolet",
+    "make": "Chevrolet",
+    "make_id": "9",
+    "state": "new-jersey",
+    "dealership_website": "https://www.motionchevrolet.com/"
+  },
+  {
+    "name": "Bridgewater Chevrolet",
+    "make": "Chevrolet",
+    "make_id": "9",
+    "state": "new-jersey",
+    "dealership_website": "http://www.bridgewaterchevy.com/"
+  },
+  {
+    "name": "Lucas Chevrolet",
+    "make": "Chevrolet",
+    "make_id": "9",
+    "state": "new-jersey",
+    "dealership_website": "http://www.lucaschevycars.com"
+  },
+  {
+    "name": "Hawthorne Chevrolet",
+    "make": "Chevrolet",
+    "make_id": "9",
+    "state": "new-jersey",
+    "dealership_website": "http://hawthornechevrolet.com"
+  },
+  {
+    "name": "Ciocca Chevrolet of Princeton",
+    "make": "Chevrolet",
+    "make_id": "9",
+    "state": "new-jersey",
+    "dealership_website": "http://www.cioccachevroletofprinceton.com/"
+  },
+  {
+    "name": "Schumacher Chevrolet of Clifton",
+    "make": "Chevrolet",
+    "make_id": "9",
+    "state": "new-jersey",
+    "dealership_website": "http://www.schumacherchevroletclifton.com/"
+  },
+  {
+    "name": "Hessert Chevrolet of Cherry Hill",
+    "make": "Chevrolet",
+    "make_id": "9",
+    "state": "new-jersey",
+    "dealership_website": "https://www.hessertchevych.com/"
+  },
+  {
+    "name": "Quality Chevrolet Buick GMC",
+    "make": "Chevrolet",
+    "make_id": "9",
+    "state": "new-jersey",
+    "dealership_website": "https://www.qualitychevybuickgmc.com/"
+  },
+  {
+    "name": "Global Auto Mall",
+    "make": "Chevrolet",
+    "make_id": "9",
+    "state": "new-jersey",
+    "dealership_website": "http://www.GlobalAutoMall.com"
+  },
+  {
+    "name": "Schumacher Chevrolet of Denville",
+    "make": "Chevrolet",
+    "make_id": "9",
+    "state": "new-jersey",
+    "dealership_website": "http://www.schumacherchevroletdenville.com/"
+  },
+  {
+    "name": "Schumacher Chevrolet of Livingston",
+    "make": "Chevrolet",
+    "make_id": "9",
+    "state": "new-jersey",
+    "dealership_website": "http://www.schumacherchevroletlivingston.com/"
+  },
+  {
+    "name": "Schumacher Chevrolet",
+    "make": "Chevrolet",
+    "make_id": "9",
+    "state": "new-jersey",
+    "dealership_website": "http://www.schumacherchevrolet.net/"
+  },
+  {
+    "name": "McGuire Chevrolet",
+    "make": "Chevrolet",
+    "make_id": "9",
+    "state": "new-jersey",
+    "dealership_website": "http://www.mcguirechevy.com"
+  },
+  {
+    "name": "Burke Motor Group",
+    "make": "Chevrolet",
+    "make_id": "9",
+    "state": "new-jersey",
+    "dealership_website": "http://www.burkemotorgroup.com/"
+  },
+  {
+    "name": "Schumacher Chevrolet Buick of Boonton",
+    "make": "Chevrolet",
+    "make_id": "9",
+    "state": "new-jersey",
+    "dealership_website": "https://www.schumacherchevybuickboonton.com/"
+  },
+  {
+    "name": "Lester Glenn Chevrolet of Old Bridge",
+    "make": "Chevrolet",
+    "make_id": "9",
+    "state": "new-jersey",
+    "dealership_website": "https://www.lesterglennchevroletoldbridge.com/"
+  },
+  {
+    "name": "Gentilini Chevrolet",
+    "make": "Chevrolet",
+    "make_id": "9",
+    "state": "new-jersey",
+    "dealership_website": "https://www.gentilinichevrolet.com/"
+  },
+  {
+    "name": "Richard Lucas Chevrolet",
+    "make": "Chevrolet",
+    "make_id": "9",
+    "state": "new-jersey",
+    "dealership_website": "https://www.richardlucaschevy.com/"
+  },
+  {
+    "name": "Rossi Chevrolet GMC",
+    "make": "Chevrolet",
+    "make_id": "9",
+    "state": "new-jersey",
+    "dealership_website": "https://www.rossichevroletgmc.com/"
+  },
+  {
+    "name": "Chevrolet/Cadillac of Turnersville",
+    "make": "Chevrolet",
+    "make_id": "9",
+    "state": "new-jersey",
+    "dealership_website": "https://www.chevroletofturnersville.com/"
+  },
+  {
+    "name": "Mall Chevrolet",
+    "make": "Chevrolet",
+    "make_id": "9",
+    "state": "new-jersey",
+    "dealership_website": "https://www.mallchevy.com/"
+  },
+  {
+    "name": "Axis Chevrolet",
+    "make": "Chevrolet",
+    "make_id": "9",
+    "state": "new-jersey",
+    "dealership_website": "https://www.axischevrolet.com/"
+  },
+  {
+    "name": "Open Road Chevrolet",
+    "make": "Chevrolet",
+    "make_id": "9",
+    "state": "new-jersey",
+    "dealership_website": "https://www.openroadchevrolet.com/"
+  },
+  {
+    "name": "Paramus Chevrolet",
+    "make": "Chevrolet",
+    "make_id": "9",
+    "state": "new-jersey",
+    "dealership_website": "https://www.paramuschevrolet.com/"
+  },
+  {
+    "name": "Paul Miller Chevrolet",
+    "make": "Chevrolet",
+    "make_id": "9",
+    "state": "new-jersey",
+    "dealership_website": "https://www.paulmillerchevrolet.com/"
+  },
+  {
+    "name": "Pellegrino Chrysler Jeep",
+    "make": "Chrysler",
+    "make_id": "10",
+    "state": "new-jersey",
+    "dealership_website": "http://www.pellegrinocj.com"
+  },
+  {
+    "name": "Pine Belt Chrysler Jeep Dodge Ram",
+    "make": "Chrysler",
+    "make_id": "10",
+    "state": "new-jersey",
+    "dealership_website": "http://www.pinebeltcjdr.com/"
+  },
+  {
+    "name": "Lester Glenn Chrysler Dodge Jeep RAM FIAT",
+    "make": "Chrysler",
+    "make_id": "10",
+    "state": "new-jersey",
+    "dealership_website": "https://www.lesterglennchryslerdodgejeep.com/?utm_source=DealerRater&utm_medium=profile&utm_campaign=website"
+  },
+  {
+    "name": "Route 1 Chrysler Dodge Jeep Ram of Lawrenceville",
+    "make": "Chrysler",
+    "make_id": "10",
+    "state": "new-jersey",
+    "dealership_website": "http://www.route1usa.com/index.htm"
+  },
+  {
+    "name": "Precision Chrysler Jeep Dodge Ram",
+    "make": "Chrysler",
+    "make_id": "10",
+    "state": "new-jersey",
+    "dealership_website": "http://www.precisioncjdr.com"
+  },
+  {
+    "name": "Circle Chrysler Dodge Jeep Ram",
+    "make": "Chrysler",
+    "make_id": "10",
+    "state": "new-jersey",
+    "dealership_website": "https://www.circlejeep.com/"
+  },
+  {
+    "name": "Lucas Chrysler Jeep Dodge RAM Inc.",
+    "make": "Chrysler",
+    "make_id": "10",
+    "state": "new-jersey",
+    "dealership_website": "http://www.lucasdodgecars.com"
+  },
+  {
+    "name": "Route 18 Chrysler Jeep Dodge Ram",
+    "make": "Chrysler",
+    "make_id": "10",
+    "state": "new-jersey",
+    "dealership_website": "http://www.rt18cjdr.com"
+  },
+  {
+    "name": "Spirit Chrysler Dodge Jeep Ram",
+    "make": "Chrysler",
+    "make_id": "10",
+    "state": "new-jersey",
+    "dealership_website": "https://www.spiritautocenter.com/"
+  },
+  {
+    "name": "Nielsen Dodge Chrysler Jeep Ram",
+    "make": "Chrysler",
+    "make_id": "10",
+    "state": "new-jersey",
+    "dealership_website": "https://www.nielsendodgechryslerjeepram.com/"
+  },
+  {
+    "name": "Salerno Duane Chrysler Jeep",
+    "make": "Chrysler",
+    "make_id": "10",
+    "state": "new-jersey",
+    "dealership_website": "https://www.salernoduanesummit.com"
+  },
+  {
+    "name": "Johnson Dodge Chrysler Jeep",
+    "make": "Chrysler",
+    "make_id": "10",
+    "state": "new-jersey",
+    "dealership_website": "http://www.johnsondodge.com/index.htm"
+  },
+  {
+    "name": "Vineland Dodge Chrysler Jeep Ram",
+    "make": "Chrysler",
+    "make_id": "10",
+    "state": "new-jersey",
+    "dealership_website": "http://www.vanndodgechryslerjeep.com/"
+  },
+  {
+    "name": "DeCozen Chrysler Jeep Dodge Ram",
+    "make": "Chrysler",
+    "make_id": "10",
+    "state": "new-jersey",
+    "dealership_website": "http://www.decozencjd.com"
+  },
+  {
+    "name": "Chrysler Dodge Jeep Ram of Princeton",
+    "make": "Chrysler",
+    "make_id": "10",
+    "state": "new-jersey",
+    "dealership_website": "https://www.cdjrofprinceton.com/"
+  },
+  {
+    "name": "Lilliston Chrysler Dodge Jeep",
+    "make": "Chrysler",
+    "make_id": "10",
+    "state": "new-jersey",
+    "dealership_website": "https://www.lillistonchryslerdodgejeep.com/"
+  },
+  {
+    "name": "Route 46 Chrysler Jeep Dodge",
+    "make": "Chrysler",
+    "make_id": "10",
+    "state": "new-jersey",
+    "dealership_website": "http://www.route46chryslerjeepdodge.net/index.htm"
+  },
+  {
+    "name": "Mt. Ephraim Chrysler Dodge",
+    "make": "Chrysler",
+    "make_id": "10",
+    "state": "new-jersey",
+    "dealership_website": "http://www.mtephraimdodge.com/"
+  },
+  {
+    "name": "Turnersville Jeep Chrysler Dodge RAM",
+    "make": "Chrysler",
+    "make_id": "10",
+    "state": "new-jersey",
+    "dealership_website": "http://www.turnersvillejeepchrysler.com/"
+  },
+  {
+    "name": "Route 130 Chrysler Dodge Jeep Ram",
+    "make": "Chrysler",
+    "make_id": "10",
+    "state": "new-jersey",
+    "dealership_website": "http://www.route130chryslerdodgejeep.com/"
+  },
+  {
+    "name": "Chrysler Dodge Jeep Ram of Englewood Cliffs",
+    "make": "Chrysler",
+    "make_id": "10",
+    "state": "new-jersey",
+    "dealership_website": "https://www.chryslerdodgejeepramofenglewoodcliffs.com/"
+  },
+  {
+    "name": "Chrysler Dodge Jeep of Paramus",
+    "make": "Chrysler",
+    "make_id": "10",
+    "state": "new-jersey",
+    "dealership_website": "http://www.chryslerdodgejeepofparamus.com"
+  },
+  {
+    "name": "Atlantic Chrysler Dodge Jeep RAM",
+    "make": "Chrysler",
+    "make_id": "10",
+    "state": "new-jersey",
+    "dealership_website": "https://www.atlanticchryslerjeep.net/"
+  },
+  {
+    "name": "Burlington Chrysler Dodge Jeep Ram",
+    "make": "Chrysler",
+    "make_id": "10",
+    "state": "new-jersey",
+    "dealership_website": "https://www.cdjrofburlington.com/"
+  },
+  {
+    "name": "Dover Dodge Chrysler Jeep",
+    "make": "Chrysler",
+    "make_id": "10",
+    "state": "new-jersey",
+    "dealership_website": "http://www.doverdodge.com"
+  },
+  {
+    "name": "Nielsen Chrysler Dodge Jeep Ram of Morristown",
+    "make": "Chrysler",
+    "make_id": "10",
+    "state": "new-jersey",
+    "dealership_website": "https://www.nielsendodgemotown.com/"
+  },
+  {
+    "name": "Spirit Chrysler Dodge Jeep Ram",
+    "make": "Dodge",
+    "make_id": "13",
+    "state": "new-jersey",
+    "dealership_website": "https://www.spiritautocenter.com/"
+  },
+  {
+    "name": "Pine Belt Chrysler Jeep Dodge Ram",
+    "make": "Dodge",
+    "make_id": "13",
+    "state": "new-jersey",
+    "dealership_website": "http://www.pinebeltcjdr.com/"
+  },
+  {
+    "name": "Lester Glenn Chrysler Dodge Jeep RAM FIAT",
+    "make": "Dodge",
+    "make_id": "13",
+    "state": "new-jersey",
+    "dealership_website": "https://www.lesterglennchryslerdodgejeep.com/?utm_source=DealerRater&utm_medium=profile&utm_campaign=website"
+  },
+  {
+    "name": "Route 1 Chrysler Dodge Jeep Ram of Lawrenceville",
+    "make": "Dodge",
+    "make_id": "13",
+    "state": "new-jersey",
+    "dealership_website": "http://www.route1usa.com/index.htm"
+  },
+  {
+    "name": "Precision Chrysler Jeep Dodge Ram",
+    "make": "Dodge",
+    "make_id": "13",
+    "state": "new-jersey",
+    "dealership_website": "http://www.precisioncjdr.com"
+  },
+  {
+    "name": "Circle Chrysler Dodge Jeep Ram",
+    "make": "Dodge",
+    "make_id": "13",
+    "state": "new-jersey",
+    "dealership_website": "https://www.circlejeep.com/"
+  },
+  {
+    "name": "Lucas Chrysler Jeep Dodge RAM Inc.",
+    "make": "Dodge",
+    "make_id": "13",
+    "state": "new-jersey",
+    "dealership_website": "http://www.lucasdodgecars.com"
+  },
+  {
+    "name": "Route 18 Chrysler Jeep Dodge Ram",
+    "make": "Dodge",
+    "make_id": "13",
+    "state": "new-jersey",
+    "dealership_website": "http://www.rt18cjdr.com"
+  },
+  {
+    "name": "Nielsen Dodge Chrysler Jeep Ram",
+    "make": "Dodge",
+    "make_id": "13",
+    "state": "new-jersey",
+    "dealership_website": "https://www.nielsendodgechryslerjeepram.com/"
+  },
+  {
+    "name": "Salerno Duane Chrysler Jeep",
+    "make": "Dodge",
+    "make_id": "13",
+    "state": "new-jersey",
+    "dealership_website": "https://www.salernoduanesummit.com"
+  },
+  {
+    "name": "Johnson Dodge Chrysler Jeep",
+    "make": "Dodge",
+    "make_id": "13",
+    "state": "new-jersey",
+    "dealership_website": "http://www.johnsondodge.com/index.htm"
+  },
+  {
+    "name": "Vineland Dodge Chrysler Jeep Ram",
+    "make": "Dodge",
+    "make_id": "13",
+    "state": "new-jersey",
+    "dealership_website": "http://www.vanndodgechryslerjeep.com/"
+  },
+  {
+    "name": "DeCozen Chrysler Jeep Dodge Ram",
+    "make": "Dodge",
+    "make_id": "13",
+    "state": "new-jersey",
+    "dealership_website": "http://www.decozencjd.com"
+  },
+  {
+    "name": "Chrysler Dodge Jeep Ram of Princeton",
+    "make": "Dodge",
+    "make_id": "13",
+    "state": "new-jersey",
+    "dealership_website": "https://www.cdjrofprinceton.com/"
+  },
+  {
+    "name": "Lilliston Chrysler Dodge Jeep",
+    "make": "Dodge",
+    "make_id": "13",
+    "state": "new-jersey",
+    "dealership_website": "https://www.lillistonchryslerdodgejeep.com/"
+  },
+  {
+    "name": "Route 46 Chrysler Jeep Dodge",
+    "make": "Dodge",
+    "make_id": "13",
+    "state": "new-jersey",
+    "dealership_website": "http://www.route46chryslerjeepdodge.net/index.htm"
+  },
+  {
+    "name": "Mt. Ephraim Chrysler Dodge",
+    "make": "Dodge",
+    "make_id": "13",
+    "state": "new-jersey",
+    "dealership_website": "http://www.mtephraimdodge.com/"
+  },
+  {
+    "name": "Turnersville Jeep Chrysler Dodge RAM",
+    "make": "Dodge",
+    "make_id": "13",
+    "state": "new-jersey",
+    "dealership_website": "http://www.turnersvillejeepchrysler.com/"
+  },
+  {
+    "name": "Route 130 Chrysler Dodge Jeep Ram",
+    "make": "Dodge",
+    "make_id": "13",
+    "state": "new-jersey",
+    "dealership_website": "http://www.route130chryslerdodgejeep.com/"
+  },
+  {
+    "name": "Chrysler Dodge Jeep Ram of Englewood Cliffs",
+    "make": "Dodge",
+    "make_id": "13",
+    "state": "new-jersey",
+    "dealership_website": "https://www.chryslerdodgejeepramofenglewoodcliffs.com/"
+  },
+  {
+    "name": "Chrysler Dodge Jeep of Paramus",
+    "make": "Dodge",
+    "make_id": "13",
+    "state": "new-jersey",
+    "dealership_website": "http://www.chryslerdodgejeepofparamus.com"
+  },
+  {
+    "name": "Performance Dodge RAM of Woodbury",
+    "make": "Dodge",
+    "make_id": "13",
+    "state": "new-jersey",
+    "dealership_website": "http://www.performancedodge.com/"
+  },
+  {
+    "name": "Atlantic Chrysler Dodge Jeep RAM",
+    "make": "Dodge",
+    "make_id": "13",
+    "state": "new-jersey",
+    "dealership_website": "https://www.atlanticchryslerjeep.net/"
+  },
+  {
+    "name": "Burlington Chrysler Dodge Jeep Ram",
+    "make": "Dodge",
+    "make_id": "13",
+    "state": "new-jersey",
+    "dealership_website": "https://www.cdjrofburlington.com/"
+  },
+  {
+    "name": "Freehold Dodge",
+    "make": "Dodge",
+    "make_id": "13",
+    "state": "new-jersey",
+    "dealership_website": "https://www.freeholddodge.net"
+  },
+  {
+    "name": "Dover Dodge Chrysler Jeep",
+    "make": "Dodge",
+    "make_id": "13",
+    "state": "new-jersey",
+    "dealership_website": "http://www.doverdodge.com"
+  },
+  {
+    "name": "Nielsen Chrysler Dodge Jeep Ram of Morristown",
+    "make": "Dodge",
+    "make_id": "13",
+    "state": "new-jersey",
+    "dealership_website": "https://www.nielsendodgemotown.com/"
+  },
+  {
+    "name": "Freedom Ford",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.freedomfordnj.com"
+  },
+  {
+    "name": "Liccardi Ford, Inc.",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.liccardifordnj.com"
+  },
+  {
+    "name": "Maplecrest Ford of Union",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.maplecrestfordlincolnunion.com"
+  },
+  {
+    "name": "Salerno Duane Ford, L.L.C.",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.salernoduaneford.com"
+  },
+  {
+    "name": "Tom's Ford",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.tomsfordkeyport.com"
+  },
+  {
+    "name": "Steven's Jersey City Ford",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.stevensjerseycityford.com"
+  },
+  {
+    "name": "All American Ford of Old Bridge",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.allamericanfordofoldbridge.com"
+  },
+  {
+    "name": "Malouf Ford",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.malouffordinc.com"
+  },
+  {
+    "name": "Performance Ford of East Hanover, LLC",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.performancefordeasthanover.com"
+  },
+  {
+    "name": "Performance Ford of Somerville LLC",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.performancefordofsomerville.net"
+  },
+  {
+    "name": "United Ford",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.unitedfordnj.com"
+  },
+  {
+    "name": "Nielsen Ford of Morristown, Inc.",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.nielsenfordmorristown.net"
+  },
+  {
+    "name": "Quality Auto Mall",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.qualityautomallford.com"
+  },
+  {
+    "name": "Verner-Cadby Inc",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.verner-cadbyford.com"
+  },
+  {
+    "name": "George Wall Ford",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.georgewall.com"
+  },
+  {
+    "name": "Fette Ford",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.fettefordsales.com"
+  },
+  {
+    "name": "Maplecrest Ford",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.maplecrestford.com"
+  },
+  {
+    "name": "Wayne Ford",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.wayneford1.com"
+  },
+  {
+    "name": "DCH Ford of Eatontown",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.dchfordofeatontown.com"
+  },
+  {
+    "name": "Freehold Ford Inc",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.freeholdfordcars.com"
+  },
+  {
+    "name": "All American Ford Inc",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.aaford.net"
+  },
+  {
+    "name": "Performance Ford",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.performanceforddealer.com"
+  },
+  {
+    "name": "Ford of Englewood, Inc.",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.fordenglewood.com"
+  },
+  {
+    "name": "Haldeman Ford",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.haldemandirect.com"
+  },
+  {
+    "name": "Lester Glenn Ford",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.lesterglennford.net"
+  },
+  {
+    "name": "Paramus Ford, Inc.",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.paramusford.net"
+  },
+  {
+    "name": "Route 23 Auto Mall, LLC",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.route23ford.com"
+  },
+  {
+    "name": "Seabreeze Ford, Inc.",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.seabreezeford.com"
+  },
+  {
+    "name": "Ciocca Ford Lincoln of Lawrenceville",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.cioccafordoflawrenceville.net"
+  },
+  {
+    "name": "Family Ford, Inc.",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.familyfd.com"
+  },
+  {
+    "name": "Ciocca Ford of Flemington",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.cioccafordofflemington.net"
+  },
+  {
+    "name": "Haldeman Ford",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.haldemanfordhamilton.com"
+  },
+  {
+    "name": "Larson Ford Inc",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.larsonford.net"
+  },
+  {
+    "name": "All American Ford in Point Pleasant",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.allamericanfordinpointpleasant.com"
+  },
+  {
+    "name": "Mahwah Ford Sales & Service, Inc.",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.mahwahford.com"
+  },
+  {
+    "name": "Fred Beans Ford of Washington",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.fredbeansfordofwashington.com"
+  },
+  {
+    "name": "Celebrity Ford of Toms River",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.celebrityfordoftoms-river.com"
+  },
+  {
+    "name": "Johnson Ford",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.johnsonfordburlington.com"
+  },
+  {
+    "name": "Nielsen Ford",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.nielsenford.com"
+  },
+  {
+    "name": "Miller Ford Sales",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.millerford.net"
+  },
+  {
+    "name": "Causeway Ford",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.causewayfordmanahawkin.com"
+  },
+  {
+    "name": "Medford Ford Inc",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.medfordfordinc.com"
+  },
+  {
+    "name": "Holman Ford Maple Shade",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.holmanfordmapleshade.net"
+  },
+  {
+    "name": "Winner Ford",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.winnerford.com"
+  },
+  {
+    "name": "Echelon Ford Inc",
+    "make": "Ford",
+    "make_id": "15",
+    "state": "new-jersey",
+    "dealership_website": "https://www.echelonfordinc.com"
+  },
+  {
+    "name": "Lester Glenn GMC",
+    "make": "GMC",
+    "make_id": "16",
+    "state": "new-jersey",
+    "dealership_website": "https://www.lesterglenngmc.com"
+  },
+  {
+    "name": "Malouf GMC",
+    "make": "GMC",
+    "make_id": "16",
+    "state": "new-jersey",
+    "dealership_website": "https://www.maloufbpg.com/"
+  },
+  {
+    "name": "Performance Buick GMC",
+    "make": "GMC",
+    "make_id": "16",
+    "state": "new-jersey",
+    "dealership_website": "https://www.performancebuickgmc.com/"
+  },
+  {
+    "name": "Burlington Chevrolet",
+    "make": "GMC",
+    "make_id": "16",
+    "state": "new-jersey",
+    "dealership_website": "https://www.burlingtonchevy.com/"
+  },
+  {
+    "name": "North Bergen Buick GMC",
+    "make": "GMC",
+    "make_id": "16",
+    "state": "new-jersey",
+    "dealership_website": "https://www.northbergenbuickgmc.com/"
+  },
+  {
+    "name": "Barlow Buick GMC",
+    "make": "GMC",
+    "make_id": "16",
+    "state": "new-jersey",
+    "dealership_website": "http://www.barlowautogroup.com"
+  },
+  {
+    "name": "Pellegrino Buick GMC",
+    "make": "GMC",
+    "make_id": "16",
+    "state": "new-jersey",
+    "dealership_website": "http://www.pellegrinopbg.com"
+  },
+  {
+    "name": "Bridgewater Chevrolet",
+    "make": "GMC",
+    "make_id": "16",
+    "state": "new-jersey",
+    "dealership_website": "http://www.bridgewaterchevy.com/"
+  },
+  {
+    "name": "Pointe Buick GMC",
+    "make": "GMC",
+    "make_id": "16",
+    "state": "new-jersey",
+    "dealership_website": "http://www.pointebuickgmc.com"
+  },
+  {
+    "name": "Quality Chevrolet Buick GMC",
+    "make": "GMC",
+    "make_id": "16",
+    "state": "new-jersey",
+    "dealership_website": "https://www.qualitychevybuickgmc.com/"
+  },
+  {
+    "name": "Coleman Buick GMC",
+    "make": "GMC",
+    "make_id": "16",
+    "state": "new-jersey",
+    "dealership_website": "http://www.colemanautos.com/"
+  },
+  {
+    "name": "Sawyer Lyons Buick GMC of Randolph",
+    "make": "GMC",
+    "make_id": "16",
+    "state": "new-jersey",
+    "dealership_website": "https://www.sawyerlyonsbuickgmc.com/"
+  },
+  {
+    "name": "Freehold Buick GMC",
+    "make": "GMC",
+    "make_id": "16",
+    "state": "new-jersey",
+    "dealership_website": "http://www.freeholdautos.com"
+  },
+  {
+    "name": "T&T Coast Buick GMC",
+    "make": "GMC",
+    "make_id": "16",
+    "state": "new-jersey",
+    "dealership_website": "http://www.ttcoastauto.com/HomePage"
+  },
+  {
+    "name": "Green Brook Buick GMC",
+    "make": "GMC",
+    "make_id": "16",
+    "state": "new-jersey",
+    "dealership_website": "http://www.greenbrookauto.com"
+  },
+  {
+    "name": "Burke Motor Group",
+    "make": "GMC",
+    "make_id": "16",
+    "state": "new-jersey",
+    "dealership_website": "http://www.burkemotorgroup.com/"
+  },
+  {
+    "name": "Schumacher Chevrolet Buick of Boonton",
+    "make": "GMC",
+    "make_id": "16",
+    "state": "new-jersey",
+    "dealership_website": "https://www.schumacherchevybuickboonton.com/"
+  },
+  {
+    "name": "McGuire Buick GMC Little Falls",
+    "make": "GMC",
+    "make_id": "16",
+    "state": "new-jersey",
+    "dealership_website": "http://www.mcguireautogroup.com"
+  },
+  {
+    "name": "Rossi Chevrolet GMC",
+    "make": "GMC",
+    "make_id": "16",
+    "state": "new-jersey",
+    "dealership_website": "https://www.rossichevroletgmc.com/"
+  },
+  {
+    "name": "Burns Buick GMC",
+    "make": "GMC",
+    "make_id": "16",
+    "state": "new-jersey",
+    "dealership_website": "https://www.burnsbuickgmc.com/"
+  },
+  {
+    "name": "F.C. Kerbeck Buick GMC",
+    "make": "GMC",
+    "make_id": "16",
+    "state": "new-jersey",
+    "dealership_website": "https://www.kerbeckbuickgmc.com/"
+  },
+  {
+    "name": "Miller Buick GMC",
+    "make": "GMC",
+    "make_id": "16",
+    "state": "new-jersey",
+    "dealership_website": "https://www.performancebuickgmcwoodbridge.com/"
+  },
+  {
+    "name": "Johnson GMC Cadillac",
+    "make": "GMC",
+    "make_id": "16",
+    "state": "new-jersey",
+    "dealership_website": "https://www.johnsoncadillacnj.com/"
+  },
+  {
+    "name": "Mcguire Pontiac Buick GMC",
+    "make": "GMC",
+    "make_id": "16",
+    "state": "new-jersey",
+    "dealership_website": "https://www.mcguireautogroup.net/"
+  },
+  {
+    "name": "Performance Buick GMC of Woodbridge",
+    "make": "GMC",
+    "make_id": "16",
+    "state": "new-jersey",
+    "dealership_website": "https://www.performancebuickgmcwoodbridge.com/"
+  },
+  {
+    "name": "T&T Coast GMC",
+    "make": "GMC",
+    "make_id": "16",
+    "state": "new-jersey",
+    "dealership_website": "https://www.ttcoastgmc.com/"
+  },
+  {
+    "name": "Clinton Honda",
+    "make": "Honda",
+    "make_id": "17",
+    "state": "new-jersey",
+    "dealership_website": "http://www.clintonhonda.com"
+  },
+  {
+    "name": "Garden State Honda",
+    "make": "Honda",
+    "make_id": "17",
+    "state": "new-jersey",
+    "dealership_website": "http://www.gardenstatehonda.com"
+  },
+  {
+    "name": "DARCARS Honda of Tenafly",
+    "make": "Honda",
+    "make_id": "17",
+    "state": "new-jersey",
+    "dealership_website": "http://www.hondaoftenafly.com/"
+  },
+  {
+    "name": "Honda Universe",
+    "make": "Honda",
+    "make_id": "17",
+    "state": "new-jersey",
+    "dealership_website": "http://www.hondauniverse.com"
+  },
+  {
+    "name": "Lester Glenn Honda of Sea Girt",
+    "make": "Honda",
+    "make_id": "17",
+    "state": "new-jersey",
+    "dealership_website": "https://www.lesterglennhonda.com"
+  },
+  {
+    "name": "DCH Kay Honda",
+    "make": "Honda",
+    "make_id": "17",
+    "state": "new-jersey",
+    "dealership_website": "http://www.dchkayhonda.com/"
+  },
+  {
+    "name": "DCH Paramus Honda",
+    "make": "Honda",
+    "make_id": "17",
+    "state": "new-jersey",
+    "dealership_website": "https://www.dchparamushonda.com/"
+  },
+  {
+    "name": "Davis Honda",
+    "make": "Honda",
+    "make_id": "17",
+    "state": "new-jersey",
+    "dealership_website": "http://www.davishonda.net/"
+  },
+  {
+    "name": "DCH Academy Honda",
+    "make": "Honda",
+    "make_id": "17",
+    "state": "new-jersey",
+    "dealership_website": "http://www.dchacademyhonda.com"
+  },
+  {
+    "name": "Honda of Toms River",
+    "make": "Honda",
+    "make_id": "17",
+    "state": "new-jersey",
+    "dealership_website": "https://www.hondaoftomsriver.com/"
+  },
+  {
+    "name": "Joyce Honda",
+    "make": "Honda",
+    "make_id": "17",
+    "state": "new-jersey",
+    "dealership_website": "http://www.joycehonda.com/"
+  },
+  {
+    "name": "Honda of Freehold",
+    "make": "Honda",
+    "make_id": "17",
+    "state": "new-jersey",
+    "dealership_website": "http://www.hondaoffreehold.com"
+  },
+  {
+    "name": "Honda Bridgewater",
+    "make": "Honda",
+    "make_id": "17",
+    "state": "new-jersey",
+    "dealership_website": "https://www.hondabridgewater.com/"
+  },
+  {
+    "name": "Planet Honda",
+    "make": "Honda",
+    "make_id": "17",
+    "state": "new-jersey",
+    "dealership_website": "https://www.planethondanj.com/"
+  },
+  {
+    "name": "Metro Honda",
+    "make": "Honda",
+    "make_id": "17",
+    "state": "new-jersey",
+    "dealership_website": "http://www.mymetrohonda.com/"
+  },
+  {
+    "name": "Honda of Mahwah",
+    "make": "Honda",
+    "make_id": "17",
+    "state": "new-jersey",
+    "dealership_website": "https://www.mahwahhonda.com/"
+  },
+  {
+    "name": "Honda of Hackettstown",
+    "make": "Honda",
+    "make_id": "17",
+    "state": "new-jersey",
+    "dealership_website": "http://www.hondaofhackettstown.com/"
+  },
+  {
+    "name": "Boardwalk Honda",
+    "make": "Honda",
+    "make_id": "17",
+    "state": "new-jersey",
+    "dealership_website": "https://www.hondaboardwalk.com/"
+  },
+  {
+    "name": "Honda of Turnersville",
+    "make": "Honda",
+    "make_id": "17",
+    "state": "new-jersey",
+    "dealership_website": "https://www.hondaofturnersville.com/"
+  },
+  {
+    "name": "Burns Honda",
+    "make": "Honda",
+    "make_id": "17",
+    "state": "new-jersey",
+    "dealership_website": "https://burnshonda.com/"
+  },
+  {
+    "name": "Phillipsburg-Easton Honda",
+    "make": "Honda",
+    "make_id": "17",
+    "state": "new-jersey",
+    "dealership_website": "https://www.pehonda.com/"
+  },
+  {
+    "name": "Route 23 Honda",
+    "make": "Honda",
+    "make_id": "17",
+    "state": "new-jersey",
+    "dealership_website": "https://www.route23honda.com/"
+  },
+  {
+    "name": "Route 22 Honda",
+    "make": "Honda",
+    "make_id": "17",
+    "state": "new-jersey",
+    "dealership_website": "https://www.route22honda.com/"
+  },
+  {
+    "name": "Paul Miller Honda of West Caldwell",
+    "make": "Honda",
+    "make_id": "17",
+    "state": "new-jersey",
+    "dealership_website": "https://www.paulmillerhonda.com/"
+  },
+  {
+    "name": "Open Road Honda",
+    "make": "Honda",
+    "make_id": "17",
+    "state": "new-jersey",
+    "dealership_website": "https://www.openroadhonda.com/"
+  },
+  {
+    "name": "VIP Honda",
+    "make": "Honda",
+    "make_id": "17",
+    "state": "new-jersey",
+    "dealership_website": "https://www.viphonda.com/"
+  },
+  {
+    "name": "Hamilton Honda",
+    "make": "Honda",
+    "make_id": "17",
+    "state": "new-jersey",
+    "dealership_website": "https://www.hamiltonhonda.com/"
+  },
+  {
+    "name": "Lester Glenn Hyundai",
+    "make": "Hyundai",
+    "make_id": "19",
+    "state": "new-jersey",
+    "dealership_website": "https://www.tomsriverhyundai.com/?utm_source=DealerRater&utm_medium=profile&utm_campaign=website"
+  },
+  {
+    "name": "Vineland Hyundai",
+    "make": "Hyundai",
+    "make_id": "19",
+    "state": "new-jersey",
+    "dealership_website": "https://www.vinelandhyundai.com/"
+  },
+  {
+    "name": "Wayne Hyundai",
+    "make": "Hyundai",
+    "make_id": "19",
+    "state": "new-jersey",
+    "dealership_website": "https://www.waynehyundai.com/"
+  },
+  {
+    "name": "Hudson Hyundai",
+    "make": "Hyundai",
+    "make_id": "19",
+    "state": "new-jersey",
+    "dealership_website": "http://www.hudsonhyundai.com"
+  },
+  {
+    "name": "Hyundai of Trenton",
+    "make": "Hyundai",
+    "make_id": "19",
+    "state": "new-jersey",
+    "dealership_website": "https://www.hyundaioftrenton.com/"
+  },
+  {
+    "name": "Global Auto Mall",
+    "make": "Hyundai",
+    "make_id": "19",
+    "state": "new-jersey",
+    "dealership_website": "http://www.GlobalAutoMall.com"
+  },
+  {
+    "name": "Paramus Hyundai",
+    "make": "Hyundai",
+    "make_id": "19",
+    "state": "new-jersey",
+    "dealership_website": "http://www.hyundaiofparamus.com/"
+  },
+  {
+    "name": "Lynnes Hyundai",
+    "make": "Hyundai",
+    "make_id": "19",
+    "state": "new-jersey",
+    "dealership_website": "http://www.lynneshyundai.com/"
+  },
+  {
+    "name": "Burlington Hyundai",
+    "make": "Hyundai",
+    "make_id": "19",
+    "state": "new-jersey",
+    "dealership_website": "https://www.hyundaicity.com/"
+  },
+  {
+    "name": "Fette INFINITI",
+    "make": "INFINITI",
+    "make_id": "20",
+    "state": "new-jersey",
+    "dealership_website": "http://www.fetteinfiniti.com"
+  },
+  {
+    "name": "Circle INFINITI",
+    "make": "INFINITI",
+    "make_id": "20",
+    "state": "new-jersey",
+    "dealership_website": "http://www.CIRCLEINFINITI.com"
+  },
+  {
+    "name": "Holman INFINITI",
+    "make": "INFINITI",
+    "make_id": "20",
+    "state": "new-jersey",
+    "dealership_website": "http://www.holmaninfiniti.com"
+  },
+  {
+    "name": "Edison INFINITI",
+    "make": "INFINITI",
+    "make_id": "20",
+    "state": "new-jersey",
+    "dealership_website": "https://www.edisoninfiniti.com/"
+  },
+  {
+    "name": "INFINITI of Englewood",
+    "make": "INFINITI",
+    "make_id": "20",
+    "state": "new-jersey",
+    "dealership_website": "https://www.infinitiofenglewood.com/"
+  },
+  {
+    "name": "Matt Blatt INFINITI Atlantic City",
+    "make": "INFINITI",
+    "make_id": "20",
+    "state": "new-jersey",
+    "dealership_website": "https://www.mattblattinfiniti.com/"
+  },
+  {
+    "name": "Land Rover Princeton",
+    "make": "Jaguar",
+    "make_id": "22",
+    "state": "new-jersey",
+    "dealership_website": "https://landroverprinceton.com"
+  },
+  {
+    "name": "Ray Catena Jaguar Land Rover Marlboro",
+    "make": "Jaguar",
+    "make_id": "22",
+    "state": "new-jersey",
+    "dealership_website": "https://www.landrovermarlboro.com/"
+  },
+  {
+    "name": "Pine Belt Chrysler Jeep Dodge Ram",
+    "make": "Jeep",
+    "make_id": "23",
+    "state": "new-jersey",
+    "dealership_website": "http://www.pinebeltcjdr.com/"
+  },
+  {
+    "name": "Lester Glenn Chrysler Dodge Jeep RAM FIAT",
+    "make": "Jeep",
+    "make_id": "23",
+    "state": "new-jersey",
+    "dealership_website": "https://www.lesterglennchryslerdodgejeep.com/?utm_source=DealerRater&utm_medium=profile&utm_campaign=website"
+  },
+  {
+    "name": "Pellegrino Chrysler Jeep",
+    "make": "Jeep",
+    "make_id": "23",
+    "state": "new-jersey",
+    "dealership_website": "http://www.pellegrinocj.com"
+  },
+  {
+    "name": "Route 1 Chrysler Dodge Jeep Ram of Lawrenceville",
+    "make": "Jeep",
+    "make_id": "23",
+    "state": "new-jersey",
+    "dealership_website": "http://www.route1usa.com/index.htm"
+  },
+  {
+    "name": "Precision Chrysler Jeep Dodge Ram",
+    "make": "Jeep",
+    "make_id": "23",
+    "state": "new-jersey",
+    "dealership_website": "http://www.precisioncjdr.com"
+  },
+  {
+    "name": "Circle Chrysler Dodge Jeep Ram",
+    "make": "Jeep",
+    "make_id": "23",
+    "state": "new-jersey",
+    "dealership_website": "https://www.circlejeep.com/"
+  },
+  {
+    "name": "Lucas Chrysler Jeep Dodge RAM Inc.",
+    "make": "Jeep",
+    "make_id": "23",
+    "state": "new-jersey",
+    "dealership_website": "http://www.lucasdodgecars.com"
+  },
+  {
+    "name": "Route 18 Chrysler Jeep Dodge Ram",
+    "make": "Jeep",
+    "make_id": "23",
+    "state": "new-jersey",
+    "dealership_website": "http://www.rt18cjdr.com"
+  },
+  {
+    "name": "Spirit Chrysler Dodge Jeep Ram",
+    "make": "Jeep",
+    "make_id": "23",
+    "state": "new-jersey",
+    "dealership_website": "https://www.spiritautocenter.com/"
+  },
+  {
+    "name": "Nielsen Dodge Chrysler Jeep Ram",
+    "make": "Jeep",
+    "make_id": "23",
+    "state": "new-jersey",
+    "dealership_website": "https://www.nielsendodgechryslerjeepram.com/"
+  },
+  {
+    "name": "Salerno Duane Chrysler Jeep",
+    "make": "Jeep",
+    "make_id": "23",
+    "state": "new-jersey",
+    "dealership_website": "https://www.salernoduanesummit.com"
+  },
+  {
+    "name": "Johnson Dodge Chrysler Jeep",
+    "make": "Jeep",
+    "make_id": "23",
+    "state": "new-jersey",
+    "dealership_website": "http://www.johnsondodge.com/index.htm"
+  },
+  {
+    "name": "Vineland Dodge Chrysler Jeep Ram",
+    "make": "Jeep",
+    "make_id": "23",
+    "state": "new-jersey",
+    "dealership_website": "http://www.vanndodgechryslerjeep.com/"
+  },
+  {
+    "name": "DeCozen Chrysler Jeep Dodge Ram",
+    "make": "Jeep",
+    "make_id": "23",
+    "state": "new-jersey",
+    "dealership_website": "http://www.decozencjd.com"
+  },
+  {
+    "name": "Chrysler Dodge Jeep Ram of Princeton",
+    "make": "Jeep",
+    "make_id": "23",
+    "state": "new-jersey",
+    "dealership_website": "https://www.cdjrofprinceton.com/"
+  },
+  {
+    "name": "Lilliston Chrysler Dodge Jeep",
+    "make": "Jeep",
+    "make_id": "23",
+    "state": "new-jersey",
+    "dealership_website": "https://www.lillistonchryslerdodgejeep.com/"
+  },
+  {
+    "name": "Route 46 Chrysler Jeep Dodge",
+    "make": "Jeep",
+    "make_id": "23",
+    "state": "new-jersey",
+    "dealership_website": "http://www.route46chryslerjeepdodge.net/index.htm"
+  },
+  {
+    "name": "Global Auto Mall",
+    "make": "Jeep",
+    "make_id": "23",
+    "state": "new-jersey",
+    "dealership_website": "http://www.GlobalAutoMall.com"
+  },
+  {
+    "name": "Turnersville Jeep Chrysler Dodge RAM",
+    "make": "Jeep",
+    "make_id": "23",
+    "state": "new-jersey",
+    "dealership_website": "http://www.turnersvillejeepchrysler.com/"
+  },
+  {
+    "name": "Route 130 Chrysler Dodge Jeep Ram",
+    "make": "Jeep",
+    "make_id": "23",
+    "state": "new-jersey",
+    "dealership_website": "http://www.route130chryslerdodgejeep.com/"
+  },
+  {
+    "name": "Chrysler Dodge Jeep Ram of Englewood Cliffs",
+    "make": "Jeep",
+    "make_id": "23",
+    "state": "new-jersey",
+    "dealership_website": "https://www.chryslerdodgejeepramofenglewoodcliffs.com/"
+  },
+  {
+    "name": "Chrysler Dodge Jeep of Paramus",
+    "make": "Jeep",
+    "make_id": "23",
+    "state": "new-jersey",
+    "dealership_website": "http://www.chryslerdodgejeepofparamus.com"
+  },
+  {
+    "name": "Atlantic Chrysler Dodge Jeep RAM",
+    "make": "Jeep",
+    "make_id": "23",
+    "state": "new-jersey",
+    "dealership_website": "https://www.atlanticchryslerjeep.net/"
+  },
+  {
+    "name": "Burlington Chrysler Dodge Jeep Ram",
+    "make": "Jeep",
+    "make_id": "23",
+    "state": "new-jersey",
+    "dealership_website": "https://www.cdjrofburlington.com/"
+  },
+  {
+    "name": "Dover Dodge Chrysler Jeep",
+    "make": "Jeep",
+    "make_id": "23",
+    "state": "new-jersey",
+    "dealership_website": "http://www.doverdodge.com"
+  },
+  {
+    "name": "Nielsen Chrysler Dodge Jeep Ram of Morristown",
+    "make": "Jeep",
+    "make_id": "23",
+    "state": "new-jersey",
+    "dealership_website": "https://www.nielsendodgemotown.com/"
+  },
+  {
+    "name": "Matt Blatt Kia of Toms River",
+    "make": "Kia",
+    "make_id": "24",
+    "state": "new-jersey",
+    "dealership_website": "https://www.mattblattkiatr.com/"
+  },
+  {
+    "name": "Motion Kia",
+    "make": "Kia",
+    "make_id": "24",
+    "state": "new-jersey",
+    "dealership_website": "http://www.motionkia.com"
+  },
+  {
+    "name": "Bridgewater KIA",
+    "make": "Kia",
+    "make_id": "24",
+    "state": "new-jersey",
+    "dealership_website": "http://www.bridgewaterkia.com"
+  },
+  {
+    "name": "Turnersville Kia",
+    "make": "Kia",
+    "make_id": "24",
+    "state": "new-jersey",
+    "dealership_website": "http://www.turnersvillekia.com/"
+  },
+  {
+    "name": "Burlington KIA",
+    "make": "Kia",
+    "make_id": "24",
+    "state": "new-jersey",
+    "dealership_website": "http://www.burlingtonkia.com/"
+  },
+  {
+    "name": "Raceway Kia of Freehold",
+    "make": "Kia",
+    "make_id": "24",
+    "state": "new-jersey",
+    "dealership_website": "https://www.racewaykia.com/"
+  },
+  {
+    "name": "Kia of Riverdale",
+    "make": "Kia",
+    "make_id": "24",
+    "state": "new-jersey",
+    "dealership_website": "https://www.kiaofriverdale.com/"
+  },
+  {
+    "name": "Global Auto Mall",
+    "make": "Kia",
+    "make_id": "24",
+    "state": "new-jersey",
+    "dealership_website": "http://www.GlobalAutoMall.com"
+  },
+  {
+    "name": "Sansone Rt 1 Dodge Genesis Hyundai Jeep Kia Mazda Nissan RAM Toyota",
+    "make": "Kia",
+    "make_id": "24",
+    "state": "new-jersey",
+    "dealership_website": "https://www.sansoneauto.com/?utm_medium=referral&utm_source=cars.com&utm_campaign=cars.com_DPP_referral"
+  },
+  {
+    "name": "Nielsen Kia",
+    "make": "Kia",
+    "make_id": "24",
+    "state": "new-jersey",
+    "dealership_website": "https://www.nielsenkiaofnewton.com/"
+  },
+  {
+    "name": "Matt Blatt Kia",
+    "make": "Kia",
+    "make_id": "24",
+    "state": "new-jersey",
+    "dealership_website": "http://www.mattblattkia.com/index.htm"
+  },
+  {
+    "name": "Land Rover Princeton",
+    "make": "Land Rover",
+    "make_id": "26",
+    "state": "new-jersey",
+    "dealership_website": "https://landroverprinceton.com"
+  },
+  {
+    "name": "Ray Catena Jaguar Land Rover Marlboro",
+    "make": "Land Rover",
+    "make_id": "26",
+    "state": "new-jersey",
+    "dealership_website": "https://www.landrovermarlboro.com/"
+  },
+  {
+    "name": "Lexus of Cherry Hill",
+    "make": "Lexus",
+    "make_id": "27",
+    "state": "new-jersey",
+    "dealership_website": "http://www.lexusofcherryhill.com"
+  },
+  {
+    "name": "Lexus of Atlantic City",
+    "make": "Lexus",
+    "make_id": "27",
+    "state": "new-jersey",
+    "dealership_website": "http://www.aclexus.com"
+  },
+  {
+    "name": "DARCARS Lexus of Englewood",
+    "make": "Lexus",
+    "make_id": "27",
+    "state": "new-jersey",
+    "dealership_website": "http://www.lexusofenglewood.com/"
+  },
+  {
+    "name": "Maplecrest Ford Lincoln",
+    "make": "Lincoln",
+    "make_id": "28",
+    "state": "new-jersey",
+    "dealership_website": "http://maplecrestcars.com"
+  },
+  {
+    "name": "Miller Ford Lincoln",
+    "make": "Lincoln",
+    "make_id": "28",
+    "state": "new-jersey",
+    "dealership_website": "http://www.millerford.com/"
+  },
+  {
+    "name": "Lincoln of Wayne",
+    "make": "Lincoln",
+    "make_id": "28",
+    "state": "new-jersey",
+    "dealership_website": "http://www.driveWAYNE.com"
+  },
+  {
+    "name": "Irwin Lincoln",
+    "make": "Lincoln",
+    "make_id": "28",
+    "state": "new-jersey",
+    "dealership_website": "http://irwinlincoln.net/"
+  },
+  {
+    "name": "Chapman Ford Lincoln Mazda",
+    "make": "Lincoln",
+    "make_id": "28",
+    "state": "new-jersey",
+    "dealership_website": "https://www.chapmannj.com/"
+  },
+  {
+    "name": "Lincoln of Ramsey",
+    "make": "Lincoln",
+    "make_id": "28",
+    "state": "new-jersey",
+    "dealership_website": "https://www.lincolnoframsey.com"
+  },
+  {
+    "name": "Malouf Ford - Lincoln, Inc.",
+    "make": "Lincoln",
+    "make_id": "28",
+    "state": "new-jersey",
+    "dealership_website": "https://www.malouffordinc.com/"
+  },
+  {
+    "name": "George Wall Ford",
+    "make": "Lincoln",
+    "make_id": "28",
+    "state": "new-jersey",
+    "dealership_website": "http://www.georgewall.com"
+  },
+  {
+    "name": "Performance Ford of East Hanover",
+    "make": "Lincoln",
+    "make_id": "28",
+    "state": "new-jersey",
+    "dealership_website": "https://www.performancefordeasthanover.com/"
+  },
+  {
+    "name": "Liccardi Ford Lincoln",
+    "make": "Lincoln",
+    "make_id": "28",
+    "state": "new-jersey",
+    "dealership_website": "https://www.liccardifordnj.com/"
+  },
+  {
+    "name": "Lester Glenn Mazda",
+    "make": "Mazda",
+    "make_id": "31",
+    "state": "new-jersey",
+    "dealership_website": "https://www.lesterglennmazda.com/?utm_source=DealerRater&utm_medium=profile&utm_campaign=website"
+  },
+  {
+    "name": "Pine Belt Mazda",
+    "make": "Mazda",
+    "make_id": "31",
+    "state": "new-jersey",
+    "dealership_website": "https://www.pinebeltmazda.com/"
+  },
+  {
+    "name": "Hamilton Mazda",
+    "make": "Mazda",
+    "make_id": "31",
+    "state": "new-jersey",
+    "dealership_website": "http://www.hamiltonmazda.net/"
+  },
+  {
+    "name": "Chapman Ford Lincoln Mazda",
+    "make": "Mazda",
+    "make_id": "31",
+    "state": "new-jersey",
+    "dealership_website": "https://www.chapmannj.com/"
+  },
+  {
+    "name": "Empire Mazda of Green Brook",
+    "make": "Mazda",
+    "make_id": "31",
+    "state": "new-jersey",
+    "dealership_website": "http://www.crystalmazda.com/"
+  },
+  {
+    "name": "Irwin Mazda",
+    "make": "Mazda",
+    "make_id": "31",
+    "state": "new-jersey",
+    "dealership_website": "http://www.irwinmazda.com/"
+  },
+  {
+    "name": "Performance Mazda",
+    "make": "Mazda",
+    "make_id": "31",
+    "state": "new-jersey",
+    "dealership_website": "performancemazdanj.com"
+  },
+  {
+    "name": "Mercedes-Benz of Edison - A Ray Catena Dealership ",
+    "make": "Mercedes-Benz",
+    "make_id": "32",
+    "state": "new-jersey",
+    "dealership_website": "https://www.raycatenaedison.com/"
+  },
+  {
+    "name": "Mercedes-Benz of Princeton",
+    "make": "Mercedes-Benz",
+    "make_id": "32",
+    "state": "new-jersey",
+    "dealership_website": "http://www.mbprinceton.com"
+  },
+  {
+    "name": "Mercedes-Benz of Morristown",
+    "make": "Mercedes-Benz",
+    "make_id": "32",
+    "state": "new-jersey",
+    "dealership_website": "https://www.mbmnj.com/"
+  },
+  {
+    "name": "Mercedes-Benz of Little Silver",
+    "make": "Mercedes-Benz",
+    "make_id": "32",
+    "state": "new-jersey",
+    "dealership_website": "https://www.mercedesoflittlesilver.com/"
+  },
+  {
+    "name": "Benzel-Busch Motor Car",
+    "make": "Mercedes-Benz",
+    "make_id": "32",
+    "state": "new-jersey",
+    "dealership_website": "http://www.benzelbusch.com/mercedes-nj?utm_source=Dealerrater&utm_medium=Banner&utm_campaign=Dealerrater_Jan2018"
+  },
+  {
+    "name": "Mercedes-Benz of Atlantic City",
+    "make": "Mercedes-Benz",
+    "make_id": "32",
+    "state": "new-jersey",
+    "dealership_website": "https://www.mbofatlanticcity.com/"
+  },
+  {
+    "name": "Ray Catena of Freehold - Mercedes-Benz Dealership",
+    "make": "Mercedes-Benz",
+    "make_id": "32",
+    "state": "new-jersey",
+    "dealership_website": "http://www.raycatenafreehold.com"
+  },
+  {
+    "name": "Mercedes-Benz of Union",
+    "make": "Mercedes-Benz",
+    "make_id": "32",
+    "state": "new-jersey",
+    "dealership_website": "http://www.raycatenaunion.com"
+  },
+  {
+    "name": "Mercedes-Benz of Paramus",
+    "make": "Mercedes-Benz",
+    "make_id": "32",
+    "state": "new-jersey",
+    "dealership_website": "https://www.mercedesbenzparamus.com/"
+  },
+  {
+    "name": "Atlantic City Mitsubishi",
+    "make": "Mitsubishi",
+    "make_id": "35",
+    "state": "new-jersey",
+    "dealership_website": "https://www.acmitsubishi.com/"
+  },
+  {
+    "name": "Bell Mitsubishi",
+    "make": "Mitsubishi",
+    "make_id": "35",
+    "state": "new-jersey",
+    "dealership_website": "http://www.bellmitsubishi.com/"
+  },
+  {
+    "name": "Matt Blatt Glassboro Mitsubishi",
+    "make": "Mitsubishi",
+    "make_id": "35",
+    "state": "new-jersey",
+    "dealership_website": "http://www.mattblatt.com"
+  },
+  {
+    "name": "Route 17 Mitsubishi",
+    "make": "Mitsubishi",
+    "make_id": "35",
+    "state": "new-jersey",
+    "dealership_website": "https://www.route17mitsubishi.com/"
+  },
+  {
+    "name": "Woodbury Nissan",
+    "make": "Nissan",
+    "make_id": "36",
+    "state": "new-jersey",
+    "dealership_website": "https://www.woodburynissan.com/"
+  },
+  {
+    "name": "Raceway Nissan of Freehold",
+    "make": "Nissan",
+    "make_id": "36",
+    "state": "new-jersey",
+    "dealership_website": "http://racewaynissannj.com"
+  },
+  {
+    "name": "Nissan City of Red Bank",
+    "make": "Nissan",
+    "make_id": "36",
+    "state": "new-jersey",
+    "dealership_website": "https://www.nissancitynj.com/"
+  },
+  {
+    "name": "Matt Blatt Nissan",
+    "make": "Nissan",
+    "make_id": "36",
+    "state": "new-jersey",
+    "dealership_website": "https://www.mattblattnissan.com/"
+  },
+  {
+    "name": "Mount Holly Nissan",
+    "make": "Nissan",
+    "make_id": "36",
+    "state": "new-jersey",
+    "dealership_website": "https://www.mthollynissan.com/"
+  },
+  {
+    "name": "Pine Belt Nissan of Toms River",
+    "make": "Nissan",
+    "make_id": "36",
+    "state": "new-jersey",
+    "dealership_website": "http://www.nissan37.com/"
+  },
+  {
+    "name": "Route 46 Nissan",
+    "make": "Nissan",
+    "make_id": "36",
+    "state": "new-jersey",
+    "dealership_website": "https://www.route46nissan.com/"
+  },
+  {
+    "name": "Route 17 Nissan",
+    "make": "Nissan",
+    "make_id": "36",
+    "state": "new-jersey",
+    "dealership_website": "https://www.route17nissan.com/"
+  },
+  {
+    "name": "Lynnes Nissan Subaru",
+    "make": "Nissan",
+    "make_id": "36",
+    "state": "new-jersey",
+    "dealership_website": "http://www.lynnesnissan.com/"
+  },
+  {
+    "name": "Edison Nissan",
+    "make": "Nissan",
+    "make_id": "36",
+    "state": "new-jersey",
+    "dealership_website": "http://www.myedisonnissan.com"
+  },
+  {
+    "name": "Route 33 Nissan",
+    "make": "Nissan",
+    "make_id": "36",
+    "state": "new-jersey",
+    "dealership_website": "http://www.route33nissan.com/index.htm"
+  },
+  {
+    "name": "Pine Belt Nissan of Keyport",
+    "make": "Nissan",
+    "make_id": "36",
+    "state": "new-jersey",
+    "dealership_website": "http://www.nissan36.com/"
+  },
+  {
+    "name": "Nissan City of Springfield",
+    "make": "Nissan",
+    "make_id": "36",
+    "state": "new-jersey",
+    "dealership_website": "https://www.nissancityspringfield.com/"
+  },
+  {
+    "name": "Riverside Nissan",
+    "make": "Nissan",
+    "make_id": "36",
+    "state": "new-jersey",
+    "dealership_website": "https://www.riversidenissanauto.com/"
+  },
+  {
+    "name": "Generation Nissan",
+    "make": "Nissan",
+    "make_id": "36",
+    "state": "new-jersey",
+    "dealership_website": "https://www.generationnissan.com/"
+  },
+  {
+    "name": "Porsche Englewood",
+    "make": "Porsche",
+    "make_id": "40",
+    "state": "new-jersey",
+    "dealership_website": "https://www.porscheenglewood.com/"
+  },
+  {
+    "name": "Porsche Princeton",
+    "make": "Porsche",
+    "make_id": "40",
+    "state": "new-jersey",
+    "dealership_website": "http://www.princetonporsche.com"
+  },
+  {
+    "name": "Precision Chrysler Jeep Dodge Ram",
+    "make": "Ram",
+    "make_id": "66",
+    "state": "new-jersey",
+    "dealership_website": "http://www.precisioncjdr.com"
+  },
+  {
+    "name": "Pine Belt Chrysler Jeep Dodge Ram",
+    "make": "Ram",
+    "make_id": "66",
+    "state": "new-jersey",
+    "dealership_website": "http://www.pinebeltcjdr.com/"
+  },
+  {
+    "name": "Lester Glenn Chrysler Dodge Jeep RAM FIAT",
+    "make": "Ram",
+    "make_id": "66",
+    "state": "new-jersey",
+    "dealership_website": "https://www.lesterglennchryslerdodgejeep.com/?utm_source=DealerRater&utm_medium=profile&utm_campaign=website"
+  },
+  {
+    "name": "Route 1 Chrysler Dodge Jeep Ram of Lawrenceville",
+    "make": "Ram",
+    "make_id": "66",
+    "state": "new-jersey",
+    "dealership_website": "http://www.route1usa.com/index.htm"
+  },
+  {
+    "name": "Circle Chrysler Dodge Jeep Ram",
+    "make": "Ram",
+    "make_id": "66",
+    "state": "new-jersey",
+    "dealership_website": "https://www.circlejeep.com/"
+  },
+  {
+    "name": "Lucas Chrysler Jeep Dodge RAM Inc.",
+    "make": "Ram",
+    "make_id": "66",
+    "state": "new-jersey",
+    "dealership_website": "http://www.lucasdodgecars.com"
+  },
+  {
+    "name": "Route 18 Chrysler Jeep Dodge Ram",
+    "make": "Ram",
+    "make_id": "66",
+    "state": "new-jersey",
+    "dealership_website": "http://www.rt18cjdr.com"
+  },
+  {
+    "name": "Spirit Chrysler Dodge Jeep Ram",
+    "make": "Ram",
+    "make_id": "66",
+    "state": "new-jersey",
+    "dealership_website": "https://www.spiritautocenter.com/"
+  },
+  {
+    "name": "Nielsen Dodge Chrysler Jeep Ram",
+    "make": "Ram",
+    "make_id": "66",
+    "state": "new-jersey",
+    "dealership_website": "https://www.nielsendodgechryslerjeepram.com/"
+  },
+  {
+    "name": "Salerno Duane Chrysler Jeep",
+    "make": "Ram",
+    "make_id": "66",
+    "state": "new-jersey",
+    "dealership_website": "https://www.salernoduanesummit.com"
+  },
+  {
+    "name": "Johnson Dodge Chrysler Jeep",
+    "make": "Ram",
+    "make_id": "66",
+    "state": "new-jersey",
+    "dealership_website": "http://www.johnsondodge.com/index.htm"
+  },
+  {
+    "name": "Vineland Dodge Chrysler Jeep Ram",
+    "make": "Ram",
+    "make_id": "66",
+    "state": "new-jersey",
+    "dealership_website": "http://www.vanndodgechryslerjeep.com/"
+  },
+  {
+    "name": "DeCozen Chrysler Jeep Dodge Ram",
+    "make": "Ram",
+    "make_id": "66",
+    "state": "new-jersey",
+    "dealership_website": "http://www.decozencjd.com"
+  },
+  {
+    "name": "Chrysler Dodge Jeep Ram of Princeton",
+    "make": "Ram",
+    "make_id": "66",
+    "state": "new-jersey",
+    "dealership_website": "https://www.cdjrofprinceton.com/"
+  },
+  {
+    "name": "Lilliston Chrysler Dodge Jeep",
+    "make": "Ram",
+    "make_id": "66",
+    "state": "new-jersey",
+    "dealership_website": "https://www.lillistonchryslerdodgejeep.com/"
+  },
+  {
+    "name": "Route 46 Chrysler Jeep Dodge",
+    "make": "Ram",
+    "make_id": "66",
+    "state": "new-jersey",
+    "dealership_website": "http://www.route46chryslerjeepdodge.net/index.htm"
+  },
+  {
+    "name": "Mt. Ephraim Chrysler Dodge",
+    "make": "Ram",
+    "make_id": "66",
+    "state": "new-jersey",
+    "dealership_website": "http://www.mtephraimdodge.com/"
+  },
+  {
+    "name": "Turnersville Jeep Chrysler Dodge RAM",
+    "make": "Ram",
+    "make_id": "66",
+    "state": "new-jersey",
+    "dealership_website": "http://www.turnersvillejeepchrysler.com/"
+  },
+  {
+    "name": "Route 130 Chrysler Dodge Jeep Ram",
+    "make": "Ram",
+    "make_id": "66",
+    "state": "new-jersey",
+    "dealership_website": "http://www.route130chryslerdodgejeep.com/"
+  },
+  {
+    "name": "Chrysler Dodge Jeep Ram of Englewood Cliffs",
+    "make": "Ram",
+    "make_id": "66",
+    "state": "new-jersey",
+    "dealership_website": "https://www.chryslerdodgejeepramofenglewoodcliffs.com/"
+  },
+  {
+    "name": "Chrysler Dodge Jeep of Paramus",
+    "make": "Ram",
+    "make_id": "66",
+    "state": "new-jersey",
+    "dealership_website": "http://www.chryslerdodgejeepofparamus.com"
+  },
+  {
+    "name": "Performance Dodge RAM of Woodbury",
+    "make": "Ram",
+    "make_id": "66",
+    "state": "new-jersey",
+    "dealership_website": "http://www.performancedodge.com/"
+  },
+  {
+    "name": "Atlantic Chrysler Dodge Jeep RAM",
+    "make": "Ram",
+    "make_id": "66",
+    "state": "new-jersey",
+    "dealership_website": "https://www.atlanticchryslerjeep.net/"
+  },
+  {
+    "name": "Burlington Chrysler Dodge Jeep Ram",
+    "make": "Ram",
+    "make_id": "66",
+    "state": "new-jersey",
+    "dealership_website": "https://www.cdjrofburlington.com/"
+  },
+  {
+    "name": "Freehold Dodge",
+    "make": "Ram",
+    "make_id": "66",
+    "state": "new-jersey",
+    "dealership_website": "https://www.freeholddodge.net"
+  },
+  {
+    "name": "Dover Dodge Chrysler Jeep",
+    "make": "Ram",
+    "make_id": "66",
+    "state": "new-jersey",
+    "dealership_website": "http://www.doverdodge.com"
+  },
+  {
+    "name": "Nielsen Chrysler Dodge Jeep Ram of Morristown",
+    "make": "Ram",
+    "make_id": "66",
+    "state": "new-jersey",
+    "dealership_website": "https://www.nielsendodgemotown.com/"
+  },
+  {
+    "name": "Circle Subaru",
+    "make": "Subaru",
+    "make_id": "44",
+    "state": "new-jersey",
+    "dealership_website": "https://www.circlesubaru.com/"
+  },
+  {
+    "name": "Richard Lucas Subaru",
+    "make": "Subaru",
+    "make_id": "44",
+    "state": "new-jersey",
+    "dealership_website": "http://www.subaruofwoodbridge.com"
+  },
+  {
+    "name": "Liberty Subaru",
+    "make": "Subaru",
+    "make_id": "44",
+    "state": "new-jersey",
+    "dealership_website": "http://www.libertysubaru.com/index.htm"
+  },
+  {
+    "name": "Pine Belt Subaru",
+    "make": "Subaru",
+    "make_id": "44",
+    "state": "new-jersey",
+    "dealership_website": "https://www.pinebeltsubaru.com/"
+  },
+  {
+    "name": "Hudson Subaru",
+    "make": "Subaru",
+    "make_id": "44",
+    "state": "new-jersey",
+    "dealership_website": "http://www.hudsonsubaru.com"
+  },
+  {
+    "name": "Lester Glenn Subaru",
+    "make": "Subaru",
+    "make_id": "44",
+    "state": "new-jersey",
+    "dealership_website": "https://www.lesterglennsubaru.com/?utm_source=DealerRater&utm_medium=profile&utm_campaign=website"
+  },
+  {
+    "name": "Freehold Subaru",
+    "make": "Subaru",
+    "make_id": "44",
+    "state": "new-jersey",
+    "dealership_website": "https://www.freeholdsubaru.com"
+  },
+  {
+    "name": "Miller Subaru",
+    "make": "Subaru",
+    "make_id": "44",
+    "state": "new-jersey",
+    "dealership_website": "http://www.millersubaru.com"
+  },
+  {
+    "name": "Prestige Subaru of Turnersville NJ",
+    "make": "Subaru",
+    "make_id": "44",
+    "state": "new-jersey",
+    "dealership_website": "http://www.prestigesubarunj.com"
+  },
+  {
+    "name": "Subaru of Englewood",
+    "make": "Subaru",
+    "make_id": "44",
+    "state": "new-jersey",
+    "dealership_website": "http://www.townsubaru.com/"
+  },
+  {
+    "name": "Victory Subaru",
+    "make": "Subaru",
+    "make_id": "44",
+    "state": "new-jersey",
+    "dealership_website": "http://www.victorysubaru.com/"
+  },
+  {
+    "name": "Lynnes Nissan Subaru",
+    "make": "Subaru",
+    "make_id": "44",
+    "state": "new-jersey",
+    "dealership_website": "http://www.lynnesnissan.com/"
+  },
+  {
+    "name": "Haldeman Subaru",
+    "make": "Subaru",
+    "make_id": "44",
+    "state": "new-jersey",
+    "dealership_website": "https://www.haldemansubaru.com/"
+  },
+  {
+    "name": "DCH Freehold Toyota",
+    "make": "Toyota",
+    "make_id": "46",
+    "state": "new-jersey",
+    "dealership_website": "http://www.dchfreeholdtoyota.com"
+  },
+  {
+    "name": "Towne Toyota",
+    "make": "Toyota",
+    "make_id": "46",
+    "state": "new-jersey",
+    "dealership_website": "http://www.townetoyota.com"
+  },
+  {
+    "name": "Hudson Toyota",
+    "make": "Toyota",
+    "make_id": "46",
+    "state": "new-jersey",
+    "dealership_website": "http://www.hudsontoyota.com"
+  },
+  {
+    "name": "Crestmont Toyota",
+    "make": "Toyota",
+    "make_id": "46",
+    "state": "new-jersey",
+    "dealership_website": "https://www.crestmonttoyota.com/"
+  },
+  {
+    "name": "Glen Toyota",
+    "make": "Toyota",
+    "make_id": "46",
+    "state": "new-jersey",
+    "dealership_website": "http://www.glentoyota.com"
+  },
+  {
+    "name": "Paul Miller Toyota of West Caldwell",
+    "make": "Toyota",
+    "make_id": "46",
+    "state": "new-jersey",
+    "dealership_website": "http://www.paulmillertoyota.com/"
+  },
+  {
+    "name": "Toyota of Hackensack",
+    "make": "Toyota",
+    "make_id": "46",
+    "state": "new-jersey",
+    "dealership_website": "http://www.toyotaofhackensack.com"
+  },
+  {
+    "name": "DCH Brunswick Toyota",
+    "make": "Toyota",
+    "make_id": "46",
+    "state": "new-jersey",
+    "dealership_website": "http://www.dchbrunswicktoyota.com"
+  },
+  {
+    "name": "Galaxy Toyota",
+    "make": "Toyota",
+    "make_id": "46",
+    "state": "new-jersey",
+    "dealership_website": "http://www.galaxytoyota.net"
+  },
+  {
+    "name": "Holman Toyota",
+    "make": "Toyota",
+    "make_id": "46",
+    "state": "new-jersey",
+    "dealership_website": "http://www.holmantoyota.com"
+  },
+  {
+    "name": "Dayton Toyota",
+    "make": "Toyota",
+    "make_id": "46",
+    "state": "new-jersey",
+    "dealership_website": "http://www.DaytonToyota.com"
+  },
+  {
+    "name": "Fred Beans Toyota of Flemington",
+    "make": "Toyota",
+    "make_id": "46",
+    "state": "new-jersey",
+    "dealership_website": "https://www.fredbeanstoyota.com/"
+  },
+  {
+    "name": "World Volkswagen",
+    "make": "Volkswagen",
+    "make_id": "47",
+    "state": "new-jersey",
+    "dealership_website": "http://www.worldvw.com"
+  },
+  {
+    "name": "Crestmont Volkswagen",
+    "make": "Volkswagen",
+    "make_id": "47",
+    "state": "new-jersey",
+    "dealership_website": "http://www.crestmontvw.com/"
+  },
+  {
+    "name": "Prestige Volkswagen of Turnersville NJ",
+    "make": "Volkswagen",
+    "make_id": "47",
+    "state": "new-jersey",
+    "dealership_website": "http://www.prestigevolkswagen.com/"
+  },
+  {
+    "name": "Three County Volkswagen",
+    "make": "Volkswagen",
+    "make_id": "47",
+    "state": "new-jersey",
+    "dealership_website": "http://www.threecountyvw.com/"
+  },
+  {
+    "name": "Paul Miller Volkswagen of Bernardsville",
+    "make": "Volkswagen",
+    "make_id": "47",
+    "state": "new-jersey",
+    "dealership_website": "http://www.paulmillervw.com/"
+  },
+  {
+    "name": "Hamilton Volkswagen",
+    "make": "Volkswagen",
+    "make_id": "47",
+    "state": "new-jersey",
+    "dealership_website": "http://www.hamiltonvw.net"
+  },
+  {
+    "name": "Joe Heidt Motors",
+    "make": "Volkswagen",
+    "make_id": "47",
+    "state": "new-jersey",
+    "dealership_website": "http://www.joeheidt.com"
+  },
+  {
+    "name": "Tom's Volkswagen of Union",
+    "make": "Volkswagen",
+    "make_id": "47",
+    "state": "new-jersey",
+    "dealership_website": "https://www.tomsunionvw.com/"
+  },
+  {
+    "name": "Toms River Volkswagen",
+    "make": "Volkswagen",
+    "make_id": "47",
+    "state": "new-jersey",
+    "dealership_website": "http://www.tomsrivervw.com/"
+  },
+  {
+    "name": "Atlantic Chrysler Dodge Jeep RAM",
+    "make": "Volkswagen",
+    "make_id": "47",
+    "state": "new-jersey",
+    "dealership_website": "https://www.atlanticchryslerjeep.net/"
+  },
+  {
+    "name": "Burlington Volkswagen",
+    "make": "Volkswagen",
+    "make_id": "47",
+    "state": "new-jersey",
+    "dealership_website": "http://www.burlingtonvw.com/"
+  },
+  {
+    "name": "Smythe Volvo Cars",
+    "make": "Volvo",
+    "make_id": "48",
+    "state": "new-jersey",
+    "dealership_website": "http://www.smythevolvo.com"
+  },
+  {
+    "name": "Volvo Cars Manasquan",
+    "make": "Volvo",
+    "make_id": "48",
+    "state": "new-jersey",
+    "dealership_website": "https://www.volvocarsmanasquan.com/"
+  },
+  {
+    "name": "Kundert Volvo of Hasbrouck Heights",
+    "make": "Volvo",
+    "make_id": "48",
+    "state": "new-jersey",
+    "dealership_website": "https://www.volvoofhasbrouckheights.com/?DDCREF=DealerRater"
+  },
+  {
+    "name": "Performance Alfa Romeo",
+    "make": "Alfa Romeo",
+    "make_id": "2",
+    "state": "new-jersey",
+    "dealership_website": "https://www.performancealfaromeo.com/"
+  },
+  {
+    "name": "Aston Martin Summit",
+    "make": "Aston Martin",
+    "make_id": "3",
+    "state": "new-jersey",
+    "dealership_website": "https://www.astonmartinsummit.com/"
+  },
+  {
+    "name": "F.C. Kerbeck & Sons - Bentley Rolls Royce Maserati Aston Martin Lamborghini",
+    "make": "Aston Martin",
+    "make_id": "3",
+    "state": "new-jersey",
+    "dealership_website": "http://www.fckerbeck.com/"
+  },
+  {
+    "name": "F.C. Kerbeck & Sons - Bentley Rolls Royce Maserati Aston Martin Lamborghini",
+    "make": "Bentley",
+    "make_id": "5",
+    "state": "new-jersey",
+    "dealership_website": "http://www.fckerbeck.com/"
+  },
+  {
+    "name": "Lester Glenn Chrysler Dodge Jeep RAM FIAT",
+    "make": "FIAT",
+    "make_id": "53",
+    "state": "new-jersey",
+    "dealership_website": "https://www.lesterglennchryslerdodgejeep.com/?utm_source=DealerRater&utm_medium=profile&utm_campaign=website"
+  },
+  {
+    "name": "Genesis of Englewood powered by Benzel-Busch",
+    "make": "Genesis",
+    "make_id": "76",
+    "state": "new-jersey",
+    "dealership_website": "https://www.englewoodgenesis.com/"
+  },
+  {
+    "name": "Karma Westfield",
+    "make": "Karma",
+    "make_id": "77",
+    "state": "new-jersey",
+    "dealership_website": "https://www.karmawestfield.com/"
+  },
+  {
+    "name": "F.C. Kerbeck & Sons - Bentley Rolls Royce Maserati Aston Martin Lamborghini",
+    "make": "Lamborghini",
+    "make_id": "25",
+    "state": "new-jersey",
+    "dealership_website": "http://www.fckerbeck.com/"
+  },
+  {
+    "name": "Lotus of North Jersey",
+    "make": "Lotus",
+    "make_id": "29",
+    "state": "new-jersey",
+    "dealership_website": "https://www.lotusnj.com"
+  },
+  {
+    "name": "Maserati of Bergen County",
+    "make": "Maserati",
+    "make_id": "30",
+    "state": "new-jersey",
+    "dealership_website": "http://www.maseratibergencounty.com/index.htm"
+  },
+  {
+    "name": "F.C. Kerbeck & Sons - Bentley Rolls Royce Maserati Aston Martin Lamborghini",
+    "make": "Maserati",
+    "make_id": "30",
+    "state": "new-jersey",
+    "dealership_website": "http://www.fckerbeck.com/"
+  },
+  {
+    "name": "Maserati Englewood Cliffs",
+    "make": "Maserati",
+    "make_id": "30",
+    "state": "new-jersey",
+    "dealership_website": "https://www.maseratiec.com/"
+  },
+  {
+    "name": "Performance Maserati",
+    "make": "Maserati",
+    "make_id": "30",
+    "state": "new-jersey",
+    "dealership_website": "https://www.performancemaserati.com/"
+  },
+  {
+    "name": "Maserati of Central New Jersey",
+    "make": "Maserati",
+    "make_id": "30",
+    "state": "new-jersey",
+    "dealership_website": "https://www.maseratiofcentralnj.com/"
+  },
+  {
+    "name": "MINI of Ramsey",
+    "make": "MINI",
+    "make_id": "34",
+    "state": "new-jersey",
+    "dealership_website": "https://www.miniramsey.com/"
+  },
+  {
+    "name": "F.C. Kerbeck & Sons - Bentley Rolls Royce Maserati Aston Martin Lamborghini",
+    "make": "Rolls Royce",
+    "make_id": "41",
+    "state": "new-jersey",
+    "dealership_website": "http://www.fckerbeck.com/"
+  },
+  {
+    "name": "Gold Coast Cadillac",
+    "make": "Saab",
+    "make_id": "42",
+    "state": "new-jersey",
+    "dealership_website": "https://www.goldcoastcadillac.com/"
+  }
+]
