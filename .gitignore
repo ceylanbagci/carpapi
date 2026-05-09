@@ -85,3 +85,9 @@ venv/
 # environment options
 environment.py
 development.py
+# CarPapi chat-API additions
+.venv/
+.pytest_cache/
+.ruff_cache/
+data/raw/
+dist/

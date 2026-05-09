@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CarPapi</title>
+    <style>
+      :root {
+        font-family: system-ui, sans-serif;
+        background: #0f1115;
+        color: #e8eaed;
+      }
+      body {
+        max-width: 720px;
+        margin: 2rem auto;
+        padding: 0 1rem 3rem;
+      }
+      h1 {
+        font-weight: 600;
+        letter-spacing: -0.02em;
+      }
+      textarea {
+        width: 100%;
+        min-height: 96px;
+        padding: 0.75rem;
+        border-radius: 8px;
+        border: 1px solid #30343c;
+        background: #16181d;
+        color: inherit;
+        font-size: 1rem;
+      }
+      button {
+        margin-top: 0.75rem;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        border: none;
+        background: #3b82f6;
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      #log {
+        margin-top: 1.5rem;
+        white-space: pre-wrap;
+        font-size: 0.9rem;
+        line-height: 1.45;
+        background: #16181d;
+        border: 1px solid #30343c;
+        border-radius: 8px;
+        padding: 1rem;
+        min-height: 200px;
+      }
+      .card {
+        border: 1px solid #30343c;
+        border-radius: 8px;
+        padding: 0.75rem;
+        margin: 0.5rem 0;
+        background: #12141a;
+      }
+      a {
+        color: #93c5fd;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>CarPapi</h1>
+    <p>Natural-language car search (demo planner + Postgres listings).</p>
+    <textarea
+      id="q"
+      placeholder='Try: Find me a Toyota Camry under $25k near New Jersey'
+    ></textarea>
+    <div>
+      <button id="go" type="button">Search</button>
+    </div>
+    <div id="cards"></div>
+    <div id="log"></div>
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>

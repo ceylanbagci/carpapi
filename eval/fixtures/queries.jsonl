@@ -1,0 +1,15 @@
+{"message": "Find me a Toyota Camry under $25k near New Jersey", "expected": {"make": "Toyota", "model": "Camry", "price_max": 25000, "region": "NJ"}}
+{"message": "Honda CR-V under 30000", "expected": {"make": "Honda", "model": "CR-V", "price_max": 30000}}
+{"message": "Toyota RAV4 with under 50,000 miles", "expected": {"make": "Toyota", "model": "RAV4", "mileage_max": 50000}}
+{"message": "SUVs under $30k near 07470 within 25 miles", "expected": {"body_style": "SUV", "price_max": 30000, "zip_code": "07470", "radius_miles": 25}}
+{"message": "sedan under 20k", "expected": {"body_style": "Sedan", "price_max": 20000}}
+{"message": "Camry near 07302", "expected": {"make": "Toyota", "model": "Camry", "zip_code": "07302", "radius_miles": 50}}
+{"message": "any car under $15k", "expected": {"price_max": 15000}}
+{"message": "Toyota near 11201 within 10 miles", "expected": {"make": "Toyota", "zip_code": "11201", "radius_miles": 10}}
+{"message": "looking for a CR-V in NJ", "expected": {"make": "Honda", "model": "CR-V", "region": "NJ"}}
+{"message": "RAV4 under 40k miles below $28,000", "expected": {"make": "Toyota", "model": "RAV4", "mileage_max": 40000, "price_max": 28000}}
+{"message": "what about a sedan", "expected": {"body_style": "Sedan"}}
+{"message": "anything available", "expected": {}}
+{"message": "SUV near Princeton 08540 50 miles radius", "expected": {"body_style": "SUV", "zip_code": "08540", "radius_miles": 50}}
+{"message": "Camry within 20 miles of 10128", "expected": {"make": "Toyota", "model": "Camry", "zip_code": "10128", "radius_miles": 20}}
+{"message": "sedan less than $18k under 60,000 miles", "expected": {"body_style": "Sedan", "price_max": 18000, "mileage_max": 60000}}

@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://carpapi.local/schema/car_listing.schema.json",
+  "title": "CarListing",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "source_id",
+    "source_name",
+    "external_id",
+    "listing_url",
+    "title",
+    "currency",
+    "scraped_at"
+  ],
+  "properties": {
+    "source_id": {
+      "type": "string",
+      "description": "Stable identifier for the data source (e.g. dealer_feed_a)."
+    },
+    "source_name": {
+      "type": "string"
+    },
+    "external_id": {
+      "type": "string",
+      "description": "Primary key from the source system before deduplication."
+    },
+    "listing_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": ["string", "null"]
+    },
+    "make": {
+      "type": ["string", "null"]
+    },
+    "model": {
+      "type": ["string", "null"]
+    },
+    "trim": {
+      "type": ["string", "null"]
+    },
+    "year": {
+      "type": ["integer", "null"],
+      "minimum": 1900,
+      "maximum": 2100
+    },
+    "body_style": {
+      "type": ["string", "null"],
+      "description": "e.g. SUV, Sedan"
+    },
+    "vin": {
+      "type": ["string", "null"],
+      "pattern": "^[A-HJ-NPR-Z0-9]{17}$"
+    },
+    "mileage": {
+      "type": ["number", "null"],
+      "minimum": 0
+    },
+    "mileage_unit": {
+      "type": "string",
+      "enum": ["mi", "km", "unknown"],
+      "default": "unknown"
+    },
+    "price_amount": {
+      "type": ["number", "null"],
+      "minimum": 0
+    },
+    "currency": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 3
+    },
+    "monthly_payment_estimate": {
+      "type": ["number", "null"],
+      "description": "Optional; requires financing assumptions — see architecture."
+    },
+    "seller_name": {
+      "type": ["string", "null"]
+    },
+    "seller_type": {
+      "type": ["string", "null"],
+      "enum": ["dealer", "private", "fleet", "unknown", null]
+    },
+    "latitude": {
+      "type": ["number", "null"]
+    },
+    "longitude": {
+      "type": ["number", "null"]
+    },
+    "region": {
+      "type": ["string", "null"],
+      "description": "State/province or coarse geo label."
+    },
+    "city": {
+      "type": ["string", "null"]
+    },
+    "postal_code": {
+      "type": ["string", "null"]
+    },
+    "listing_posted_at": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "listing_updated_at": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "scraped_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "raw_checksum": {
+      "type": ["string", "null"],
+      "description": "SHA-256 of normalized raw payload for change detection."
+    },
+    "features": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "images": {
+      "type": "array",
+      "items": { "type": "string", "format": "uri" }
+    }
+  }
+}
