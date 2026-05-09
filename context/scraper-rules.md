@@ -1,5 +1,31 @@
 # Scraper Rules
 
+## Hard rule: zero AI in the scraping layer
+
+**No LLM calls during data extraction.** Not for parsing, not for field disambiguation, not for "just this one tricky field." Scrapers are pure-Python statistical/structured tools. AI gets involved only in downstream query planning (and even then only via [ai-cache-rules.md](ai-cache-rules.md)).
+
+### Approved stack
+| Tool | Role |
+|---|---|
+| `requests` | Static HTTP |
+| `BeautifulSoup4` | HTML parsing, JSON-LD extraction |
+| `lxml` | Fast XML/HTML parsing where speed matters |
+| `Selenium` | JS-rendered pages, pagination, dynamic content |
+
+### Prohibited in this layer
+- Any Claude / OpenAI / Bedrock / Gemini / generic LLM API call.
+- Paid AI enrichment services.
+- AI-driven browser automation (`browser-use`, Stagehand, etc.).
+- Heuristic "AI" wrappers that internally call an LLM.
+
+### Why
+Scrape failures should be diagnosed by reading code and metrics, not by asking an LLM what went wrong. AI in this layer adds cost, hides bugs, and makes the pipeline non-deterministic.
+
+## Code locations
+- Approved scrapers: [carpapi/scrapers/](../carpapi/scrapers/) — `google_search.py` (Google Custom Search API client), `dealership_page.py` (BS4 + Selenium harness), `dealerrater.py` (stub — ToS-gated).
+- Post-run statistical monitor: [carpapi/monitor/scrape_monitor.py](../carpapi/monitor/scrape_monitor.py) — pure threshold checks; no AI.
+- Ingest stub for fixtures: [pipeline/carapi_pipeline/scraper_stub.py](../pipeline/carapi_pipeline/scraper_stub.py).
+
 ## Status
 Live scrapers are NOT shipped. `pipeline/carapi_pipeline/scraper_stub.py` returns the bundled `fixtures/sample_listings.json`. Do not write production scrapers until the data-source decision lands (see [project-overview.md](project-overview.md) → Open decisions #1).
 

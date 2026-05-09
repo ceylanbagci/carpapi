@@ -6,8 +6,18 @@ See [scraper-rules.md](scraper-rules.md). One-line summary: licensed feeds and T
 ## PII handling
 Listings may carry seller PII (`seller_name`, occasionally embedded phone/email in `description`). Policy:
 - **Dealer listings:** seller name is business info; safe to store and display.
-- **Private-party listings:** treat seller name as PII. Store, but redact phone/email patterns from `description` before persistence (regex strip in `normalize.py`). Do not display seller PII in chat responses.
+- **Private-party listings:** treat seller name as PII. Store, but redact phone/email patterns from `description` before persistence (regex strip in `normalize.py` via [carpapi_pipeline/pii.py](../pipeline/carapi_pipeline/pii.py)). Do not display seller PII in chat responses.
 - **Never** persist plaintext credit-card or financing data (we don't collect it; if a source ever sends it, drop the field at normalization).
+
+## Raw data must NEVER reach an LLM
+Restated as a hard rule (with implementation backing): the only path from CarPapi data to Claude/Bedrock/any LLM is through [carpapi/cache/token_cache.py](../carpapi/cache/token_cache.py), and the cache's PII guard ([carpapi/cache/pii_guard.py](../carpapi/cache/pii_guard.py)) rejects prompts containing:
+- 17-character VINs
+- US phone numbers
+- Email addresses
+- Street addresses (US format)
+- SSN-shaped strings (defensive)
+
+The rejection raises `PIIInPromptError` *before* the prompt hashes or hits the wire. Anonymized metadata only — make/model/year/trim, body style, region, price band. See [ai-cache-rules.md](ai-cache-rules.md) for the full architecture.
 
 ## Data-subject rights
 - **CCPA / state-equivalent deletion requests:** route to a manual playbook (TBD). Until built, log requests in a tracker; do not auto-delete.
