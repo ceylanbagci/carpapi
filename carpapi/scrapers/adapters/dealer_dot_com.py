@@ -25,6 +25,7 @@ import json
 import logging
 import re
 import time
+from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any, Iterator, Optional
 from urllib.parse import urljoin, urlparse
@@ -70,6 +71,124 @@ class FetchedPage:
 # --------------------------------------------------------------------- #
 # HTTP
 # --------------------------------------------------------------------- #
+
+
+# --------------------------------------------------------------------- #
+# Selenium fetcher (for JS-rendered listing pages).
+#
+# Many Dealer.com themes render inventory entirely client-side — the static
+# HTML is a UI shell. For those, we render with headless Chrome.
+#
+# Per scraper-rules.md guideline 4: Selenium IS in the approved stack
+# ("JavaScript-rendered pages, pagination, dynamic content"). What we
+# DON'T do here, and won't:
+#   - randomize fingerprints / spoof navigator properties
+#   - rotate proxies
+#   - run undetected-chromedriver or similar evasion frameworks
+# We use a stock headless Chrome with our identifiable User-Agent.
+# --------------------------------------------------------------------- #
+
+
+@contextmanager
+def selenium_session(*, headless: bool = True) -> Iterator[Any]:
+    """Context manager yielding a Selenium webdriver. Always quits on exit.
+
+    The driver is reusable across multiple .get() calls within one dealer
+    run, which is far cheaper than restarting Chrome per-page (~10s startup
+    vs ~2s post-startup).
+    """
+    try:
+        from selenium import webdriver  # noqa: PLC0415
+        from selenium.webdriver.chrome.options import Options  # noqa: PLC0415
+    except ImportError as exc:
+        raise RuntimeError(
+            "selenium is not installed. Install with: "
+            "pip install selenium  (Selenium 4.6+ auto-manages chromedriver)"
+        ) from exc
+
+    opts = Options()
+    if headless:
+        opts.add_argument("--headless=new")
+    opts.add_argument(f"--user-agent={USER_AGENT}")
+    opts.add_argument("--no-sandbox")
+    opts.add_argument("--disable-dev-shm-usage")
+    opts.add_argument("--disable-gpu")
+    opts.add_argument("--window-size=1280,1800")
+    # Disable images to cut bandwidth — listings are in the DOM, not images.
+    prefs = {"profile.managed_default_content_settings.images": 2}
+    opts.add_experimental_option("prefs", prefs)
+    # Quiet ChromeDriver's own logging.
+    opts.add_argument("--log-level=3")
+
+    driver = webdriver.Chrome(options=opts)
+    driver.set_page_load_timeout(45)
+    try:
+        yield driver
+    finally:
+        try:
+            driver.quit()
+        except Exception:  # noqa: BLE001
+            pass
+
+
+def fetch_rendered(
+    driver: Any,
+    url: str,
+    *,
+    wait_for_jsonld_seconds: float = 8.0,
+    poll_interval: float = 0.5,
+) -> FetchedPage:
+    """Use a Selenium driver to load `url` and return the rendered HTML.
+
+    Waits up to `wait_for_jsonld_seconds` for at least one
+    `<script type="application/ld+json">` block containing 'Vehicle' or
+    'Car' to appear, then snapshots the DOM. Returns a FetchedPage shaped
+    identically to the static fetcher so the parser is agnostic.
+    """
+    import datetime as dt
+    from selenium.common.exceptions import (  # noqa: PLC0415
+        TimeoutException,
+        WebDriverException,
+    )
+
+    iso = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
+    try:
+        driver.get(url)
+    except TimeoutException:
+        return FetchedPage(
+            url=url, status=0, html="", fetched_at_iso=iso,
+            error="page load timeout (Selenium)",
+        )
+    except WebDriverException as exc:
+        return FetchedPage(
+            url=url, status=0, html="", fetched_at_iso=iso,
+            error=f"WebDriverException: {exc}",
+        )
+
+    # Poll for JSON-LD readiness. Many Dealer.com themes hydrate listings
+    # within the first 1-3 seconds; if it hasn't appeared by 8s, it's
+    # almost never going to.
+    started = time.time()
+    while True:
+        html = driver.page_source or ""
+        if (
+            ('"@type":"Vehicle"' in html
+             or '"@type": "Vehicle"' in html
+             or '"@type":"Car"' in html
+             or '"@type": "Car"' in html)
+        ):
+            break
+        if time.time() - started >= wait_for_jsonld_seconds:
+            break
+        time.sleep(poll_interval)
+
+    final_url = driver.current_url or url
+    html = driver.page_source or ""
+    # Selenium doesn't expose a reliable HTTP status code for the main
+    # navigation; treat 'we got page_source back' as 200-equivalent.
+    return FetchedPage(
+        url=final_url, status=200 if html else 0, html=html, fetched_at_iso=iso,
+    )
 
 
 def fetch(url: str, *, timeout: float = 20.0, max_bytes: int = 1_500_000) -> FetchedPage:
@@ -169,10 +288,21 @@ def vehicles_in_html(html: str) -> list[dict]:
 # --------------------------------------------------------------------- #
 
 
+_VDP_PATH_RE = re.compile(
+    r"/(?:new|used|preowned|pre-owned|certified)/[^/]+/[^/]+\.html?(\?|$)",
+    re.IGNORECASE,
+)
+
+
 def vdp_links_in_html(html: str, base_url: str) -> list[str]:
     """Return same-host hrefs that look like Vehicle Detail Pages on
-    Dealer.com. Heuristic: contains a 17-char VIN-shaped substring AND
-    ends with .htm/.html. De-duped, capped to 100."""
+    Dealer.com. Two heuristics, either is sufficient:
+      a) URL contains a 17-char VIN-shaped substring and ends in .htm/.html
+         (e.g. Malouf: /new/KL79MRSL0TB164152.htm)
+      b) URL has the path shape /new|used|certified/<segment>/<segment>.htm
+         (e.g. All American:
+         /new/Chevrolet/2026-Chevrolet-Equinox-<hex>.htm)
+    De-duped, capped to 100. Index pages are skipped."""
     seen: list[str] = []
     seen_set: set[str] = set()
     base_host = urlparse(base_url).hostname or ""
@@ -186,9 +316,16 @@ def vdp_links_in_html(html: str, base_url: str) -> list[str]:
             continue
         if urlparse(joined).hostname != base_host:
             continue
-        if not _VIN_RE.search(joined):
-            continue
         if not re.search(r"\.html?(\?|$)", joined, re.IGNORECASE):
+            continue
+        # Skip listing/index pages — those have already been visited.
+        if re.search(r"/(?:new|used)?[\-_]?inventory/", joined, re.IGNORECASE):
+            continue
+        if re.search(r"/index\.html?", joined, re.IGNORECASE):
+            continue
+        # Match either heuristic.
+        looks_vdp = bool(_VIN_RE.search(joined)) or bool(_VDP_PATH_RE.search(joined))
+        if not looks_vdp:
             continue
         if joined in seen_set:
             continue
