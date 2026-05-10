@@ -123,6 +123,29 @@ END
 $$;
 
 -- --------------------------------------------------------------------- --
+-- public.listing_price_history
+--   Append-only record of every price change observed on a listing.
+--   The pipeline writes a row here ONLY when the new price differs from
+--   the previous most-recent entry (or there is no previous entry).
+--   Re-scraping a listing whose price hasn't moved produces no new row.
+-- --------------------------------------------------------------------- --
+
+CREATE TABLE IF NOT EXISTS public.listing_price_history (
+    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    listing_id    UUID NOT NULL REFERENCES public.listings(id) ON DELETE CASCADE,
+    price_amount  NUMERIC(12, 2),               -- nullable: tracks "price disappeared" too
+    currency      TEXT NOT NULL DEFAULT 'USD',
+    observed_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    source_id     TEXT,                         -- which source the observation came from
+    raw_checksum  TEXT                          -- ties back to ingest.raw_payloads when present
+);
+
+CREATE INDEX IF NOT EXISTS ix_lph_listing_observed
+    ON public.listing_price_history (listing_id, observed_at DESC);
+CREATE INDEX IF NOT EXISTS ix_lph_observed
+    ON public.listing_price_history (observed_at DESC);
+
+-- --------------------------------------------------------------------- --
 -- public.dealers
 --   The roster. Seeded from output/dealers_final.json + extended with
 --   discovered CMS data (carpapi.scrapers.discover_cms output).
@@ -339,15 +362,28 @@ CREATE INDEX IF NOT EXISTS ix_ai_calls_errors
 
 -- --------------------------------------------------------------------- --
 -- Grants — safe to re-run.
+--
+-- public has mixed ownership (some tables created by other tooling like
+-- Django migrations), so we only grant on the carpapi-owned ones by name.
+-- The dedicated schemas (ingest, monitor, ai) are wholly carpapi-owned;
+-- we can grant on ALL TABLES there.
 -- --------------------------------------------------------------------- --
 
 GRANT USAGE ON SCHEMA ingest, monitor, ai TO carpapi;
 
-GRANT SELECT, INSERT, UPDATE, DELETE
-    ON ALL TABLES IN SCHEMA public, ingest, monitor, ai TO carpapi;
-GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public, ingest, monitor, ai TO carpapi;
+GRANT SELECT, INSERT, UPDATE, DELETE ON
+    public.listings,
+    public.listing_groups,
+    public.listing_price_history,
+    public.dealers,
+    public.sources
+TO carpapi;
 
-ALTER DEFAULT PRIVILEGES IN SCHEMA public, ingest, monitor, ai
+GRANT SELECT, INSERT, UPDATE, DELETE
+    ON ALL TABLES IN SCHEMA ingest, monitor, ai TO carpapi;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA ingest, monitor, ai TO carpapi;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA ingest, monitor, ai
     GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO carpapi;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public, ingest, monitor, ai
+ALTER DEFAULT PRIVILEGES IN SCHEMA ingest, monitor, ai
     GRANT USAGE, SELECT ON SEQUENCES TO carpapi;

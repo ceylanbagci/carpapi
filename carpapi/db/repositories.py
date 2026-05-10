@@ -27,6 +27,7 @@ from carpapi.db.models import (
     Dealer,
     IngestRun,
     ListingGroup,
+    ListingPriceHistory,
     RawPayload,
     RejectionLog,
     ScrapeMonitorReport,
@@ -106,6 +107,78 @@ class DealerRepo:
             .group_by(Dealer.cms)
         )
         return {row[0] or "unknown": int(row[1]) for row in session.execute(stmt)}
+
+
+# --------------------------------------------------------------------- #
+# Listing price history
+# --------------------------------------------------------------------- #
+
+
+class PriceHistoryRepo:
+    """Append-only price history for listings.
+
+    The ingest path calls record_change() on every observed price; the
+    helper inserts a row ONLY when the price differs from the latest
+    existing entry. So routine no-op re-scrapes (price unchanged) don't
+    bloat the table.
+    """
+
+    @staticmethod
+    def latest_price(session: Session, listing_id: uuid.UUID) -> Optional[Decimal]:
+        """Return the most recent observed price for a listing, or None."""
+        row = session.execute(
+            select(ListingPriceHistory.price_amount)
+            .where(ListingPriceHistory.listing_id == listing_id)
+            .order_by(ListingPriceHistory.observed_at.desc())
+            .limit(1)
+        ).first()
+        return row[0] if row is not None else None
+
+    @staticmethod
+    def record_change(
+        session: Session,
+        *,
+        listing_id: uuid.UUID,
+        price_amount: Optional[float],
+        currency: str = "USD",
+        source_id: Optional[str] = None,
+        raw_checksum: Optional[str] = None,
+        observed_at: Optional[dt.datetime] = None,
+    ) -> Optional[ListingPriceHistory]:
+        """Insert a new history row only if the price actually changed.
+
+        Returns the new ListingPriceHistory row (or None when nothing
+        was written). Comparison normalizes None == None.
+        """
+        prev = PriceHistoryRepo.latest_price(session, listing_id)
+        new = None if price_amount is None else Decimal(str(round(float(price_amount), 2)))
+        if prev is None and new is None:
+            return None
+        if prev is not None and new is not None and prev == new:
+            return None
+
+        row = ListingPriceHistory(
+            listing_id=listing_id,
+            price_amount=new,
+            currency=currency or "USD",
+            source_id=source_id,
+            raw_checksum=raw_checksum,
+            observed_at=observed_at or dt.datetime.now(dt.timezone.utc),
+        )
+        session.add(row)
+        session.flush()
+        return row
+
+    @staticmethod
+    def history(session: Session, listing_id: uuid.UUID) -> list[ListingPriceHistory]:
+        """Chronological history (oldest first) for one listing."""
+        return list(
+            session.scalars(
+                select(ListingPriceHistory)
+                .where(ListingPriceHistory.listing_id == listing_id)
+                .order_by(ListingPriceHistory.observed_at.asc())
+            )
+        )
 
 
 # --------------------------------------------------------------------- #

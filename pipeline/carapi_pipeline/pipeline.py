@@ -111,6 +111,53 @@ def _should_replace(existing: Listing, new_doc: dict[str, Any], settings: Settin
     return bool(new_sc and new_sc > existing.scraped_at)
 
 
+def _record_price_history(
+    session: Session,
+    listing_id: uuid.UUID,
+    new_price: Any,
+    *,
+    currency: str,
+    source_id: str,
+    raw_checksum: str | None,
+    prev_price: Any = None,
+    is_initial: bool = False,
+) -> None:
+    """Append a row to public.listing_price_history when price changed.
+
+    On the FIRST observation of a listing (insert) we always record.
+    On subsequent observations we only record when the price differs.
+    Imported lazily so carapi_pipeline doesn't grow a hard dep on carpapi.db.
+    """
+    try:
+        from carpapi.db.repositories import PriceHistoryRepo  # noqa: PLC0415
+    except ImportError:
+        # carpapi.db not on PYTHONPATH (e.g. pipeline-only smoke test).
+        return
+
+    if is_initial:
+        # Always record the initial observation, even when price is None.
+        from carpapi.db.models import ListingPriceHistory  # noqa: PLC0415
+        from decimal import Decimal as _D  # noqa: PLC0415
+        amount = None if new_price is None else _D(str(round(float(new_price), 2)))
+        session.add(ListingPriceHistory(
+            listing_id=listing_id,
+            price_amount=amount,
+            currency=(currency or "USD"),
+            source_id=source_id,
+            raw_checksum=raw_checksum,
+        ))
+        return
+
+    PriceHistoryRepo.record_change(
+        session,
+        listing_id=listing_id,
+        price_amount=new_price,
+        currency=currency or "USD",
+        source_id=source_id,
+        raw_checksum=raw_checksum,
+    )
+
+
 def upsert_listing(
     session: Session,
     doc: dict[str, Any],
@@ -118,14 +165,29 @@ def upsert_listing(
     *,
     dealer_id: uuid.UUID | None = None,
 ) -> str:
-    """Insert or update by dedupe_key. Returns 'inserted', 'updated', or 'skipped'."""
+    """Insert or update by dedupe_key. Returns 'inserted', 'updated', or 'skipped'.
+
+    Side-effect: writes to public.listing_price_history on first observation
+    and on every subsequent price change.
+    """
     dedupe_key = build_dedupe_key(doc)
     row = session.execute(select(Listing).where(Listing.dedupe_key == dedupe_key)).scalar_one_or_none()
     candidate = _listing_from_doc(doc, dedupe_key, dealer_id=dealer_id)
     if row is None:
         session.add(candidate)
+        session.flush()  # need candidate.id for the price-history FK
+        _record_price_history(
+            session,
+            listing_id=candidate.id,
+            new_price=candidate.price_amount,
+            currency=candidate.currency,
+            source_id=candidate.source_id,
+            raw_checksum=candidate.raw_checksum,
+            is_initial=True,
+        )
         return "inserted"
     if _should_replace(row, doc, settings):
+        prev_price = row.price_amount
         for attr in (
             "source_id",
             "source_name",
@@ -164,6 +226,17 @@ def upsert_listing(
             "is_on_sale",
         ):
             setattr(row, attr, getattr(candidate, attr))
+        # Append to price history when the price actually moved.
+        _record_price_history(
+            session,
+            listing_id=row.id,
+            new_price=row.price_amount,
+            currency=row.currency,
+            source_id=row.source_id,
+            raw_checksum=row.raw_checksum,
+            prev_price=prev_price,
+            is_initial=False,
+        )
         return "updated"
     return "skipped"
 
