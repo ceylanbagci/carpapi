@@ -23,16 +23,23 @@ def _priority(settings: Settings, source_id: str) -> int:
     return settings.source_priority.get(source_id, settings.source_priority.get("default", 0))
 
 
-def _listing_from_doc(doc: dict[str, Any], dedupe_key: str) -> Listing:
+def _listing_from_doc(
+    doc: dict[str, Any],
+    dedupe_key: str,
+    *,
+    dealer_id: uuid.UUID | None = None,
+) -> Listing:
     scraped = parse_iso_dt(doc["scraped_at"])
     if scraped is None:
         scraped = datetime.now(timezone.utc)
+    listing_url = doc["listing_url"]
+    is_on_sale = bool(doc.get("is_on_sale", False))
     return Listing(
         dedupe_key=dedupe_key,
         source_id=doc["source_id"],
         source_name=doc["source_name"],
         external_id=doc["external_id"],
-        listing_url=doc["listing_url"],
+        listing_url=listing_url,
         title=doc["title"],
         description=doc.get("description"),
         make=doc.get("make"),
@@ -64,7 +71,27 @@ def _listing_from_doc(doc: dict[str, Any], dedupe_key: str) -> Listing:
         features=doc.get("features"),
         images=doc.get("images"),
         raw_document=doc,
+        # carpapi DB extensions:
+        car_url=listing_url,
+        dealer_id=dealer_id,
+        is_on_sale=is_on_sale,
     )
+
+
+def _resolve_dealer_id(session: Session, source_id: str) -> uuid.UUID | None:
+    """Look up dealers.id by slug == source_id. Returns None when no match.
+
+    Cheap because callers cache the result for the duration of a batch.
+    """
+    from sqlalchemy import text as sql_text
+
+    row = session.execute(
+        sql_text(
+            "SELECT id FROM public.dealers WHERE slug = :slug LIMIT 1"
+        ),
+        {"slug": source_id},
+    ).first()
+    return row[0] if row is not None else None
 
 
 def _should_replace(existing: Listing, new_doc: dict[str, Any], settings: Settings) -> bool:
@@ -84,15 +111,83 @@ def _should_replace(existing: Listing, new_doc: dict[str, Any], settings: Settin
     return bool(new_sc and new_sc > existing.scraped_at)
 
 
-def upsert_listing(session: Session, doc: dict[str, Any], settings: Settings) -> str:
-    """Insert or update by dedupe_key. Returns 'inserted', 'updated', or 'skipped'."""
+def _record_price_history(
+    session: Session,
+    listing_id: uuid.UUID,
+    new_price: Any,
+    *,
+    currency: str,
+    source_id: str,
+    raw_checksum: str | None,
+    prev_price: Any = None,
+    is_initial: bool = False,
+) -> None:
+    """Append a row to public.listing_price_history when price changed.
+
+    On the FIRST observation of a listing (insert) we always record.
+    On subsequent observations we only record when the price differs.
+    Imported lazily so carapi_pipeline doesn't grow a hard dep on carpapi.db.
+    """
+    try:
+        from carpapi.db.repositories import PriceHistoryRepo  # noqa: PLC0415
+    except ImportError:
+        # carpapi.db not on PYTHONPATH (e.g. pipeline-only smoke test).
+        return
+
+    if is_initial:
+        # Always record the initial observation, even when price is None.
+        from carpapi.db.models import ListingPriceHistory  # noqa: PLC0415
+        from decimal import Decimal as _D  # noqa: PLC0415
+        amount = None if new_price is None else _D(str(round(float(new_price), 2)))
+        session.add(ListingPriceHistory(
+            listing_id=listing_id,
+            price_amount=amount,
+            currency=(currency or "USD"),
+            source_id=source_id,
+            raw_checksum=raw_checksum,
+        ))
+        return
+
+    PriceHistoryRepo.record_change(
+        session,
+        listing_id=listing_id,
+        price_amount=new_price,
+        currency=currency or "USD",
+        source_id=source_id,
+        raw_checksum=raw_checksum,
+    )
+
+
+def upsert_listing(
+    session: Session,
+    doc: dict[str, Any],
+    settings: Settings,
+    *,
+    dealer_id: uuid.UUID | None = None,
+) -> str:
+    """Insert or update by dedupe_key. Returns 'inserted', 'updated', or 'skipped'.
+
+    Side-effect: writes to public.listing_price_history on first observation
+    and on every subsequent price change.
+    """
     dedupe_key = build_dedupe_key(doc)
     row = session.execute(select(Listing).where(Listing.dedupe_key == dedupe_key)).scalar_one_or_none()
-    candidate = _listing_from_doc(doc, dedupe_key)
+    candidate = _listing_from_doc(doc, dedupe_key, dealer_id=dealer_id)
     if row is None:
         session.add(candidate)
+        session.flush()  # need candidate.id for the price-history FK
+        _record_price_history(
+            session,
+            listing_id=candidate.id,
+            new_price=candidate.price_amount,
+            currency=candidate.currency,
+            source_id=candidate.source_id,
+            raw_checksum=candidate.raw_checksum,
+            is_initial=True,
+        )
         return "inserted"
     if _should_replace(row, doc, settings):
+        prev_price = row.price_amount
         for attr in (
             "source_id",
             "source_name",
@@ -125,8 +220,23 @@ def upsert_listing(session: Session, doc: dict[str, Any], settings: Settings) ->
             "features",
             "images",
             "raw_document",
+            # carpapi DB extensions:
+            "car_url",
+            "dealer_id",
+            "is_on_sale",
         ):
             setattr(row, attr, getattr(candidate, attr))
+        # Append to price history when the price actually moved.
+        _record_price_history(
+            session,
+            listing_id=row.id,
+            new_price=row.price_amount,
+            currency=row.currency,
+            source_id=row.source_id,
+            raw_checksum=row.raw_checksum,
+            prev_price=prev_price,
+            is_initial=False,
+        )
         return "updated"
     return "skipped"
 
@@ -143,13 +253,16 @@ def run_ingest_batch(
     counts = {"RecordsFetched": 0, "RecordsNormalized": 0, "RecordsInserted": 0, "RecordsUpdated": 0, "RecordsSkipped": 0, "RecordsRejected": 0}
     started_at = time.monotonic()
 
+    # Resolve dealer FK once per batch (source_id == dealers.slug).
+    dealer_id = _resolve_dealer_id(session, source_id)
+
     for doc in docs:
         counts["RecordsFetched"] += 1
         try:
             checksum = write_raw_payload(settings=settings, source_id=source_id, batch_id=batch_id, payload=doc)
             norm = normalize_listing_dict(dict(doc))
             norm["raw_checksum"] = checksum
-            outcome = upsert_listing(session, norm, settings)
+            outcome = upsert_listing(session, norm, settings, dealer_id=dealer_id)
             counts["RecordsNormalized"] += 1
             if outcome == "inserted":
                 counts["RecordsInserted"] += 1

@@ -41,6 +41,32 @@ class Base(DeclarativeBase):
 
 
 # --------------------------------------------------------------------- #
+# public.listing_price_history
+# --------------------------------------------------------------------- #
+
+
+class ListingPriceHistory(Base):
+    __tablename__ = "listing_price_history"
+    __table_args__ = ({"schema": "public"},)
+
+    # No ORM-level FK to public.listings.id — that table lives in the
+    # carapi_pipeline.models.Base metadata, and SQLAlchemy can't resolve
+    # cross-MetaData FKs at flush time. The DB-level FK is declared in
+    # carpapi/db/schema.sql and remains enforced at the database tier.
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    listing_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    price_amount: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 2), nullable=True)
+    currency: Mapped[str] = mapped_column(Text, nullable=False, default="USD")
+    observed_at: Mapped[dt.datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: dt.datetime.now(dt.timezone.utc),
+    )
+    source_id: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    raw_checksum: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+
+# --------------------------------------------------------------------- #
 # public.listing_groups
 # --------------------------------------------------------------------- #
 

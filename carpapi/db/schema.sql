@@ -61,12 +61,16 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_listing_groups_canonical_vin
 CREATE INDEX IF NOT EXISTS ix_listing_groups_make_model_year
     ON public.listing_groups (canonical_make, canonical_model, canonical_year);
 
--- Add the listing_group_id FK column to public.listings if it's missing.
--- The listings table is created by carapi_pipeline.models.init_schema.
+-- Add columns to public.listings if missing. The listings table is
+-- created by carapi_pipeline.models.init_schema; this block layers in
+-- carpapi-managed extensions idempotently. Safe to apply while the
+-- ingest pipeline is running — all columns are nullable / defaulted.
 DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.tables
                WHERE table_schema = 'public' AND table_name = 'listings') THEN
+
+        -- listing_group_id: cross-source same-physical-car grouping.
         ALTER TABLE public.listings
             ADD COLUMN IF NOT EXISTS listing_group_id UUID;
         BEGIN
@@ -75,15 +79,71 @@ BEGIN
                 FOREIGN KEY (listing_group_id)
                 REFERENCES public.listing_groups(id)
                 ON DELETE SET NULL;
-        EXCEPTION
-            WHEN duplicate_object THEN NULL;
-            WHEN invalid_foreign_key THEN NULL;
+        EXCEPTION WHEN duplicate_object THEN NULL;
+                  WHEN invalid_foreign_key THEN NULL;
         END;
         CREATE INDEX IF NOT EXISTS ix_listings_listing_group_id
             ON public.listings (listing_group_id);
+
+        -- car_url: plain-named alias for the canonical detail-page URL.
+        --   Mirrors listing_url at insert/update time so callers can
+        --   use the more obvious column name. Indexed for lookups by URL.
+        ALTER TABLE public.listings
+            ADD COLUMN IF NOT EXISTS car_url TEXT;
+        CREATE INDEX IF NOT EXISTS ix_listings_car_url
+            ON public.listings (car_url);
+
+        -- dealer_id: FK to public.dealers — the dealership this listing
+        --   came from. Resolved at ingest by matching source_id to
+        --   dealers.slug. Nullable for fixture / non-dealer sources.
+        ALTER TABLE public.listings
+            ADD COLUMN IF NOT EXISTS dealer_id UUID;
+        BEGIN
+            ALTER TABLE public.listings
+                ADD CONSTRAINT fk_listings_dealer_id
+                FOREIGN KEY (dealer_id)
+                REFERENCES public.dealers(id)
+                ON DELETE SET NULL;
+        EXCEPTION WHEN duplicate_object THEN NULL;
+                  WHEN invalid_foreign_key THEN NULL;
+        END;
+        CREATE INDEX IF NOT EXISTS ix_listings_dealer_id
+            ON public.listings (dealer_id);
+
+        -- is_on_sale: boolean flag for promotional / sale-priced listings.
+        --   Set true at ingest when the source publishes a separate MSRP
+        --   higher than the offer price, or when schema.org markup
+        --   tags the listing as a sale. Default false.
+        ALTER TABLE public.listings
+            ADD COLUMN IF NOT EXISTS is_on_sale BOOLEAN NOT NULL DEFAULT false;
+        CREATE INDEX IF NOT EXISTS ix_listings_is_on_sale
+            ON public.listings (is_on_sale) WHERE is_on_sale = true;
     END IF;
 END
 $$;
+
+-- --------------------------------------------------------------------- --
+-- public.listing_price_history
+--   Append-only record of every price change observed on a listing.
+--   The pipeline writes a row here ONLY when the new price differs from
+--   the previous most-recent entry (or there is no previous entry).
+--   Re-scraping a listing whose price hasn't moved produces no new row.
+-- --------------------------------------------------------------------- --
+
+CREATE TABLE IF NOT EXISTS public.listing_price_history (
+    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    listing_id    UUID NOT NULL REFERENCES public.listings(id) ON DELETE CASCADE,
+    price_amount  NUMERIC(12, 2),               -- nullable: tracks "price disappeared" too
+    currency      TEXT NOT NULL DEFAULT 'USD',
+    observed_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    source_id     TEXT,                         -- which source the observation came from
+    raw_checksum  TEXT                          -- ties back to ingest.raw_payloads when present
+);
+
+CREATE INDEX IF NOT EXISTS ix_lph_listing_observed
+    ON public.listing_price_history (listing_id, observed_at DESC);
+CREATE INDEX IF NOT EXISTS ix_lph_observed
+    ON public.listing_price_history (observed_at DESC);
 
 -- --------------------------------------------------------------------- --
 -- public.dealers
@@ -368,15 +428,28 @@ CREATE INDEX IF NOT EXISTS ix_ai_calls_errors
 
 -- --------------------------------------------------------------------- --
 -- Grants — safe to re-run.
+--
+-- public has mixed ownership (some tables created by other tooling like
+-- Django migrations), so we only grant on the carpapi-owned ones by name.
+-- The dedicated schemas (ingest, monitor, ai) are wholly carpapi-owned;
+-- we can grant on ALL TABLES there.
 -- --------------------------------------------------------------------- --
 
 GRANT USAGE ON SCHEMA ingest, monitor, ai TO carpapi;
 
-GRANT SELECT, INSERT, UPDATE, DELETE
-    ON ALL TABLES IN SCHEMA public, ingest, monitor, ai TO carpapi;
-GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public, ingest, monitor, ai TO carpapi;
+GRANT SELECT, INSERT, UPDATE, DELETE ON
+    public.listings,
+    public.listing_groups,
+    public.listing_price_history,
+    public.dealers,
+    public.sources
+TO carpapi;
 
-ALTER DEFAULT PRIVILEGES IN SCHEMA public, ingest, monitor, ai
+GRANT SELECT, INSERT, UPDATE, DELETE
+    ON ALL TABLES IN SCHEMA ingest, monitor, ai TO carpapi;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA ingest, monitor, ai TO carpapi;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA ingest, monitor, ai
     GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO carpapi;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public, ingest, monitor, ai
+ALTER DEFAULT PRIVILEGES IN SCHEMA ingest, monitor, ai
     GRANT USAGE, SELECT ON SEQUENCES TO carpapi;

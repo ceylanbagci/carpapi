@@ -95,3 +95,7 @@ dist/
 # Top-level installs that don't belong in the repo
 node_modules/
 ui-ux-pro-max-skill/
+
+# Credentials accidentally dropped in the project tree
+*credentials.csv
+carpapi/car-papi*

@@ -23,6 +23,7 @@ from carpapi.db.models import (
     DailyReport,
     IngestRun,
     ListingGroup,
+    ListingPriceHistory,
     RawPayload,
     RejectionLog,
     ScrapeMonitorReport,
@@ -35,6 +36,7 @@ from carpapi.db.repositories import (
     IngestRepo,
     ListingGroupRepo,
     MonitorRepo,
+    PriceHistoryRepo,
     SourceRepo,
 )
 
@@ -46,6 +48,7 @@ __all__ = [
     "Base",
     "Dealer",
     "ListingGroup",
+    "ListingPriceHistory",
     "Source",
     "IngestRun",
     "RawPayload",
@@ -57,6 +60,7 @@ __all__ = [
     # repositories
     "DealerRepo",
     "ListingGroupRepo",
+    "PriceHistoryRepo",
     "SourceRepo",
     "IngestRepo",
     "MonitorRepo",
