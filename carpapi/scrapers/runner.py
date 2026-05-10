@@ -99,6 +99,7 @@ def run_for_dealer(
     max_listings: int = 25,
     rate_limit_seconds: float = 1.5,
     run_kind: str = "manual",
+    allow_selenium: bool = True,
 ) -> DealerRunResult:
     """Scrape one dealer and ingest results into Postgres.
 
@@ -130,16 +131,29 @@ def run_for_dealer(
         dealer_slug=dealer_slug, cms=cms, inventory_url=inventory_url
     )
 
-    # 2. CMS routing — only Dealer.com is implemented today.
-    if cms != "dealer.com":
+    # 2. CMS routing.
+    # Known-blocked CMSes we never try (per scraper-rules.md):
+    #   - dealeron: robots.txt explicitly disallows inventory paths
+    #   - dealer_inspire: 403s plain HTTP; project policy disallows
+    #     escalating past bot defenses
+    if cms in ("dealeron", "dealer_inspire"):
         result.skipped_reason = (
-            f"no adapter for CMS {cms!r} yet (only dealer.com is implemented)"
+            f"CMS {cms!r} is policy-blocked "
+            "(robots.txt disallow / bot defense)"
         )
         return result
 
     if not inventory_url:
         result.skipped_reason = "dealer has no inventory_url; run discover_cms first"
         return result
+
+    # For 'unknown' CMS we still try the Dealer.com adapter — many
+    # 'unknown' dealers turn out to be Dealer.com themes that didn't
+    # match the fingerprints. Adapter handles the case gracefully (0
+    # listings → marked unhealthy by scrape_monitor, not crash).
+    # Other known/different adapters can be wired here.
+    adapter_cms = cms if cms == "dealer.com" else "dealer.com (try)"
+    log.info("[%s] using dealer.com adapter (cms=%s)", dealer_slug, adapter_cms)
 
     # 3. Robots check — always honor it, even if discovery already said allow.
     rp = _robots_for(inventory_url)
@@ -176,19 +190,20 @@ def run_for_dealer(
     pages_fetched = 0
 
     try:
-        # 6. Fetch the inventory page.
+        # 6a. Fetch the inventory page (static, cheap).
         page = dealer_dot_com.fetch(inventory_url)
         pages_fetched += 1
         if page.error or page.status >= 400:
             http_error_count += 1
             log.warning(
-                "[%s] inventory page error: status=%s err=%s",
+                "[%s] static inventory page error: status=%s err=%s",
                 dealer_slug, page.status, page.error,
             )
-            # Stop on initial 403/429 — don't escalate.
             if page.status in (403, 429):
+                # Bot defense — don't escalate to Selenium either; honor it.
                 result.skipped_reason = f"inventory returned HTTP {page.status}; stopping"
-        else:
+                page = None
+        if page is not None and page.status == 200:
             inline, vdps = dealer_dot_com.parse_listing_page(
                 page,
                 source_id=source_id,
@@ -197,37 +212,110 @@ def run_for_dealer(
                 city=city,
             )
             log.info(
-                "[%s] listing page: %d inline listings, %d VDP candidates",
+                "[%s] static listing page: %d inline listings, %d VDP candidates",
                 dealer_slug, len(inline), len(vdps),
             )
             canonical_listings.extend(inline)
 
-            # 7. Walk VDPs until we hit max_listings.
-            for vdp_url in vdps:
-                if len(canonical_listings) >= max_listings:
-                    break
-                time.sleep(rate_limit_seconds)
-                vdp_page = dealer_dot_com.fetch(vdp_url)
-                pages_fetched += 1
-                if vdp_page.status in (403, 429):
-                    http_error_count += 1
-                    log.warning(
-                        "[%s] VDP %s returned HTTP %s — stopping for this dealer",
-                        dealer_slug, vdp_url, vdp_page.status,
-                    )
-                    break
-                if vdp_page.error or vdp_page.status >= 400:
-                    http_error_count += 1
-                    continue
-                listing = dealer_dot_com.parse_vdp(
-                    vdp_page,
-                    source_id=source_id,
-                    source_name=dealer_name,
-                    region=region,
-                    city=city,
+            # 6b. Selenium fallback when the static page yielded nothing.
+            #     Re-fetch with a real browser so JS-rendered inventory
+            #     hydrates, then re-run the same parser.
+            if (
+                allow_selenium
+                and not inline
+                and not vdps
+                and not result.skipped_reason
+            ):
+                log.info(
+                    "[%s] no inline listings or VDPs in static HTML; "
+                    "falling back to Selenium-rendered fetch",
+                    dealer_slug,
                 )
-                if listing is not None:
-                    canonical_listings.append(listing)
+                try:
+                    with dealer_dot_com.selenium_session() as driver:
+                        rendered = dealer_dot_com.fetch_rendered(
+                            driver, inventory_url
+                        )
+                        pages_fetched += 1
+                        if rendered.error or rendered.status >= 400:
+                            log.warning(
+                                "[%s] selenium fetch error: %s",
+                                dealer_slug, rendered.error or rendered.status,
+                            )
+                            http_error_count += 1
+                        else:
+                            inline2, vdps2 = dealer_dot_com.parse_listing_page(
+                                rendered,
+                                source_id=source_id,
+                                source_name=dealer_name,
+                                region=region,
+                                city=city,
+                            )
+                            log.info(
+                                "[%s] rendered listing page: %d inline, "
+                                "%d VDP candidates",
+                                dealer_slug, len(inline2), len(vdps2),
+                            )
+                            canonical_listings.extend(inline2)
+                            vdps = vdps2
+                            # If still nothing, try walking VDPs by parsing
+                            # generic anchors to detail pages — many
+                            # Dealer.com themes have /new/<year>-<make>/...
+                            # patterns that don't always include a VIN in
+                            # the URL. We'll add that selector if needed
+                            # in a later pass.
+
+                            # Walk VDPs (if any) using Selenium too, since
+                            # detail pages also tend to be JS-rendered.
+                            for vdp_url in vdps:
+                                if len(canonical_listings) >= max_listings:
+                                    break
+                                time.sleep(rate_limit_seconds)
+                                vdp_page = dealer_dot_com.fetch_rendered(
+                                    driver, vdp_url, wait_for_jsonld_seconds=4.0
+                                )
+                                pages_fetched += 1
+                                if vdp_page.error or vdp_page.status >= 400:
+                                    http_error_count += 1
+                                    continue
+                                listing = dealer_dot_com.parse_vdp(
+                                    vdp_page,
+                                    source_id=source_id,
+                                    source_name=dealer_name,
+                                    region=region,
+                                    city=city,
+                                )
+                                if listing is not None:
+                                    canonical_listings.append(listing)
+                except RuntimeError as exc:
+                    log.warning("[%s] selenium not available: %s", dealer_slug, exc)
+            else:
+                # 7. Walk VDPs via static fetch (cheaper) when we found them.
+                for vdp_url in vdps:
+                    if len(canonical_listings) >= max_listings:
+                        break
+                    time.sleep(rate_limit_seconds)
+                    vdp_page = dealer_dot_com.fetch(vdp_url)
+                    pages_fetched += 1
+                    if vdp_page.status in (403, 429):
+                        http_error_count += 1
+                        log.warning(
+                            "[%s] VDP %s returned HTTP %s — stopping for this dealer",
+                            dealer_slug, vdp_url, vdp_page.status,
+                        )
+                        break
+                    if vdp_page.error or vdp_page.status >= 400:
+                        http_error_count += 1
+                        continue
+                    listing = dealer_dot_com.parse_vdp(
+                        vdp_page,
+                        source_id=source_id,
+                        source_name=dealer_name,
+                        region=region,
+                        city=city,
+                    )
+                    if listing is not None:
+                        canonical_listings.append(listing)
     except Exception as exc:  # noqa: BLE001
         log.exception("[%s] adapter raised: %s", dealer_slug, exc)
         with session_scope() as session:

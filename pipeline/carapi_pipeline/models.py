@@ -64,6 +64,13 @@ class Listing(Base):
 
     raw_document: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
 
+    # carpapi DB extensions (managed by carpapi/db/schema.sql, populated
+    # at ingest time by carapi_pipeline/pipeline.py).
+    car_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    dealer_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    is_on_sale: Mapped[bool] = mapped_column(default=False, nullable=False, server_default=text("false"))
+    listing_group_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+
 
 def init_schema(engine) -> None:
     Base.metadata.create_all(engine)
