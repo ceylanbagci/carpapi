@@ -141,6 +141,51 @@ CREATE INDEX IF NOT EXISTS ix_makes_name ON public.makes (name);
 CREATE INDEX IF NOT EXISTS ix_dealers_makes_gin    ON public.dealers USING gin (makes_carried);
 
 -- --------------------------------------------------------------------- --
+-- public.listings — enrichment columns
+--   Two-track pipeline:
+--     * hot loop  — price_refreshed_at marks the last cheap price refresh
+--     * cold loop — maker_url + maker_specs + window_sticker filled once
+--                   per VIN by the orchestrator (carpapi.enrich)
+--   maker_enrich_status sticks at 'unsupported' / 'login_required' so the
+--   orchestrator skips dead-end makes on subsequent runs.
+-- --------------------------------------------------------------------- --
+
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables
+               WHERE table_schema = 'public' AND table_name = 'listings') THEN
+        ALTER TABLE public.listings
+            ADD COLUMN IF NOT EXISTS price_refreshed_at  TIMESTAMPTZ,
+            ADD COLUMN IF NOT EXISTS maker_url           TEXT,
+            ADD COLUMN IF NOT EXISTS maker_specs         JSONB,
+            ADD COLUMN IF NOT EXISTS window_sticker      JSONB,
+            ADD COLUMN IF NOT EXISTS window_sticker_url  TEXT,
+            ADD COLUMN IF NOT EXISTS maker_enriched_at   TIMESTAMPTZ,
+            ADD COLUMN IF NOT EXISTS maker_enrich_status TEXT,
+            ADD COLUMN IF NOT EXISTS maker_enrich_error  TEXT;
+
+        BEGIN
+            ALTER TABLE public.listings
+                ADD CONSTRAINT ck_listings_maker_enrich_status
+                CHECK (maker_enrich_status IS NULL OR maker_enrich_status IN
+                       ('pending','enriched','unsupported','login_required','failed'));
+        EXCEPTION
+            WHEN duplicate_object THEN NULL;
+        END;
+
+        CREATE INDEX IF NOT EXISTS ix_listings_enrich_pending
+            ON public.listings (make)
+            WHERE maker_specs IS NULL
+              AND (maker_enrich_status IS NULL
+                   OR maker_enrich_status NOT IN ('unsupported','login_required'));
+
+        CREATE INDEX IF NOT EXISTS ix_listings_price_refreshed_at
+            ON public.listings (price_refreshed_at);
+    END IF;
+END
+$$;
+
+-- --------------------------------------------------------------------- --
 -- public.sources
 --   Registry of every data source (replaces CARAPI_SOURCE_PRIORITY env var).
 -- --------------------------------------------------------------------- --

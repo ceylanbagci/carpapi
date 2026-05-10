@@ -25,6 +25,13 @@ class ListingSerializer(serializers.ModelSerializer):
             "source_name",
             "listing_url",
             "scraped_at",
+            "price_refreshed_at",
+            "maker_url",
+            "maker_specs",
+            "window_sticker_url",
+            "window_sticker",
+            "maker_enriched_at",
+            "maker_enrich_status",
         ]
 
 
