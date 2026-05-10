@@ -60,6 +60,21 @@ class Listing(models.Model):
         ordering = ["-scraped_at"]
 
 
+class Make(models.Model):
+    id = models.UUIDField(primary_key=True)
+    slug = models.TextField(unique=True)
+    name = models.TextField(unique=True)
+    homepage_url = models.TextField(null=True, blank=True)
+    logo_url = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField()
+    updated_at = models.DateTimeField()
+
+    class Meta:
+        managed = False
+        db_table = "makes"
+        ordering = ["name"]
+
+
 class Dealer(models.Model):
     id = models.UUIDField(primary_key=True)
     slug = models.TextField(unique=True)

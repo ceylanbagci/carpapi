@@ -1,7 +1,45 @@
 import DataTable from "../components/DataTable.jsx";
 
+const logoCell = (r) =>
+  r.logo_url ? (
+    <img
+      src={r.logo_url}
+      alt={`${r.make} logo`}
+      width="40"
+      height="40"
+      style={{ borderRadius: 8, display: "block" }}
+      loading="lazy"
+    />
+  ) : (
+    <div
+      style={{
+        width: 40,
+        height: 40,
+        borderRadius: 8,
+        background: "var(--d4-border)",
+      }}
+    />
+  );
+
+const homepageCell = (r) =>
+  r.homepage_url ? (
+    <a href={r.homepage_url} target="_blank" rel="noreferrer">
+      {new URL(r.homepage_url).host.replace(/^www\./, "")}
+      <i className="bi bi-box-arrow-up-right ms-1 small"></i>
+    </a>
+  ) : (
+    "—"
+  );
+
 const columns = [
+  { key: "logo", label: "", sortable: false, render: logoCell },
   { key: "make", label: "Make" },
+  {
+    key: "homepage_url",
+    label: "USA homepage",
+    sortable: false,
+    render: homepageCell,
+  },
   {
     key: "listing_count",
     label: "Listings",

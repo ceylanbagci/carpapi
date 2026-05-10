@@ -23,7 +23,7 @@ from rest_framework.decorators import api_view
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
-from .models import Dealer, Listing
+from .models import Dealer, Listing, Make
 from .serializers import DealerSerializer, ListingSerializer
 
 
@@ -199,33 +199,53 @@ def cars(request):
 
 @api_view(["GET"])
 def makes(request):
-    """Distinct makes with dealer + listing counts."""
+    """Distinct makes with dealer + listing counts.
+
+    Joins the persisted ``public.makes`` table (homepage_url, logo_url)
+    with on-the-fly counts derived from listings + dealers.makes_carried.
+    """
     listing_qs = Listing.objects.exclude(make__isnull=True)
     listing_qs = _apply_listing_filters(listing_qs, request.query_params)
-    listing_counts = dict(listing_qs.values_list("make").annotate(c=Count("id")))
 
     make_filter = (request.query_params.get("make") or "").strip().lower()
+    search = (request.query_params.get("search") or "").strip().lower()
+
+    # Case-insensitive count maps so "Ford" / "ford" / "FORD" merge.
+    listing_counts: dict[str, int] = {}
+    for raw, c in listing_qs.values_list("make").annotate(c=Count("id")):
+        if not raw:
+            continue
+        listing_counts[raw.lower()] = listing_counts.get(raw.lower(), 0) + c
 
     dealer_make_counts: dict[str, int] = {}
     for d in Dealer.objects.exclude(makes_carried__isnull=True).values_list(
         "makes_carried", flat=True
     ):
         for m in d or []:
-            dealer_make_counts[m] = dealer_make_counts.get(m, 0) + 1
+            if not m:
+                continue
+            dealer_make_counts[m.lower()] = dealer_make_counts.get(m.lower(), 0) + 1
 
-    search = (request.query_params.get("search") or "").strip().lower()
+    persisted = {m.name.lower(): m for m in Make.objects.all()}
+
+    all_keys = set(listing_counts) | set(dealer_make_counts) | set(persisted)
 
     rows = []
-    for m in sorted(set(listing_counts) | set(dealer_make_counts)):
-        if make_filter and m.lower() != make_filter:
+    for key in sorted(all_keys):
+        if make_filter and key != make_filter:
             continue
-        if search and search not in m.lower():
+        if search and search not in key:
             continue
+        m_row = persisted.get(key)
+        display_name = m_row.name if m_row else key.title()
         rows.append(
             {
-                "make": m,
-                "listing_count": listing_counts.get(m, 0),
-                "dealer_count": dealer_make_counts.get(m, 0),
+                "make": display_name,
+                "slug": m_row.slug if m_row else None,
+                "homepage_url": m_row.homepage_url if m_row else None,
+                "logo_url": m_row.logo_url if m_row else None,
+                "listing_count": listing_counts.get(key, 0),
+                "dealer_count": dealer_make_counts.get(key, 0),
             }
         )
 
@@ -234,7 +254,7 @@ def makes(request):
         desc = ordering.startswith("-")
         field = ordering.lstrip("-")
         if field in {"make", "listing_count", "dealer_count"}:
-            rows.sort(key=lambda r: r[field], reverse=desc)
+            rows.sort(key=lambda r: (r[field] is None, r[field]), reverse=desc)
     else:
         rows.sort(key=lambda r: (-r["listing_count"], -r["dealer_count"], r["make"]))
 

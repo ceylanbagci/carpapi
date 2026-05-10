@@ -117,6 +117,27 @@ CREATE TABLE IF NOT EXISTS public.dealers (
 
 CREATE INDEX IF NOT EXISTS ix_dealers_cms          ON public.dealers (cms);
 CREATE INDEX IF NOT EXISTS ix_dealers_region_status ON public.dealers (region, status);
+
+-- --------------------------------------------------------------------- --
+-- public.makes
+--   Reference table for vehicle makes — name, USA homepage URL, and a
+--   relative path to the brand's placeholder logo (served by Django out
+--   of MEDIA_ROOT/logos/). Seeded by web/backend/seed_makes.py from the
+--   union of listings.make, dealers.makes_carried[], and a curated
+--   homepage map in web/backend/api/make_info.py.
+-- --------------------------------------------------------------------- --
+
+CREATE TABLE IF NOT EXISTS public.makes (
+    id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    slug         TEXT NOT NULL UNIQUE,
+    name         TEXT NOT NULL UNIQUE,
+    homepage_url TEXT,
+    logo_url     TEXT,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS ix_makes_name ON public.makes (name);
 CREATE INDEX IF NOT EXISTS ix_dealers_makes_gin    ON public.dealers USING gin (makes_carried);
 
 -- --------------------------------------------------------------------- --
