@@ -54,6 +54,18 @@ class Listing(models.Model):
     images = models.JSONField(null=True, blank=True)
     raw_document = models.JSONField(null=True, blank=True)
 
+    # Hot-loop refresh tracking
+    price_refreshed_at = models.DateTimeField(null=True, blank=True)
+
+    # Cold-loop enrichment from manufacturer site + window sticker
+    maker_url = models.TextField(null=True, blank=True)
+    maker_specs = models.JSONField(null=True, blank=True)
+    window_sticker_url = models.TextField(null=True, blank=True)
+    window_sticker = models.JSONField(null=True, blank=True)
+    maker_enriched_at = models.DateTimeField(null=True, blank=True)
+    maker_enrich_status = models.CharField(max_length=32, null=True, blank=True)
+    maker_enrich_error = models.TextField(null=True, blank=True)
+
     class Meta:
         managed = False
         db_table = "listings"
