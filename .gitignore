@@ -91,3 +91,7 @@ development.py
 data/raw/
 dist/
 .env.bak
+
+# Top-level installs that don't belong in the repo
+node_modules/
+ui-ux-pro-max-skill/
