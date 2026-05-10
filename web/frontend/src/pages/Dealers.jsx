@@ -27,8 +27,27 @@ const columns = [
   { key: "city", label: "City" },
   { key: "region", label: "Region" },
   { key: "cms", label: "CMS" },
-  { key: "makes_carried", label: "Makes", render: makesCell },
+  {
+    key: "makes_carried",
+    label: "Makes",
+    render: makesCell,
+    sortable: false,
+  },
   { key: "status", label: "Status", render: statusPill },
+];
+
+const filters = [
+  { key: "make", label: "Make", type: "text", placeholder: "Make carried" },
+  {
+    key: "status",
+    label: "Status",
+    type: "select",
+    options: [
+      { value: "active", label: "active" },
+      { value: "paused", label: "paused" },
+      { value: "blocked", label: "blocked" },
+    ],
+  },
 ];
 
 export default function Dealers() {
@@ -37,6 +56,7 @@ export default function Dealers() {
       title="Dealers"
       endpoint="/dealers/"
       columns={columns}
+      filters={filters}
       initialOrdering="name"
     />
   );

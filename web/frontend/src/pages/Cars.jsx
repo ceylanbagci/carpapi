@@ -23,7 +23,21 @@ const columns = [
     label: "Listings",
     render: (r) => <span className="d4-pill">{r.count}</span>,
   },
-  { key: "price_range", label: "Price range", render: fmtRange },
+  {
+    key: "min_price",
+    label: "Price range",
+    render: fmtRange,
+    sortKey: "min_price",
+  },
+];
+
+const filters = [
+  { key: "make", label: "Make", type: "text", placeholder: "Make" },
+  { key: "model", label: "Model", type: "text", placeholder: "Model" },
+  { key: "year_min", label: "Year min", type: "number", placeholder: "Year ≥" },
+  { key: "year_max", label: "Year max", type: "number", placeholder: "Year ≤" },
+  { key: "price_min", label: "Min price", type: "number", placeholder: "Price ≥" },
+  { key: "price_max", label: "Max price", type: "number", placeholder: "Price ≤" },
 ];
 
 export default function Cars() {
@@ -32,7 +46,7 @@ export default function Cars() {
       title="Cars (distinct year · make · model · trim)"
       endpoint="/cars/"
       columns={columns}
-      searchable={false}
+      filters={filters}
     />
   );
 }

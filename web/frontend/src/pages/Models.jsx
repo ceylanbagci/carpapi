@@ -10,13 +10,21 @@ const columns = [
   },
 ];
 
+const filters = [
+  { key: "make", label: "Make", type: "text", placeholder: "Make" },
+  { key: "model", label: "Model", type: "text", placeholder: "Model" },
+  { key: "price_min", label: "Min price", type: "number", placeholder: "Price ≥" },
+  { key: "price_max", label: "Max price", type: "number", placeholder: "Price ≤" },
+];
+
 export default function Models() {
   return (
     <DataTable
       title="Models"
       endpoint="/models/"
       columns={columns}
-      searchable={false}
+      filters={filters}
+      initialOrdering="-count"
     />
   );
 }
