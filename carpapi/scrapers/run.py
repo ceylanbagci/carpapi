@@ -56,6 +56,11 @@ def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
         default=1.5,
         help="Sleep between requests to the same host.",
     )
+    p.add_argument(
+        "--no-selenium",
+        action="store_true",
+        help="Disable Selenium fallback (static fetch only).",
+    )
     return p.parse_args(argv)
 
 
@@ -106,6 +111,7 @@ def main(argv: Optional[list[str]] = None) -> int:
                 slug,
                 max_listings=args.max_listings,
                 rate_limit_seconds=args.rate_limit_seconds,
+                allow_selenium=not args.no_selenium,
             )
         except Exception as exc:  # noqa: BLE001
             log.exception("[%s] runner crashed: %s", slug, exc)
