@@ -90,3 +90,6 @@ development.py
 .ruff_cache/
 data/raw/
 dist/
+.env.bak
+*credentials.csv
+carpapi/car-papi*

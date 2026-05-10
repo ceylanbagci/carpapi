@@ -495,10 +495,16 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         help="Where to write the enriched per-dealer records.",
     )
     p.add_argument(
+        "--offset",
+        type=int,
+        default=0,
+        help="Start from dealer index N (0-based) in the source list.",
+    )
+    p.add_argument(
         "--limit",
         type=int,
         default=0,
-        help="Process only the first N dealers (0 = all).",
+        help="Process only the first N dealers (after offset/makes filter).",
     )
     p.add_argument(
         "--delay",
@@ -552,6 +558,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.makes:
         wanted = {m.strip() for m in args.makes.split(",") if m.strip()}
         dealers = [d for d in dealers if d.get("make") in wanted]
+    if args.offset > 0:
+        dealers = dealers[args.offset:]
     if args.limit > 0:
         dealers = dealers[: args.limit]
 
