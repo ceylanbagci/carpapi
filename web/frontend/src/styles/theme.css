@@ -399,18 +399,71 @@ table.d4-table tbody tr:hover {
 .d4-hero {
   position: relative;
   background:
-    radial-gradient(60% 60% at 70% 0%, rgba(54, 153, 255, 0.18), transparent 70%),
-    radial-gradient(45% 45% at 0% 100%, rgba(54, 153, 255, 0.12), transparent 70%),
+    radial-gradient(60% 60% at 70% 0%, rgba(54, 153, 255, 0.22), transparent 70%),
+    radial-gradient(45% 45% at 0% 100%, rgba(54, 153, 255, 0.14), transparent 70%),
     linear-gradient(180deg, #0f1115 0%, #1e1e2d 100%);
   color: #fff;
-  padding: 5rem 1.5rem 4rem;
+  padding: 5rem 1.5rem 14rem;   /* extra bottom space for the car */
   text-align: center;
   overflow: hidden;
+}
+
+/* Animated road that scrolls horizontally underneath the car. */
+.d4-road {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 6rem;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.35) 50%, rgba(0, 0, 0, 0.55) 100%);
+  overflow: hidden;
+}
+
+.d4-road-lane {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 1.4rem;
+  height: 4px;
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.55) 0 40px,
+    transparent 40px 100px
+  );
+  background-size: 200px 4px;
+}
+
+/* Car sits just above the road, centered. */
+.d4-hero-car {
+  position: absolute;
+  left: 50%;
+  bottom: 5rem;
+  transform: translateX(-50%);
+  width: min(420px, 70vw);
+  z-index: 2;
+  pointer-events: none;
+  filter: drop-shadow(0 18px 24px rgba(0, 0, 0, 0.45));
+}
+
+.d4-car-stage {
+  display: block;
 }
 
 .d4-hero-inner {
   max-width: 880px;
   margin: 0 auto;
+  position: relative;
+  z-index: 3;
+}
+
+.d4-hero-title-accent {
+  background: linear-gradient(120deg, #93c5fd 0%, #3699ff 60%, #c4dcff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
 }
 
 .d4-hero-eyebrow {
