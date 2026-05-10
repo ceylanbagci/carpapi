@@ -25,6 +25,27 @@ web/
 The schema is **owned by `carpapi/db/schema.sql`** — Django models here use
 `managed = False`, so `manage.py migrate` won't touch the live tables.
 
+## 0. Make logos (one-time, populates `media/logos/`)
+
+The `media/` directory is git-ignored. After cloning, run the fetcher
+once to populate per-make logo files (PNG / JPG / ICO) used by the
+Makes page. The script pulls each brand's published apple-touch-icon
+or its favicon via Google's public favicon service and caches it
+locally — no logos are committed to the repo.
+
+```bash
+cd web/backend
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+CARPAPI_DB_HOST=<host> CARPAPI_DB_PORT=<port> \
+CARPAPI_DB_USER=<user> CARPAPI_DB_PASSWORD=<pwd> \
+CARPAPI_DB_NAME=carpapi \
+python fetch_logos.py
+```
+
+Re-run any time you add new makes — it's idempotent (overwrites the
+on-disk file and updates `public.makes.logo_url`).
+
 ## 1. Backend (Django)
 
 ```bash
