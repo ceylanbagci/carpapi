@@ -46,6 +46,18 @@ def _build_parser() -> argparse.ArgumentParser:
     sp = sub.add_parser("parse-sticker", help="re-parse the sticker for one VIN")
     sp.add_argument("vin")
 
+    sp = sub.add_parser(
+        "discover-stickers",
+        help="scan dealer VDPs of enriched listings for window-sticker URLs",
+    )
+    sp.add_argument("--make", help="restrict to one make")
+    sp.add_argument("--limit", type=int, default=50)
+    sp.add_argument(
+        "--and-parse",
+        action="store_true",
+        help="also run the markitdown parser on every newly-discovered URL",
+    )
+
     sub.add_parser("status", help="enrichment status summary")
     sub.add_parser("refresh-prices",
                    help="(placeholder) hot loop — price-only refresh")
@@ -66,6 +78,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _cmd_enrich_stale(make=args.make, limit=args.limit)
     if args.command == "parse-sticker":
         return _cmd_parse_sticker(args.vin)
+    if args.command == "discover-stickers":
+        return _cmd_discover_stickers(
+            make=args.make, limit=args.limit, and_parse=args.and_parse,
+        )
     if args.command == "status":
         return _cmd_status()
     if args.command == "refresh-prices":
@@ -109,6 +125,45 @@ def _cmd_enrich_stale(*, make: str | None, limit: int) -> int:
               f"{listing.vin}  {res.status}: {res.detail}")
     print()
     print("summary:", "  ".join(f"{k}={v}" for k, v in counts.items()))
+    return 0
+
+
+def _cmd_discover_stickers(*, make: str | None, limit: int, and_parse: bool) -> int:
+    from . import discover_stickers
+    counts = discover_stickers.run(make=make, limit=limit)
+    if and_parse and counts.get("found"):
+        # Re-fetch the rows that just got URLs and parse each one.
+        with db.connect() as conn, conn.cursor() as cur:
+            sql = """
+                SELECT id, vin, make, model, year, trim, listing_url,
+                       maker_specs, window_sticker, window_sticker_url,
+                       maker_enrich_status, price_amount
+                FROM public.listings
+                WHERE window_sticker_url IS NOT NULL
+                  AND window_sticker IS NULL
+            """
+            params = []
+            if make:
+                sql += " AND lower(make) = lower(%s)"
+                params.append(make)
+            sql += " ORDER BY scraped_at DESC NULLS LAST LIMIT %s"
+            params.append(limit)
+            cur.execute(sql, params)
+            rows = [db.ListingRow(*r) for r in cur.fetchall()]
+        print()
+        print(f"--and-parse: parsing {len(rows)} newly-discovered stickers")
+        ok = fail = 0
+        for i, listing in enumerate(rows, 1):
+            res = parse_sticker_only(listing)
+            mark = "✓" if res.status == "enriched" else "✗"
+            msrp = f"${res.sticker_msrp:,}" if res.sticker_msrp else "MSRP=?"
+            print(f"  [{i:3}/{len(rows)}] {mark} {listing.vin}  {msrp}  {res.detail[:80]}")
+            if res.status == "enriched":
+                ok += 1
+            else:
+                fail += 1
+        print()
+        print(f"parse summary: enriched={ok} failed={fail}")
     return 0
 
 
