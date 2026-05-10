@@ -1,0 +1,12 @@
+---
+description: CarPapi runtime safety rules (Postgres is source of truth, validated CarQuery only)
+alwaysApply: true
+---
+
+# CarPapi runtime rules
+
+- **Postgres is the source of truth** for inventory. Never let the LLM fabricate listings.
+- The orchestrator returns a **`CarQuery` JSON** validated against [`schema/car_query.schema.json`](../../schema/car_query.schema.json). Never accept raw SQL strings from the model.
+- Query execution lives in [`services/api/carapi_api/query_exec.py`](../../services/api/carapi_api/query_exec.py) and uses **prepared SQLAlchemy statements** only.
+- Dedupe contract: VIN-first, then fingerprint via `carapi_pipeline.dedupe.build_dedupe_key`. Survivorship by `source_priority` then freshness.
+- Responses must cite stable IDs and source URLs. Add a one-line rationale tied to filters used.
