@@ -379,7 +379,14 @@ def _extract_make(node: dict) -> Optional[str]:
 
 
 def _extract_offer(node: dict) -> tuple[Optional[float], Optional[str]]:
-    """Return (price, currency) from a Vehicle's offers field."""
+    """Return (price, currency) from a Vehicle's offers field.
+
+    Also handles a few schema.org variants seen in the wild:
+      - offers as a single Offer dict
+      - offers as a list (take first)
+      - offers as an AggregateOffer (use lowPrice or price)
+      - offers.priceSpecification.price (compound offer)
+    """
     offers = node.get("offers")
     if offers is None:
         return None, None
@@ -389,9 +396,45 @@ def _extract_offer(node: dict) -> tuple[Optional[float], Optional[str]]:
         offer = offers
     if not isinstance(offer, dict):
         return None, None
+
+    # Direct price first.
     price = _safe_number(offer.get("price"))
-    currency = _safe_str(offer.get("priceCurrency")) or "USD"
+    # AggregateOffer: lowPrice / highPrice.
+    if price is None:
+        price = _safe_number(offer.get("lowPrice")) or _safe_number(offer.get("highPrice"))
+    # Compound offer with priceSpecification.
+    if price is None:
+        spec = offer.get("priceSpecification")
+        if isinstance(spec, list):
+            spec = spec[0] if spec else None
+        if isinstance(spec, dict):
+            price = _safe_number(spec.get("price"))
+
+    currency = (
+        _safe_str(offer.get("priceCurrency"))
+        or (_safe_str(offer.get("priceSpecification", {}).get("priceCurrency"))
+            if isinstance(offer.get("priceSpecification"), dict) else None)
+        or "USD"
+    )
     return price, currency
+
+
+def _vdp_url_from_node(node: dict) -> Optional[str]:
+    """Return the schema.org url field on a Vehicle node, normalized.
+
+    Many Dealer.com listing pages publish per-vehicle Vehicle JSON-LD
+    nodes that lack offers but include the per-vehicle detail URL via
+    `url`. The runner can walk these to fetch a richer JSON-LD that
+    DOES carry the offers/price.
+    """
+    url = _safe_str(node.get("url"))
+    if not url:
+        return None
+    # Normalize protocol-less hostnames seen in the wild
+    # (e.g. "www.davishonda.net/2023/Acura/Integra/<vin>/").
+    if not url.startswith(("http://", "https://")):
+        url = "https://" + url.lstrip("/")
+    return url
 
 
 def _extract_mileage(node: dict) -> tuple[Optional[float], str]:
@@ -454,11 +497,16 @@ def vehicle_node_to_listing(
     price, currency = _extract_offer(node)
     mileage, mileage_unit = _extract_mileage(node)
 
+    # Prefer the per-vehicle URL from the JSON-LD when present — that's
+    # the actual VDP for this car, more useful than the listing page URL.
+    node_vdp = _vdp_url_from_node(node)
+    final_listing_url = node_vdp or listing_url
+
     return {
         "source_id": source_id,
         "source_name": source_name,
         "external_id": external_id,
-        "listing_url": listing_url,
+        "listing_url": final_listing_url,
         "title": name,
         "description": _safe_str(node.get("description")),
         "make": make,
@@ -492,10 +540,18 @@ def parse_listing_page(
     region: Optional[str] = None,
     city: Optional[str] = None,
 ) -> tuple[list[dict], list[str]]:
-    """Return (canonical listings found inline, VDP URLs to follow next)."""
+    """Return (canonical listings found inline, VDP URLs to follow next).
+
+    The VDP list now prioritizes URLs from inline Vehicle nodes that are
+    missing offers (i.e., needs price refinement). These are interleaved
+    with anchor-discovered VDP URLs so the runner can fetch them first
+    and dedup-by-VIN will overwrite the offerless inline listing with
+    the priced VDP version.
+    """
     if page.html is None or page.error:
         return [], []
-    inline = []
+    inline: list[dict] = []
+    refinement_vdps: list[str] = []  # inline-without-price -> walk to fill price
     for node in vehicles_in_html(page.html):
         listing = vehicle_node_to_listing(
             node,
@@ -506,10 +562,28 @@ def parse_listing_page(
             region=region,
             city=city,
         )
-        if listing is not None:
-            inline.append(listing)
-    vdps = vdp_links_in_html(page.html, page.url)
-    return inline, vdps
+        if listing is None:
+            continue
+        inline.append(listing)
+        # If the inline node lacks a price AND has a VDP url, queue it
+        # for a follow-up fetch — the VDP almost always carries the
+        # offers/price block that the listing-page nodes omit.
+        if listing.get("price_amount") in (None, 0):
+            vdp = _vdp_url_from_node(node)
+            if vdp:
+                refinement_vdps.append(vdp)
+
+    anchor_vdps = vdp_links_in_html(page.html, page.url)
+
+    # De-dupe; refinement URLs take priority (they map 1:1 to inline
+    # listings missing prices, so they're high-yield).
+    seen: set[str] = set()
+    merged: list[str] = []
+    for u in refinement_vdps + anchor_vdps:
+        if u not in seen:
+            seen.add(u)
+            merged.append(u)
+    return inline, merged
 
 
 def parse_vdp(
