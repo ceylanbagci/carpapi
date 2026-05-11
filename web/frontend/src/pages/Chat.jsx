@@ -25,6 +25,21 @@ function mkMsg(role, text, results) {
 }
 
 const STORAGE_KEY = "carpapi.chat.thread.v1";
+const THEME_KEY = "carpapi.chat.theme.v1";
+
+function initialTheme() {
+  if (typeof window === "undefined") return "light";
+  try {
+    const stored = localStorage.getItem(THEME_KEY);
+    if (stored === "light" || stored === "dark") return stored;
+  } catch {
+    /* ignore */
+  }
+  const prefersDark =
+    window.matchMedia &&
+    window.matchMedia("(prefers-color-scheme: dark)").matches;
+  return prefersDark ? "dark" : "light";
+}
 
 export default function Chat() {
   const [messages, setMessages] = useState(() => {
@@ -37,6 +52,7 @@ export default function Chat() {
   });
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
+  const [theme, setTheme] = useState(initialTheme);
   const scrollerRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -55,6 +71,33 @@ export default function Chat() {
 
   useEffect(() => {
     inputRef.current?.focus();
+  }, []);
+
+  // Persist the user's theme choice. Updating data-theme on the
+  // outer .d4-chat element is what swaps the colour tokens.
+  useEffect(() => {
+    try {
+      localStorage.setItem(THEME_KEY, theme);
+    } catch {
+      /* ignore */
+    }
+  }, [theme]);
+
+  // Follow system preference only when the user hasn't pinned a choice
+  // yet (no THEME_KEY in storage). Once they toggle, we stop listening.
+  useEffect(() => {
+    let stored = null;
+    try {
+      stored = localStorage.getItem(THEME_KEY);
+    } catch {
+      /* ignore */
+    }
+    if (stored) return;
+    if (!window.matchMedia) return;
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = (e) => setTheme(e.matches ? "dark" : "light");
+    mq.addEventListener?.("change", handler);
+    return () => mq.removeEventListener?.("change", handler);
   }, []);
 
   const send = (raw) => {
@@ -91,8 +134,11 @@ export default function Chat() {
 
   const isEmpty = messages.length === 0 && !busy;
 
+  const toggleTheme = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
+  const isDark = theme === "dark";
+
   return (
-    <div className="d4-chat">
+    <div className="d4-chat" data-theme={theme}>
       <header className="d4-chat-header">
         <Link to="/" className="d4-chat-brand" title="Back to landing">
           <span className="logo-dot">C</span>
@@ -112,6 +158,16 @@ export default function Chat() {
               New chat
             </button>
           )}
+          <button
+            type="button"
+            className="d4-chat-theme-toggle"
+            onClick={toggleTheme}
+            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            aria-pressed={isDark}
+          >
+            <i className={`bi ${isDark ? "bi-sun" : "bi-moon-stars"}`}></i>
+          </button>
         </div>
       </header>
 
