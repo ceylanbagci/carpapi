@@ -1,5 +1,6 @@
 > # 🟢 LIVE
-> **Public URL:** https://gt3mapscrz.us-east-1.awsapprunner.com
+> **Frontend (React):** https://d372ww3313y553.cloudfront.net (S3 + CloudFront, OAC-protected)
+> **API (Django + RAG):** https://gt3mapscrz.us-east-1.awsapprunner.com
 > **Chat:**     `POST /api/chat/` `{"message":"…"}` — 4/4 smoke queries pass with real Bedrock synthesis (skip 2.4s, haiku 2.3s, sonnet 5.7s cold).
 > **Stats:**    `GET /api/stats/` — returns 4391 listings / 385 dealers / 42 makes from RDS.
 
@@ -76,6 +77,34 @@ HNSW index `ix_listings_embedding_hnsw` on `(embedding vector_cosine_ops)` carri
 |---|---|
 | ECR repo | `183617081338.dkr.ecr.us-east-1.amazonaws.com/carpapi-api` |
 | Pushed tags | `latest`, `<12-char-git-sha>` |
+
+## Frontend (React, S3 + CloudFront)
+
+| Field | Value |
+|---|---|
+| S3 bucket | `carpapi-frontend-183617081338` (private, block-public-access on) |
+| CloudFront distribution ID | `E1UCY9STI5VCUF` |
+| CloudFront domain | `d372ww3313y553.cloudfront.net` |
+| Origin Access Control | `E1QS4DFOX5F4D1` (sigv4, s3) |
+| Cache behaviour | `index.html`: no-cache; assets: `max-age=31536000 immutable` |
+| SPA fallback | `403/404 → /index.html` (custom error responses) so React Router works |
+| Build-time API base | `VITE_API_BASE=https://gt3mapscrz.us-east-1.awsapprunner.com/api` (in `web/frontend/.env.production`) |
+| Cost | ~$1/mo at low traffic (storage <$0.10/mo, CF requests + 100GB egress free tier covers it) |
+
+**Deploy frontend updates:**
+```bash
+cd web/frontend
+npm run build
+aws s3 sync dist/ s3://carpapi-frontend-183617081338/ --delete \
+  --cache-control "public, max-age=31536000, immutable" \
+  --exclude "index.html" --exclude "landing.html"
+aws s3 cp dist/index.html s3://carpapi-frontend-183617081338/ \
+  --cache-control "public, max-age=0, must-revalidate" --content-type "text/html"
+aws s3 cp dist/landing.html s3://carpapi-frontend-183617081338/ \
+  --cache-control "public, max-age=0, must-revalidate" --content-type "text/html"
+aws cloudfront create-invalidation \
+  --distribution-id E1UCY9STI5VCUF --paths "/index.html" "/landing.html"
+```
 
 ## App Runner service
 

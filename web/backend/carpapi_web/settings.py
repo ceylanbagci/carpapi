@@ -105,4 +105,19 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^http://127\.0\.0\.1(:\d+)?$",
     r"^http://192\.168\.\d+\.\d+(:\d+)?$",
     r"^http://10\.\d+\.\d+\.\d+(:\d+)?$",
+    # Production frontend on CloudFront (S3-backed React SPA). Any
+    # *.cloudfront.net subdomain matches — narrow this to the specific
+    # distribution ID (e.g. ^https://d372ww3313y553\.cloudfront\.net$)
+    # once you wire a custom domain.
+    r"^https://[a-z0-9]+\.cloudfront\.net$",
 ]
+
+# Extra explicit allow-list pulled from env so a new deploy can add a
+# custom domain without a code change. Comma-separated.
+import os as _os
+_extra = [
+    o.strip()
+    for o in _os.environ.get("DJANGO_CORS_ALLOWED_ORIGINS", "").split(",")
+    if o.strip()
+]
+CORS_ALLOWED_ORIGINS = _extra
