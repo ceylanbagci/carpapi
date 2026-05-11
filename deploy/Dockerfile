@@ -46,12 +46,14 @@ COPY schema/   /app/schema/
 COPY services/ /app/services/
 COPY web/backend/ /app/web/backend/
 
-# Collect static (Django admin / DRF browsable API CSS).
+# PYTHONPATH so `from carpapi.rag.answer import answer` resolves at
+# runtime. We deliberately skip `collectstatic` — the API is JSON-only
+# (/api/*), the React frontend is hosted separately, and Django's
+# settings.py has STATIC_URL but no STATIC_ROOT (which collectstatic
+# needs). If you later want the DRF browsable API or Django admin in
+# production, add `STATIC_ROOT = BASE_DIR / "staticfiles"` to
+# settings.py and restore a collectstatic step here.
 ENV PYTHONPATH=/app
-RUN cd /app/web/backend \
- && DJANGO_SECRET_KEY=build-only-key \
-    DJANGO_ALLOWED_HOSTS="*" \
-    python manage.py collectstatic --noinput
 
 # Non-root runtime user.
 RUN useradd --uid 10001 --user-group --no-create-home carpapi \

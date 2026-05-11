@@ -131,6 +131,17 @@ class ListingViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 @api_view(["GET"])
+def healthz(_request):
+    """Liveness probe — returns 200 without touching DB or Bedrock.
+
+    Use this as the App Runner / ECS / k8s health-check path. Use
+    ``/api/stats/`` only as a readiness probe, since it requires DB
+    connectivity.
+    """
+    return Response({"ok": True, "service": "carpapi-api"})
+
+
+@api_view(["GET"])
 def stats(_request):
     listings_qs = Listing.objects.all()
     return Response(
