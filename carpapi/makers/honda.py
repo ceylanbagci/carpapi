@@ -16,9 +16,17 @@ BASE = "https://automobiles.honda.com"
 
 class HondaAdapter(MakerAdapter):
     make = "Honda"
-    supported = True
+    # automobiles.honda.com responds 403 to every plain-HTTP user-agent
+    # (Akamai bot wall). A headless-browser fallback would be needed to
+    # reach it; until that lands, we mark Honda unsupported so the
+    # orchestrator skips its listings without burning HTTP budget.
+    supported = False
 
     def lookup(self, *, vin, make, model, year, trim):
+        raise MakerUnsupported(
+            "honda: automobiles.honda.com requires a headless browser"
+        )
+        # Unreachable; kept for future re-enable when Selenium lands.
         if not model:
             raise MakerUnsupported("honda: no model on listing")
         m = slug(model)

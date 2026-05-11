@@ -25,9 +25,9 @@ MODEL_CATEGORY: dict[str, str] = {
     "tahoe": "suvs",
     "suburban": "suvs",
     "colorado": "trucks",
-    "silverado-1500": "trucks",
-    "silverado-2500hd": "trucks",
-    "silverado-3500hd": "trucks",
+    "silverado-1500": "commercial",
+    "silverado-2500hd": "commercial",
+    "silverado-3500hd": "commercial",
     "silverado-ev": "electric",
     "blazer-ev": "electric",
     "equinox-ev": "electric",
@@ -35,7 +35,23 @@ MODEL_CATEGORY: dict[str, str] = {
     "bolt-euv": "electric",
 }
 
-CATEGORIES = ["cars", "suvs", "trucks", "performance", "electric"]
+# Path layout observed live on chevrolet.com:
+#   /suvs/<model>          /suvs/equinox, /suvs/tahoe
+#   /trucks/<model>        /trucks/colorado
+#   /electric/<model>      /electric/silverado-ev
+#   /performance/<model>   /performance/corvette
+#   /commercial/silverado/<sub>   ← split-name truck handled below
+CATEGORIES = ["suvs", "trucks", "electric", "performance", "cars", "commercial"]
+
+
+def _split_silverado_paths(m: str) -> list[str]:
+    """Chevy filed full-size pickups under /commercial/silverado/<size>/."""
+    if m == "silverado-1500":
+        return ["commercial/silverado/1500"]
+    if m in ("silverado-2500hd", "silverado-3500hd"):
+        # Combined page on chevy.com
+        return ["commercial/silverado/2500hd-3500hd"]
+    return []
 
 
 class ChevroletAdapter(MakerAdapter):
@@ -48,11 +64,18 @@ class ChevroletAdapter(MakerAdapter):
         m = slug(model)
         primary = MODEL_CATEGORY.get(m)
         order = ([primary] if primary else []) + [c for c in CATEGORIES if c != primary]
+
+        # Live chevy.com paths are /<category>/<model> with no trailing
+        # slash and no year segment.
         candidates: list[str] = []
         for c in order:
-            if year:
-                candidates.append(f"{BASE}/{c}/{m}/{year}/")
+            candidates.append(f"{BASE}/{c}/{m}")
             candidates.append(f"{BASE}/{c}/{m}/")
+        # Full-size pickups live at /commercial/silverado/<size>/
+        for sub in _split_silverado_paths(m):
+            candidates.insert(0, f"{BASE}/{sub}")
+            candidates.insert(1, f"{BASE}/{sub}/")
+
         url, html = try_url_candidates(self, candidates, must_mention=model)
         if not html:
             raise MakerUnsupported(f"chevy: no model page for {model} {year}")

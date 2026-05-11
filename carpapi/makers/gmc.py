@@ -14,9 +14,9 @@ from .base import (
 BASE = "https://www.gmc.com"
 
 MODEL_CATEGORY: dict[str, str] = {
-    "sierra-1500": "trucks",
-    "sierra-2500hd": "trucks",
-    "sierra-3500hd": "trucks",
+    "sierra-1500": "commercial",
+    "sierra-2500hd": "commercial",
+    "sierra-3500hd": "commercial",
     "canyon": "trucks",
     "yukon": "suvs",
     "yukon-xl": "suvs",
@@ -24,9 +24,21 @@ MODEL_CATEGORY: dict[str, str] = {
     "terrain": "suvs",
     "hummer-ev": "electric",
     "hummer-ev-suv": "electric",
+    "sierra-ev": "electric",
 }
 
-CATEGORIES = ["trucks", "suvs", "electric"]
+# Real gmc.com layout: /<category>/<model>, no year, no trailing slash.
+#   /suvs/yukon  /suvs/terrain  /trucks/canyon  /electric/sierra-ev
+CATEGORIES = ["suvs", "trucks", "electric", "commercial"]
+
+
+def _split_sierra_paths(m: str) -> list[str]:
+    """Sierra full-size pickups: /trucks/sierra/<size> (slash, not hyphen)."""
+    if m == "sierra-1500":
+        return ["trucks/sierra/1500"]
+    if m in ("sierra-2500hd", "sierra-3500hd"):
+        return ["trucks/sierra/2500hd-3500hd"]
+    return []
 
 
 class GmcAdapter(MakerAdapter):
@@ -39,11 +51,16 @@ class GmcAdapter(MakerAdapter):
         m = slug(model)
         primary = MODEL_CATEGORY.get(m)
         order = ([primary] if primary else []) + [c for c in CATEGORIES if c != primary]
+
+        # gmc.com uses /<category>/<model> with no year/trailing slash.
         candidates: list[str] = []
         for c in order:
-            if year:
-                candidates.append(f"{BASE}/{c}/{m}/{year}/")
+            candidates.append(f"{BASE}/{c}/{m}")
             candidates.append(f"{BASE}/{c}/{m}/")
+        for sub in _split_sierra_paths(m):
+            candidates.insert(0, f"{BASE}/{sub}")
+            candidates.insert(1, f"{BASE}/{sub}/")
+
         url, html = try_url_candidates(self, candidates, must_mention=model)
         if not html:
             raise MakerUnsupported(f"gmc: no model page for {model} {year}")
