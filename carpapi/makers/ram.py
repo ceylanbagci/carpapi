@@ -16,9 +16,16 @@ BASE = "https://www.ramtrucks.com"
 
 class RamAdapter(MakerAdapter):
     make = "Ram"
-    supported = True
+    # ramtrucks.com returns 403 for plain HTTP user agents (Stellantis
+    # bot wall). Mark unsupported until a headless-browser fallback
+    # ships; the orchestrator marks rows sticky and skips them.
+    supported = False
 
     def lookup(self, *, vin, make, model, year, trim):
+        raise MakerUnsupported(
+            "ram: ramtrucks.com requires a headless browser (Stellantis bot wall)"
+        )
+        # Unreachable; kept for future re-enable.
         if not model:
             raise MakerUnsupported("ram: no model on listing")
         m = slug(model)

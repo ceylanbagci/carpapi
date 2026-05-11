@@ -307,21 +307,38 @@ def try_url_candidates(
             continue
 
         if needles:
-            # Pull the page's title + og:title — quick text check, no full parse.
-            head = text[:6000].lower()
-            title_match = re.search(
-                r'<title[^>]*>(.*?)</title>|property=["\']og:title["\']\s+content=["\']([^"\']+)',
-                head,
-                re.S,
+            # Modern manufacturer pages are large SPA shells; the <title>
+            # element can sit well past the first few KB. Scan a larger
+            # head, and accept any signal the page is actually about
+            # this model — title, og:title, canonical URL, meta
+            # description, or simply the model name appearing in the
+            # first 50 KB of body text.
+            head = text[:50_000].lower()
+
+            title_hits = re.findall(r"<title[^>]*>(.*?)</title>", head, re.S)
+            og_hits = re.findall(
+                r'property=["\']og:[a-z]+["\']\s+content=["\']([^"\']+)', head
             )
-            blob = ""
-            if title_match:
-                blob = " ".join(g for g in title_match.groups() if g).lower()
-            if not any(n in blob for n in needles):
+            canon_hits = re.findall(
+                r'rel=["\']canonical["\']\s+href=["\']([^"\']+)', head
+            )
+            meta_desc = re.findall(
+                r'name=["\']description["\']\s+content=["\']([^"\']+)', head
+            )
+            blob = " ".join(title_hits + og_hits + canon_hits + meta_desc)
+            blob_lower = blob.lower()
+
+            matched = any(n in blob_lower for n in needles)
+            # Fallback: model name appears anywhere in the prefix. Cheap and
+            # robust for SPA shells where the <title> is JS-set after load.
+            if not matched:
+                matched = any(n in head for n in needles)
+
+            if not matched:
                 log.debug(
-                    "%s: %s landed on a page whose title doesn't match model (%r); "
+                    "%s: %s landed on a page that doesn't mention model %r; "
                     "title was %r",
-                    adapter.make, url, needles, blob[:120],
+                    adapter.make, url, needles, (title_hits[:1] or [""])[0][:120],
                 )
                 continue
 
