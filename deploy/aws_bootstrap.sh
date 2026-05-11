@@ -31,7 +31,7 @@ set -euo pipefail
 # --------------------------------------------------------------------- #
 : "${AWS_REGION:=us-east-1}"
 : "${DB_IDENTIFIER:=carpapi-db}"
-: "${DB_ENGINE_VERSION:=16.4}"
+: "${DB_ENGINE_VERSION:=16.13}"
 : "${DB_INSTANCE_CLASS:=db.t4g.micro}"
 : "${DB_STORAGE_GB:=20}"
 : "${DB_NAME:=carpapi}"
