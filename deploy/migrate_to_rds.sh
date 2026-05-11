@@ -62,27 +62,38 @@ log "  → $DUMP_DIR/schema.sql ($(wc -l < "$DUMP_DIR/schema.sql") lines)"
 # --------------------------------------------------------------------- #
 # 2. Data — table-by-table so a single bad row doesn't abort everything
 # --------------------------------------------------------------------- #
-TABLES=(
+# Build TABLES list dynamically from the live local schema so we don't
+# have to chase drift between this script and the actual public.*
+# layout. Order matters for FK-honoring restores — dealers/makes/sources
+# first, then groups/listings, then dependent rows.
+ORDERED_PREFERENCE=(
+  public.sources
   public.dealers
   public.makes
   public.maker_models
+  public.maker_specs
+  public.listing_groups
   public.listings
   public.listing_price_history
 )
-# maker_specs is optional — only dump if it exists
-if PGPASSWORD="$LOCAL_PG_PASSWORD" psql -At \
-     -h "$LOCAL_PG_HOST" -p "$LOCAL_PG_PORT" \
-     -U "$LOCAL_PG_USER" -d "$LOCAL_PG_DB" \
-     -c "SELECT to_regclass('public.maker_specs')" | grep -q "maker_specs"; then
-  TABLES+=("public.maker_specs")
-fi
+EXISTING=$(PGPASSWORD="$LOCAL_PG_PASSWORD" psql -At \
+  -h "$LOCAL_PG_HOST" -p "$LOCAL_PG_PORT" \
+  -U "$LOCAL_PG_USER" -d "$LOCAL_PG_DB" \
+  -c "SELECT 'public.' || tablename FROM pg_tables WHERE schemaname='public'")
+TABLES=()
+for t in "${ORDERED_PREFERENCE[@]}"; do
+  if grep -qFx "$t" <<<"$EXISTING"; then
+    TABLES+=("$t")
+  fi
+done
+log "Migrating tables: ${TABLES[*]}"
 
 for tbl in "${TABLES[@]}"; do
   log "Dumping $tbl ..."
   PGPASSWORD="$LOCAL_PG_PASSWORD" pg_dump \
     -h "$LOCAL_PG_HOST" -p "$LOCAL_PG_PORT" \
     -U "$LOCAL_PG_USER" -d "$LOCAL_PG_DB" \
-    --data-only --no-owner --no-acl --column-inserts=false \
+    --data-only --no-owner --no-acl \
     -t "$tbl" \
     -f "$DUMP_DIR/data_${tbl#public.}.sql"
 done
@@ -97,6 +108,14 @@ log "Ensuring vector extension on RDS ..."
 PGPASSWORD="$CARPAPI_DB_PASSWORD" psql "${RDS_FLAGS[@]}" \
   -v ON_ERROR_STOP=1 \
   -c "CREATE EXTENSION IF NOT EXISTS vector;"
+
+# Strip PG-17-only SET directives the destination PG-16 doesn't know.
+# `transaction_timeout` (added in PG 17) is the only blocker today; if
+# AWS adds more later, append patterns here.
+log "Sanitizing dumps for cross-version restore (PG17 -> PG16) ..."
+for f in "$DUMP_DIR"/*.sql; do
+  sed -i.bak -E '/^SET transaction_timeout/d' "$f"
+done
 
 log "Applying schema to RDS ..."
 PGPASSWORD="$CARPAPI_DB_PASSWORD" psql "${RDS_FLAGS[@]}" \
