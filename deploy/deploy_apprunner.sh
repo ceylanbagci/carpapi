@@ -67,14 +67,20 @@ aws ecr get-login-password --region "$AWS_REGION" \
   | docker login --username AWS --password-stdin \
       "${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
 
-log "Building image (this can take 3-5 min on first build) ..."
-docker build -f deploy/Dockerfile -t "${ECR_REPO}:${GIT_SHA}" -t "${ECR_REPO}:latest" .
-
-log "Pushing $IMAGE_URI:{$GIT_SHA,latest} ..."
-docker tag "${ECR_REPO}:${GIT_SHA}"  "${IMAGE_URI}:${GIT_SHA}"
-docker tag "${ECR_REPO}:latest"      "${IMAGE_URI}:latest"
-docker push "${IMAGE_URI}:${GIT_SHA}"
-docker push "${IMAGE_URI}:latest"
+log "Building + pushing linux/amd64 image (this can take 5-10 min on first build) ..."
+# CRITICAL: --platform linux/amd64 forces an x86_64 build. App Runner
+# (and ECS Fargate, and EC2 t/m/c-class) runs on x86_64; if you build
+# on an Apple Silicon laptop without this flag, docker buildx produces
+# a linux/arm64 image that fails to start on App Runner with no useful
+# error (App Runner reports "health check failed" because the container
+# exec-format-errors before binding port 8000). Always cross-build.
+docker buildx build \
+  --platform linux/amd64 \
+  -f deploy/Dockerfile \
+  -t "${IMAGE_URI}:${GIT_SHA}" \
+  -t "${IMAGE_URI}:latest" \
+  --push \
+  .
 
 # --------------------------------------------------------------------- #
 # 3. App Runner instance role with Bedrock policy

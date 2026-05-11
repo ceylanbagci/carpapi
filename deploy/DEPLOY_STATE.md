@@ -116,6 +116,37 @@ Trust policy: only `repo:ceylanbagci/carpapi on refs/heads/main` can assume `Car
 
 After that, `deploy.yml` runs automatically on merge to `main`. The first auto-deploy will hit the same App Runner service `carpapi-api`.
 
+## Lessons learned during initial deploy
+
+The first three App Runner deployments all `CREATE_FAILED` with the
+generic message "Health check failed on /api/stats/. Check your
+configured port number." None of these were really the cause:
+
+1. **Schema mismatch (PG 17 local vs PG 16 RDS).** Fixed by sanitizing
+   PG-17-only `SET transaction_timeout` directives out of the dump
+   before applying — see `migrate_to_rds.sh`.
+2. **collectstatic crashed** because `settings.py` had no
+   `STATIC_ROOT`. Fixed by removing the step from `Dockerfile` (the
+   API is JSON-only).
+3. **RDS SG too narrow.** Fixed properly with the VPC Connector
+   route, not by widening to `0.0.0.0/0`.
+4. ⚠️ **Image architecture mismatch.** Docker buildx on Apple Silicon
+   defaulted to `linux/arm64`. App Runner runs `linux/amd64`. The
+   container exec-format-errored before gunicorn ever started, hence
+   no application log group ever appeared. **`deploy_apprunner.sh`
+   now hard-codes `docker buildx --platform linux/amd64`.** This was
+   the real reason all earlier deploys failed.
+
+If you see another mysterious "health check failed" with no
+application logs in CloudWatch, **check the image arch first**:
+
+```bash
+docker buildx imagetools inspect <ECR_URI>:latest | head -10
+```
+
+If you see `Platform: linux/arm64` (and nothing else), rebuild with
+`--platform linux/amd64`.
+
 ## Smoke commands
 
 ```bash
