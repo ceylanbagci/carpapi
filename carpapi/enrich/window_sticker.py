@@ -89,26 +89,30 @@ def parse_pdf_bytes(pdf_bytes: bytes, *, source_url: str | None = None) -> dict[
 
 
 def _extract_msrp(text: str) -> int | None:
+    # Markitdown's Monroney layout often puts the label and value in
+    # separate table cells, so the gap between "TOTAL MSRP" and the
+    # number can be 100+ characters of `|` separators. Match generously.
     for pat in (
-        r"Total\s+MSRP[^\$\n]{0,40}\$([\d,]+)",
-        r"MSRP[^\$\n]{0,40}\$([\d,]+)",
-        r"Total\s+Price[^\$\n]{0,40}\$([\d,]+)",
-        r"Suggested\s+Retail\s+Price[^\$\n]{0,40}\$([\d,]+)",
+        r"Total\s+MSRP[\s\S]{0,800}?\$?\s*([\d]{2,3}(?:,\d{3})+(?:\.\d{2})?)",
+        r"\bMSRP[\s\S]{0,800}?\$?\s*([\d]{2,3}(?:,\d{3})+(?:\.\d{2})?)",
+        r"Total\s+Price[\s\S]{0,800}?\$?\s*([\d]{2,3}(?:,\d{3})+(?:\.\d{2})?)",
+        r"Suggested\s+Retail[\s\S]{0,800}?\$?\s*([\d]{2,3}(?:,\d{3})+(?:\.\d{2})?)",
     ):
         m = re.search(pat, text, flags=re.I)
         if m:
             try:
-                return int(m.group(1).replace(",", ""))
+                return int(float(m.group(1).replace(",", "")))
             except ValueError:
                 pass
     return None
 
 
 def _extract_dollar(text: str, prefix_pattern: str) -> int | None:
-    m = re.search(prefix_pattern + r"\$([\d,]+)", text, flags=re.I | re.S)
+    pat = prefix_pattern + r"[\s\S]{0,500}?\$?\s*([\d]{2,3}(?:,\d{3})+(?:\.\d{2})?)"
+    m = re.search(pat, text, flags=re.I | re.S)
     if m:
         try:
-            return int(m.group(1).replace(",", ""))
+            return int(float(m.group(1).replace(",", "")))
         except ValueError:
             return None
     return None
