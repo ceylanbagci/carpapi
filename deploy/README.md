@@ -4,6 +4,8 @@ End-to-end deployment of the chat pipeline from `architecture.md §12` to AWS.
 
 > **Going to production?** Read [`PRODUCTION.md`](PRODUCTION.md) — it covers serving choice (App Runner vs ECS vs Lambda vs EC2), CI/CD pipeline via GitHub Actions + OIDC, hardening checklist, cost projections, and the one-time rollout sequence.
 
+> **Want Claude to drive the deploy?** Use the [`carpapi-deployer`](../.claude/agents/carpapi-deployer.md) subagent — it knows the script order, the cost of every step, the rollback path, and refuses to touch resources outside the `Project=CarPapi` tag. Invoke it with: *"deploy CarPapi to AWS"* or *"tear down the AWS resources"*.
+
 ```
 Local Postgres :5433  ──► RDS Postgres 16 + pgvector (db.t4g.micro)
                            │
