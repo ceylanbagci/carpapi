@@ -6,6 +6,8 @@ db.sqlite3
 input/google_api.json
 data/*.sqlite
 data/*.sqlite-journal
+data/secrets/
+data/dumps/
 
 # Pycharm folder
 .idea/
