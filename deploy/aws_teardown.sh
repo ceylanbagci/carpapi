@@ -19,10 +19,13 @@ set -euo pipefail
 : "${AWS_REGION:=us-east-1}"
 : "${DB_IDENTIFIER:=carpapi-db}"
 : "${SG_NAME:=carpapi-rds-sg}"
+: "${EGRESS_SG_NAME:=carpapi-apprunner-egress}"
+: "${VPC_CONNECTOR_NAME:=carpapi-vpc-connector}"
 : "${ECR_REPO:=carpapi-api}"
 : "${SERVICE_NAME:=carpapi-api}"
 : "${INSTANCE_ROLE_NAME:=CarPapiAppRunnerInstanceRole}"
 : "${ACCESS_ROLE_NAME:=CarPapiAppRunnerEcrAccessRole}"
+: "${DEPLOY_ROLE_NAME:=CarPapiGitHubDeployer}"
 : "${BEDROCK_POLICY_NAME:=CarPapiBedrockInvoke}"
 
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
@@ -106,14 +109,38 @@ fi
 DEFAULT_VPC=$(aws ec2 describe-vpcs --region "$AWS_REGION" \
   --filters Name=isDefault,Values=true \
   --query 'Vpcs[0].VpcId' --output text)
-SG_ID=$(aws ec2 describe-security-groups --region "$AWS_REGION" \
-  --filters "Name=group-name,Values=${SG_NAME}" "Name=vpc-id,Values=${DEFAULT_VPC}" \
-  --query 'SecurityGroups[0].GroupId' --output text 2>/dev/null || echo "None")
-if [[ "$SG_ID" != "None" && -n "$SG_ID" ]]; then
-  log "Deleting security group $SG_NAME ($SG_ID) ..."
-  aws ec2 delete-security-group --region "$AWS_REGION" --group-id "$SG_ID" 2>/dev/null \
-    || log "  (failed — likely still attached to a removing RDS instance; retry in a few min)"
+
+# 4a. App Runner VPC connector (must come before SGs that it references)
+VPC_CONN_ARN=$(aws apprunner list-vpc-connectors --region "$AWS_REGION" \
+  --query "VpcConnectors[?VpcConnectorName=='${VPC_CONNECTOR_NAME}'].VpcConnectorArn | [0]" \
+  --output text 2>/dev/null || echo "None")
+if [[ "$VPC_CONN_ARN" != "None" && -n "$VPC_CONN_ARN" ]]; then
+  log "Deleting VPC connector $VPC_CONNECTOR_NAME ..."
+  aws apprunner delete-vpc-connector --region "$AWS_REGION" \
+    --vpc-connector-arn "$VPC_CONN_ARN" >/dev/null 2>&1 \
+    || log "  (delete failed — service may still be referencing it; retry after service deletes)"
 fi
+
+# 4b. GitHub deploy role (separate IAM role used only by Actions)
+if aws iam get-role --role-name "$DEPLOY_ROLE_NAME" >/dev/null 2>&1; then
+  log "Deleting inline policy + role $DEPLOY_ROLE_NAME ..."
+  aws iam delete-role-policy --role-name "$DEPLOY_ROLE_NAME" \
+    --policy-name CarPapiDeployInline 2>/dev/null || true
+  aws iam delete-role --role-name "$DEPLOY_ROLE_NAME" 2>/dev/null || true
+fi
+
+# 5. Security groups — RDS SG first (was created first), then egress SG.
+#    Order doesn't strictly matter since neither is in use after RDS is gone.
+for sg in "$SG_NAME" "$EGRESS_SG_NAME"; do
+  SG_ID=$(aws ec2 describe-security-groups --region "$AWS_REGION" \
+    --filters "Name=group-name,Values=${sg}" "Name=vpc-id,Values=${DEFAULT_VPC}" \
+    --query 'SecurityGroups[0].GroupId' --output text 2>/dev/null || echo "None")
+  if [[ "$SG_ID" != "None" && -n "$SG_ID" ]]; then
+    log "Deleting security group $sg ($SG_ID) ..."
+    aws ec2 delete-security-group --region "$AWS_REGION" --group-id "$SG_ID" 2>/dev/null \
+      || log "  (failed — likely still attached to a removing resource; retry in a few min)"
+  fi
+done
 
 cat <<'EOF'
 
