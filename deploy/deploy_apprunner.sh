@@ -152,19 +152,43 @@ cat > "$SOURCE_CFG_FILE" <<JSON
 JSON
 
 INSTANCE_CFG='{"Cpu":"1 vCPU","Memory":"2 GB","InstanceRoleArn":"'"$INSTANCE_ROLE_ARN"'"}'
-HEALTH_CFG='{"Protocol":"HTTP","Path":"/api/stats/","Interval":20,"Timeout":5,"HealthyThreshold":1,"UnhealthyThreshold":3}'
+# Health check: /api/stats/ runs Django ORM counts against RDS. First
+# request through VPC connector can take a few seconds to establish
+# the psycopg connection; default 5s timeout + 3 retries is too tight
+# for cold start. 20s × 5 = 100s grace before unhealthy.
+HEALTH_CFG='{"Protocol":"HTTP","Path":"/api/stats/","Interval":20,"Timeout":20,"HealthyThreshold":1,"UnhealthyThreshold":5}'
+
+# Network: route App Runner egress through the VPC connector created
+# by aws_bootstrap.sh (or by hand). RDS SG is locked to this
+# connector's SG, so this is the ONLY way the container can reach
+# the database. If the connector ARN doesn't exist yet, fail fast
+# rather than create the service with public egress (which won't
+# reach RDS and will CREATE_FAILED on health check).
+VPC_CONNECTOR_ARN=$(aws apprunner list-vpc-connectors --region "$AWS_REGION" \
+  --query "VpcConnectors[?VpcConnectorName=='carpapi-vpc-connector' && Status=='ACTIVE'].VpcConnectorArn | [0]" \
+  --output text 2>/dev/null || echo "None")
+if [[ "$VPC_CONNECTOR_ARN" == "None" || -z "$VPC_CONNECTOR_ARN" ]]; then
+  log "ERROR: VPC connector 'carpapi-vpc-connector' missing or not ACTIVE."
+  log "       Create it first; see deploy/DEPLOY_STATE.md for the manual steps."
+  exit 1
+fi
+NETWORK_CFG=$(cat <<JSON
+{"EgressConfiguration":{"EgressType":"VPC","VpcConnectorArn":"${VPC_CONNECTOR_ARN}"}}
+JSON
+)
 
 EXISTING_ARN=$(aws apprunner list-services --region "$AWS_REGION" \
   --query "ServiceSummaryList[?ServiceName=='${SERVICE_NAME}'].ServiceArn | [0]" \
   --output text 2>/dev/null || echo "None")
 
 if [[ "$EXISTING_ARN" == "None" || -z "$EXISTING_ARN" ]]; then
-  log "Creating App Runner service $SERVICE_NAME ..."
+  log "Creating App Runner service $SERVICE_NAME (with VPC egress) ..."
   aws apprunner create-service --region "$AWS_REGION" \
     --service-name "$SERVICE_NAME" \
     --source-configuration "file://$SOURCE_CFG_FILE" \
     --instance-configuration "$INSTANCE_CFG" \
     --health-check-configuration "$HEALTH_CFG" \
+    --network-configuration "$NETWORK_CFG" \
     --tags Key=Project,Value=CarPapi Key=Env,Value=mvp \
     >/dev/null
   EXISTING_ARN=$(aws apprunner list-services --region "$AWS_REGION" \
@@ -176,7 +200,8 @@ else
     --service-arn "$EXISTING_ARN" \
     --source-configuration "file://$SOURCE_CFG_FILE" \
     --instance-configuration "$INSTANCE_CFG" \
-    --health-check-configuration "$HEALTH_CFG" >/dev/null
+    --health-check-configuration "$HEALTH_CFG" \
+    --network-configuration "$NETWORK_CFG" >/dev/null
 fi
 
 log "Waiting for service to be RUNNING (5-8 min) ..."
