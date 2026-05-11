@@ -120,8 +120,8 @@ def _cmd_enrich_stale(*, make: str | None, limit: int) -> int:
         counts[res.status] = counts.get(res.status, 0) + 1
         marker = {"enriched": "✓", "skipped": "·", "unsupported": "—",
                   "login_required": "🔒", "failed": "✗"}.get(res.status, "?")
-        print(f"  [{i:4}/{len(pending)}] {marker} {listing.make:<14} "
-              f"{listing.year or '????'} {listing.model or '?':<18} "
+        print(f"  [{i:4}/{len(pending)}] {marker} {(listing.make or '?'):<14} "
+              f"{listing.year or '????'} {(listing.model or '?'):<18} "
               f"{listing.vin}  {res.status}: {res.detail}")
     print()
     print("summary:", "  ".join(f"{k}={v}" for k, v in counts.items()))
