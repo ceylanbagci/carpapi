@@ -1,0 +1,36 @@
+# CarPapi — App Runner source config.
+#
+# This file is read by App Runner when you point a service at a GitHub
+# repo + branch with "Configuration source: Repository". For ECR-based
+# deploys it isn't needed — App Runner pulls the image directly.
+#
+# We keep it here so a "deploy from source" path works identically.
+
+version: 1.0
+runtime: docker
+
+build:
+  commands:
+    pre-build:
+      - echo "no pre-build step; gunicorn deps installed in Dockerfile"
+  dockerfile: deploy/Dockerfile
+  # build-context is the repo root so the Dockerfile can COPY both
+  # carpapi/ and web/backend/.
+
+run:
+  network:
+    port: 8000
+  command: sh -c "cd /app/web/backend && gunicorn carpapi_web.wsgi:application --bind 0.0.0.0:8000 --workers 2 --threads 4 --timeout 60 --access-logfile - --error-logfile -"
+
+  # All sensitive values come from App Runner environment variables —
+  # set them via:
+  #     aws apprunner update-service --service-arn ... \
+  #         --source-configuration ... RuntimeEnvironmentVariables=...
+  env:
+    - name: DJANGO_SETTINGS_MODULE
+      value: carpapi_web.settings
+    - name: PYTHONPATH
+      value: /app
+    - name: AWS_REGION
+      value: us-east-1
+    # CARPAPI_DB_* + DJANGO_SECRET_KEY are set per-service, never here.

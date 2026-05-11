@@ -60,7 +60,10 @@ class Listing(Base):
     features: Mapped[list[Any] | None] = mapped_column(JSONB, nullable=True)
     images: Mapped[list[Any] | None] = mapped_column(JSONB, nullable=True)
 
-    embedding: Mapped[list[float] | None] = mapped_column(Vector(1536), nullable=True)
+    # 1024-dim to match Amazon Titan Embed Text v2 (default output).
+    # Populated by carpapi/rag/embed.py; HNSW index on cosine ops added in
+    # carpapi/db/schema.sql migrations (or manually for older installs).
+    embedding: Mapped[list[float] | None] = mapped_column(Vector(1024), nullable=True)
 
     raw_document: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
 
