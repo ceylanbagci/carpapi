@@ -1,3 +1,8 @@
+> # 🟢 LIVE
+> **Public URL:** https://gt3mapscrz.us-east-1.awsapprunner.com
+> **Chat:**     `POST /api/chat/` `{"message":"…"}` — 4/4 smoke queries pass with real Bedrock synthesis (skip 2.4s, haiku 2.3s, sonnet 5.7s cold).
+> **Stats:**    `GET /api/stats/` — returns 4391 listings / 385 dealers / 42 makes from RDS.
+
 # CarPapi — live AWS state (snapshot)
 
 This document is the source of truth for "what's actually running in AWS
@@ -31,11 +36,15 @@ stale, run:
 | RDS security group | `sg-076ab63563873b45a` (`carpapi-rds-sg`) | guards `:5432`; ingress = home IP + App Runner egress SG |
 | App Runner egress SG | `sg-0897cabb71dc01061` (`carpapi-apprunner-egress`) | egress for the VPC connector; default outbound rules |
 | App Runner VPC Connector | `arn:aws:apprunner:us-east-1:183617081338:vpcconnector/carpapi-vpc-connector/1/45e44ec480ee441db60d733299b0ac03` | wires App Runner egress through default VPC subnets (1a/1b/1c) |
+| Bedrock interface VPC endpoint | `vpce-042d375f94206d022` (`bedrock-runtime`) | so the container can reach Bedrock from VPC egress without NAT; ENIs in 3 AZs, ~$22/mo |
 
 **RDS ingress rules:**
 - `:5432` ← `69.124.101.33/32` (home IP, for `psql` ops from laptop)
 - `:5432` ← `sg-0897cabb71dc01061` (App Runner egress only — narrow)
 - **NOT open to `0.0.0.0/0`** — RDS is unreachable from the public internet.
+
+**App Runner egress SG self-ingress:**
+- `:443` ← `sg-0897cabb71dc01061` (self) — required for the container ENIs to reach the Bedrock interface VPC endpoint ENIs (same SG).
 
 ## Database
 
@@ -73,8 +82,8 @@ HNSW index `ix_listings_embedding_hnsw` on `(embedding vector_cosine_ops)` carri
 | Field | Value |
 |---|---|
 | Service name | `carpapi-api` |
-| Service ARN | `arn:aws:apprunner:us-east-1:183617081338:service/carpapi-api/542dbe4b528547f8b074dbb84319431d` |
-| Public URL | `https://edb6qkw9pa.us-east-1.awsapprunner.com` |
+| Service ARN | `arn:aws:apprunner:us-east-1:183617081338:service/carpapi-api/367498f87d9e45bf976fa92b20573149` |
+| Public URL | `https://gt3mapscrz.us-east-1.awsapprunner.com` |
 | Instance | 1 vCPU / 2 GB |
 | Egress | VPC (via connector above) — RDS reach only |
 | Health check | `HTTP GET /api/stats/` on port 8000 |
@@ -118,34 +127,56 @@ After that, `deploy.yml` runs automatically on merge to `main`. The first auto-d
 
 ## Lessons learned during initial deploy
 
-The first three App Runner deployments all `CREATE_FAILED` with the
-generic message "Health check failed on /api/stats/. Check your
-configured port number." None of these were really the cause:
+The path from "scripts exist" to "live endpoint serving real RAG
+responses" required fixing six distinct issues. The deployer agent
+docs them so the next pass is faster.
 
-1. **Schema mismatch (PG 17 local vs PG 16 RDS).** Fixed by sanitizing
-   PG-17-only `SET transaction_timeout` directives out of the dump
-   before applying — see `migrate_to_rds.sh`.
-2. **collectstatic crashed** because `settings.py` had no
-   `STATIC_ROOT`. Fixed by removing the step from `Dockerfile` (the
-   API is JSON-only).
-3. **RDS SG too narrow.** Fixed properly with the VPC Connector
-   route, not by widening to `0.0.0.0/0`.
-4. ⚠️ **Image architecture mismatch.** Docker buildx on Apple Silicon
+1. **PG-version mismatch (local PG 17 → RDS PG 16).** pg_dump 16 hard-
+   refuses to connect to a PG 17 server. Use PG 17 client binaries
+   for pg_dump, but **sanitize** the dump by stripping
+   `SET transaction_timeout = 0` lines before applying to RDS
+   (PG 17–only setting, unrecognized by 16). Now baked into
+   `migrate_to_rds.sh` via `sed -i.bak`.
+2. **Dynamic table list.** Hard-coded `TABLES=()` in the migrate
+   script referenced `public.maker_models` (doesn't exist) and missed
+   `public.sources` + `public.listing_groups`. Now the script
+   intersects an `ORDERED_PREFERENCE` array (for FK ordering) with
+   the actual `pg_tables` output at runtime.
+3. **`collectstatic` crashed** because `settings.py` has `STATIC_URL`
+   but no `STATIC_ROOT`. Fixed by removing the step from `Dockerfile`
+   (the API is JSON-only). If the Django admin or DRF browsable API
+   is wanted in production later, add `STATIC_ROOT = BASE_DIR /
+   "staticfiles"` and restore the step.
+4. **RDS SG was too narrow for App Runner.** Solved properly with the
+   VPC Connector route + an SG-to-SG ingress rule (not by widening
+   `:5432` to `0.0.0.0/0`).
+5. ⚠️ **Image architecture mismatch.** Docker on Apple Silicon
    defaulted to `linux/arm64`. App Runner runs `linux/amd64`. The
    container exec-format-errored before gunicorn ever started, hence
-   no application log group ever appeared. **`deploy_apprunner.sh`
-   now hard-codes `docker buildx --platform linux/amd64`.** This was
-   the real reason all earlier deploys failed.
+   no application log group ever appeared. The error message
+   "Check your configured port number" sent us on three wild-goose
+   chases. **`deploy_apprunner.sh` now hard-codes
+   `docker buildx --platform linux/amd64`.**
 
-If you see another mysterious "health check failed" with no
-application logs in CloudWatch, **check the image arch first**:
-
-```bash
-docker buildx imagetools inspect <ECR_URI>:latest | head -10
-```
-
-If you see `Platform: linux/arm64` (and nothing else), rebuild with
-`--platform linux/amd64`.
+   If you see another mysterious "health check failed" with no
+   application logs in CloudWatch, **check the image arch first**:
+   ```bash
+   docker buildx imagetools inspect <ECR_URI>:latest | head -10
+   ```
+   `Platform: linux/arm64` only → rebuild with `--platform linux/amd64`.
+6. **Bedrock unreachable from VPC connector.** App Runner ENIs in
+   "public" default subnets cannot actually reach the internet without
+   either a public IP attached or a NAT Gateway. Fixed with a VPC
+   **interface endpoint** for `bedrock-runtime` (3 ENIs across AZs,
+   ~$22/mo, cheaper than $32/mo NAT). The container's SG needs a
+   self-referencing `:443` ingress rule so its ENIs can connect to
+   the endpoint ENIs.
+7. **IAM policy too region-narrow.** Inference profile `us.anthropic.*`
+   is *registered* in us-east-1 but cross-region invocation routes the
+   actual `InvokeModel` to whichever AZ has capacity (often us-east-2
+   or us-west-2). The IAM policy must list foundation-model ARNs with
+   region `*`, not `us-east-1` only. `deploy/iam_bedrock_policy.json`
+   now uses `arn:aws:bedrock:*::foundation-model/...`.
 
 ## Smoke commands
 
