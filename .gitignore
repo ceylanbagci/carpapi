@@ -4,6 +4,8 @@ db.sqlite3
 .DS_Store
 .claude/
 input/google_api.json
+data/*.sqlite
+data/*.sqlite-journal
 
 # Pycharm folder
 .idea/
