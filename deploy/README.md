@@ -2,6 +2,10 @@
 
 End-to-end deployment of the chat pipeline from `architecture.md §12` to AWS.
 
+> **Going to production?** Read [`PRODUCTION.md`](PRODUCTION.md) — it covers serving choice (App Runner vs ECS vs Lambda vs EC2), CI/CD pipeline via GitHub Actions + OIDC, hardening checklist, cost projections, and the one-time rollout sequence.
+
+> **Want Claude to drive the deploy?** Use the [`carpapi-deployer`](../.claude/agents/carpapi-deployer.md) subagent — it knows the script order, the cost of every step, the rollback path, and refuses to touch resources outside the `Project=CarPapi` tag. Invoke it with: *"deploy CarPapi to AWS"* or *"tear down the AWS resources"*.
+
 ```
 Local Postgres :5433  ──► RDS Postgres 16 + pgvector (db.t4g.micro)
                            │
@@ -27,6 +31,10 @@ that needs AWS specifically is the API + DB.
 | `iam_bedrock_policy.json` | Least-privilege policy for the App Runner instance role to invoke Bedrock. |
 | `deploy_apprunner.sh` | Creates ECR repo, builds + pushes image, creates IAM roles, creates/updates the App Runner service. |
 | `aws_teardown.sh` | Destroys everything created by the two scripts above. Idempotent. |
+| `github_oidc_setup.sh` | One-time AWS-side: creates the GitHub OIDC provider + `CarPapiGitHubDeployer` IAM role so GitHub Actions can deploy without long-lived access keys. |
+| `PRODUCTION.md` | Serving comparison, CI/CD architecture, production hardening, cost projections. Read before going live. |
+| `../.github/workflows/ci.yml` | PR-time lint + Postgres+pgvector tests + Docker build smoke. |
+| `../.github/workflows/deploy.yml` | On-merge-to-main: OIDC auth → ECR push → App Runner deploy → smoke test. |
 
 ## Prereqs
 

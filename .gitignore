@@ -2,7 +2,12 @@
 migrations/
 db.sqlite3
 .DS_Store
-.claude/
+# Project-shared Claude Code agents under .claude/agents/ ARE tracked;
+# everything else under .claude/ (session state, caches) stays ignored.
+# Note: we use .claude/* (not .claude/) so the !.claude/agents/
+# negation can re-include the agents subtree.
+.claude/*
+!.claude/agents/
 input/google_api.json
 data/*.sqlite
 data/*.sqlite-journal

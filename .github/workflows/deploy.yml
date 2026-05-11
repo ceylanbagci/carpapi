@@ -1,0 +1,149 @@
+# CarPapi — Deploy: build image, push to ECR, deploy to App Runner.
+# Triggered on:
+#   - push to main (auto-deploy)
+#   - manual workflow_dispatch (so you can re-deploy without a code change)
+#
+# AWS auth: OIDC, no long-lived keys. The role ARN is set on the
+# AWS side by `deploy/github_oidc_setup.sh` and stored in the GitHub
+# repo variable `AWS_DEPLOY_ROLE_ARN`.
+#
+# Cost: ~5-8 min per run. ECR push + App Runner update are free
+# (you pay for ECR storage ~$0.10/GB/month and App Runner runtime).
+
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      force_rebuild:
+        description: "Rebuild image even if no code changed"
+        type: boolean
+        default: false
+
+concurrency:
+  # Only one production deploy at a time.
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  id-token: write      # for OIDC -> AWS
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPO: carpapi-api
+  APPRUNNER_SERVICE: carpapi-api
+
+jobs:
+  deploy:
+    name: build + push + deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: production    # gates on the GitHub "production" environment
+                               # if you turn on required reviewers there.
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set short SHA
+        id: sha
+        run: echo "short=$(git rev-parse --short=12 HEAD)" >> "$GITHUB_OUTPUT"
+
+      # 1. AWS auth via OIDC (no static keys in GitHub secrets)
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          role-session-name: carpapi-deploy-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify caller identity
+        run: aws sts get-caller-identity
+
+      # 2. Login to ECR
+      - name: Login to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # 3. Build + push image
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/Dockerfile
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+            ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPO }}:${{ steps.sha.outputs.short }}
+            ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPO }}:latest
+
+      # 4. Trigger App Runner to pull the new :latest tag.
+      #
+      # If the service has AutoDeploymentsEnabled=true (set by
+      # deploy/deploy_apprunner.sh), App Runner notices the push and
+      # starts deploying within ~60 sec. We still poke it explicitly
+      # to make the timing deterministic.
+      - name: Start App Runner deployment
+        id: deploy
+        run: |
+          ARN=$(aws apprunner list-services \
+            --query "ServiceSummaryList[?ServiceName=='${APPRUNNER_SERVICE}'].ServiceArn | [0]" \
+            --output text)
+          if [ -z "$ARN" ] || [ "$ARN" = "None" ]; then
+            echo "::error::App Runner service ${APPRUNNER_SERVICE} not found. Run deploy/deploy_apprunner.sh once first."
+            exit 1
+          fi
+          aws apprunner start-deployment --service-arn "$ARN" >/dev/null
+          echo "service_arn=$ARN" >> "$GITHUB_OUTPUT"
+          echo "Deployment started for $ARN"
+
+      # 5. Wait for the deployment to reach RUNNING
+      - name: Wait for healthy deployment
+        run: |
+          ARN="${{ steps.deploy.outputs.service_arn }}"
+          DEADLINE=$(( $(date +%s) + 900 ))   # 15 min
+          while [ "$(date +%s)" -lt "$DEADLINE" ]; do
+            STATUS=$(aws apprunner describe-service --service-arn "$ARN" \
+              --query 'Service.Status' --output text)
+            echo "[$(date -u +%FT%TZ)] status=$STATUS"
+            case "$STATUS" in
+              RUNNING)        echo "::notice::Service is RUNNING"; exit 0 ;;
+              CREATE_FAILED|DELETED|DELETE_FAILED|PAUSED)
+                echo "::error::Deployment ended in $STATUS"
+                aws apprunner list-operations --service-arn "$ARN" \
+                  --query 'OperationSummaryList[0:5]' --output table
+                exit 1 ;;
+            esac
+            sleep 20
+          done
+          echo "::error::Timed out waiting for RUNNING"
+          exit 1
+
+      # 6. Post-deploy smoke against the live URL
+      - name: Smoke test
+        run: |
+          ARN="${{ steps.deploy.outputs.service_arn }}"
+          URL=$(aws apprunner describe-service --service-arn "$ARN" \
+            --query 'Service.ServiceUrl' --output text)
+          echo "Live URL: https://$URL"
+
+          # /api/stats/ should always work
+          curl -fsS "https://$URL/api/stats/" | head -200
+
+          # /api/chat/ — single concrete query to verify Bedrock auth +
+          # DB connectivity. If this 200s, the whole chain is wired up.
+          curl -fsS -X POST "https://$URL/api/chat/" \
+            -H 'Content-Type: application/json' \
+            -d '{"message":"Toyota Camry under $25k"}' \
+            | jq '.diagnostics, .listings | length' \
+            || { echo "::error::Chat smoke failed"; exit 1; }
+
+      # 7. Tag the commit so we can correlate Sentry / CloudWatch back
+      - name: Annotate commit with deploy info
+        if: success()
+        run: |
+          echo "::notice title=Deployed ${{ steps.sha.outputs.short }}::live on App Runner"
