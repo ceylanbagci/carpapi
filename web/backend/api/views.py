@@ -1,7 +1,6 @@
 """REST API views — read-only list endpoints + a small stats endpoint
-for the dashboard. Cars / Makes / Models are derived aggregations over
-the ``listings`` table; the underlying schema does not have separate
-tables for them.
+for the dashboard, plus a RAG-backed ``/api/chat/`` endpoint that
+proxies user questions through ``carpapi.rag.answer``.
 
 All list endpoints accept the query params:
 
@@ -129,6 +128,17 @@ class ListingViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         return _apply_listing_filters(super().get_queryset(), self.request.query_params)
+
+
+@api_view(["GET"])
+def healthz(_request):
+    """Liveness probe — returns 200 without touching DB or Bedrock.
+
+    Use this as the App Runner / ECS / k8s health-check path. Use
+    ``/api/stats/`` only as a readiness probe, since it requires DB
+    connectivity.
+    """
+    return Response({"ok": True, "service": "carpapi-api"})
 
 
 @api_view(["GET"])
@@ -285,3 +295,118 @@ def models_list(request):
     paginator = StandardPagination()
     page = paginator.paginate_queryset(list(qs), request)
     return paginator.get_paginated_response(page)
+
+
+# --------------------------------------------------------------------------- #
+# Chat / RAG endpoint
+# --------------------------------------------------------------------------- #
+#
+# POST /api/chat/
+#   body: { "message": "Find me a Toyota Camry under $25k" }
+#   response: {
+#     "answer":  "...prose with [listing-id] citations...",
+#     "listings": [{ id, title, make, model, year, price, url, ... }, ...],
+#     "rationale": "Filtering by Toyota Camry; price ≤ $25,000",
+#     "car_query": { make: "Toyota", model: "Camry", price_max: 25000, ... },
+#     "plan_source": "llm" | "regex-fallback",
+#     "retrieval_path": "structured" | "vector",
+#     "cited_listing_ids": [...],
+#     "diagnostics": { hits, cache, hallucinated_ids_dropped }
+#   }
+#
+# Wired to ``carpapi.rag.answer.answer``. That module owns the TokenCache
+# and the Bedrock calls; this view is a thin HTTP shim.
+
+import logging
+
+_chat_log = logging.getLogger("api.chat")
+_RAG_CACHE = None  # populated lazily so import-time doesn't open Bedrock
+
+
+def _rag_cache():
+    """Process-local TokenCache so repeated questions hit the cache."""
+    global _RAG_CACHE
+    if _RAG_CACHE is None:
+        from carpapi.cache.bedrock_client import bedrock_chat
+        from carpapi.cache.token_cache import SQLiteBackend, TokenCache
+        _RAG_CACHE = TokenCache(
+            backend=SQLiteBackend("./data/token_cache.sqlite"),
+            llm_call=bedrock_chat(default_model="haiku", default_max_tokens=512),
+        )
+    return _RAG_CACHE
+
+
+@api_view(["POST"])
+def chat(request):
+    """RAG-backed chat: plan -> retrieve -> synthesize.
+
+    Auth: JWT Bearer. Real user accounts via accounts.User; the SPA
+    sends `Authorization: Bearer <access-token>` on every request.
+    Unauthenticated requests get DRF's 401 automatically.
+
+    Legacy passphrase path: if `CARPAPI_API_KEY` is set in settings,
+    we also accept `X-CarPapi-Auth: <key>` from clients that haven't
+    migrated to JWT yet. Empty key disables the legacy path entirely.
+    """
+    from django.conf import settings
+    from rest_framework import status
+
+    # Legacy passphrase fallback (only when no JWT was provided AND
+    # the env-var path is enabled). Lets old SPA bundles still work
+    # during the rollout window.
+    if not request.user.is_authenticated:
+        required_key = getattr(settings, "CARPAPI_API_KEY", "") or ""
+        if required_key:
+            sent = (request.headers.get("X-CarPapi-Auth") or "").strip()
+            if sent != required_key:
+                return Response(
+                    {"error": "unauthorized"},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+        # else: no JWT and no legacy key configured → fall through. Local
+        # dev mode (DJANGO_DEBUG=true) skips the gate.
+        elif not getattr(settings, "DEBUG", False):
+            return Response(
+                {"error": "unauthorized", "detail": "sign in to use the chat"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+    message = (request.data.get("message") or "").strip()
+    if not message:
+        return Response(
+            {"error": "missing required field 'message'"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    if len(message) > 2000:
+        return Response(
+            {"error": "message too long (max 2000 chars)"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    from carpapi.cache.pii_guard import PIIInPromptError
+    from carpapi.rag.answer import answer as rag_answer
+
+    try:
+        result = rag_answer(message, cache=_rag_cache(), limit=8)
+    except PIIInPromptError as exc:
+        return Response(
+            {"error": "pii_in_prompt", "detail": str(exc)},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    except Exception as exc:  # noqa: BLE001
+        _chat_log.exception("chat failed: %s", exc)
+        return Response(
+            {"error": "chat_pipeline_failure", "detail": type(exc).__name__},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    return Response({
+        "answer": result.answer,
+        "listings": result.listings,
+        "rationale": result.rationale,
+        "car_query": result.car_query,
+        "plan_source": result.plan_source,
+        "retrieval_path": result.retrieval_path,
+        "cited_listing_ids": result.cited_listing_ids,
+        "diagnostics": result.diagnostics,
+    })

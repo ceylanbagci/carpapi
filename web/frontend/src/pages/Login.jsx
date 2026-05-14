@@ -1,115 +1,234 @@
+/**
+ * /login — real email + password (no more shared passphrase).
+ *
+ * Calls api.login(email, password) which POSTs to
+ * /api/auth/login/ on the Django backend. On success the JWT
+ * tokens + user object are persisted to localStorage by api.js;
+ * we then bounce to `?next=` (default /chat).
+ *
+ * Google button links to the backend's /accounts/google/login/
+ * endpoint — allauth handles the full OAuth dance and bounces
+ * the user back to `?next=`.
+ */
 import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import AuthShell from "../components/AuthShell.jsx";
-import { login, DEMO_CREDENTIALS } from "../data/mockAuth.js";
+import {
+  Link,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
+import { motion } from "framer-motion";
+import { googleLoginUrl, login as apiLogin } from "../api.js";
+import { useAuth } from "../auth.jsx";
+
+const inputBaseStyle = {
+  width: "100%",
+  padding: "12px 16px",
+  borderRadius: 12,
+  border: "1px solid rgba(0,0,0,0.15)",
+  fontSize: 16,
+  background: "#fff",
+  color: "#111",
+  outline: "none",
+  boxSizing: "border-box",
+};
+
+const buttonBase = {
+  marginTop: 14,
+  width: "100%",
+  padding: "12px 16px",
+  borderRadius: 12,
+  border: "none",
+  fontSize: 16,
+  fontWeight: 600,
+  cursor: "pointer",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 10,
+};
 
 export default function Login() {
+  const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const { signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPwd, setShowPwd] = useState(false);
-  const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
-  const navigate = useNavigate();
-  const loc = useLocation();
-  const next = new URLSearchParams(loc.search).get("next") || "/account";
+  const [error, setError] = useState(null);
 
-  const onSubmit = (e) => {
+  const next = params.get("next") || "/chat";
+
+  const onSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
+    if (!email.trim() || !password || busy) return;
     setBusy(true);
-    const res = login({ email, password });
-    setBusy(false);
-    if (!res.ok) {
-      setError(res.error);
-      return;
-    }
-    navigate(next, { replace: true });
-  };
-
-  const useDemo = () => {
-    setEmail(DEMO_CREDENTIALS.email);
-    setPassword(DEMO_CREDENTIALS.password);
     setError(null);
+    try {
+      const auth = await apiLogin({ email: email.trim(), password });
+      signIn(auth);
+      navigate(next, { replace: true });
+    } catch (err) {
+      const detail =
+        (err.payload &&
+          (err.payload.detail ||
+            err.payload.non_field_errors?.[0] ||
+            err.payload.email?.[0] ||
+            err.payload.password?.[0])) ||
+        err.message ||
+        "Login failed. Check your credentials.";
+      setError(detail);
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
-    <AuthShell
-      eyebrow="Welcome back"
-      title="Sign in to CarPapi"
-      subtitle="Use your email and password. We'll keep you signed in on this device."
-      footerLinks={[
-        { text: "Don't have an account?", label: "Sign up", to: "/signup" },
-        { text: "Forgot your password?", label: "Reset it", to: "/forgot-password" },
-      ]}
-    >
-      <form className="d4-auth-form" onSubmit={onSubmit} noValidate>
-        <label className="d4-field">
-          <span className="d4-field-label">Email</span>
-          <input
-            type="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
-          />
-        </label>
+    <div className="d4-chat" data-theme="light">
+      <header className="d4-chat-header">
+        <Link to="/" className="d4-chat-brand" title="Back to landing">
+          <span className="logo-dot">C</span>
+          <span>CarPapi</span>
+        </Link>
+      </header>
 
-        <label className="d4-field">
-          <span className="d4-field-label">
-            Password
-            <Link to="/forgot-password" className="d4-field-link">
-              Forgot?
-            </Link>
-          </span>
-          <div className="d4-field-with-toggle">
+      <main className="d4-chat-scroller">
+        <motion.div
+          className="d4-chat-empty"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35 }}
+          style={{ maxWidth: 460 }}
+        >
+          <div className="d4-chat-empty-logo">
+            <i className="bi bi-shield-lock-fill"></i>
+          </div>
+          <h1 className="d4-chat-empty-title">Sign in to CarPapi</h1>
+          <p className="d4-chat-empty-sub">
+            Welcome back. Sign in to chat with live dealer inventory.
+          </p>
+
+          {/* Google */}
+          <a
+            href={googleLoginUrl(next)}
+            style={{
+              ...buttonBase,
+              marginTop: 18,
+              textDecoration: "none",
+              background: "#fff",
+              color: "#3c4043",
+              border: "1px solid #dadce0",
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+              <path
+                fill="#4285F4"
+                d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"
+              />
+              <path
+                fill="#34A853"
+                d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M3.964 10.707A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.707V4.96H.957A8.997 8.997 0 0 0 0 9c0 1.452.348 2.827.957 4.04l3.007-2.333z"
+              />
+              <path
+                fill="#EA4335"
+                d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.892 11.426 0 9 0 5.482 0 2.438 2.017.957 4.96L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z"
+              />
+            </svg>
+            Continue with Google
+          </a>
+
+          {/* Email / password */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              margin: "20px 0 14px",
+              color: "#666",
+              fontSize: 13,
+            }}
+          >
+            <hr style={{ flex: 1, border: 0, borderTop: "1px solid #e5e5e5" }} />
+            or
+            <hr style={{ flex: 1, border: 0, borderTop: "1px solid #e5e5e5" }} />
+          </div>
+
+          <form onSubmit={onSubmit} style={{ width: "100%" }} autoComplete="on">
             <input
-              type={showPwd ? "text" : "password"}
-              autoComplete="current-password"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              autoComplete="email"
+              autoFocus
+              disabled={busy}
               required
+              aria-label="Email"
+              style={inputBaseStyle}
+            />
+            <div style={{ height: 10 }} />
+            <input
+              type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder="Password"
+              autoComplete="current-password"
+              disabled={busy}
+              required
+              aria-label="Password"
+              style={inputBaseStyle}
             />
+
+            {error && (
+              <div
+                style={{
+                  marginTop: 12,
+                  padding: "10px 14px",
+                  borderRadius: 10,
+                  background: "rgba(220, 38, 38, 0.08)",
+                  color: "#b91c1c",
+                  fontSize: 14,
+                }}
+              >
+                {error}
+              </div>
+            )}
+
             <button
-              type="button"
-              className="d4-field-toggle"
-              onClick={() => setShowPwd((v) => !v)}
-              aria-label={showPwd ? "Hide password" : "Show password"}
+              type="submit"
+              disabled={!email.trim() || !password || busy}
+              style={{
+                ...buttonBase,
+                background: "#111",
+                color: "#fff",
+                opacity: !email.trim() || !password || busy ? 0.55 : 1,
+              }}
             >
-              <i className={`bi ${showPwd ? "bi-eye-slash" : "bi-eye"}`}></i>
+              {busy ? "Signing in…" : "Sign in"}
             </button>
-          </div>
-        </label>
+          </form>
 
-        <label className="d4-checkbox">
-          <input type="checkbox" defaultChecked />
-          <span>Stay signed in on this device</span>
-        </label>
-
-        {error && <div className="d4-form-error">{error}</div>}
-
-        <button type="submit" className="d4-form-submit" disabled={busy}>
-          {busy ? "Signing in…" : "Sign in"}
-        </button>
-
-        <div className="d4-form-divider">
-          <span>or</span>
-        </div>
-
-        <div className="d4-sso-row">
-          <button type="button" className="d4-sso-btn" disabled title="Coming soon">
-            <i className="bi bi-google"></i> Google
-          </button>
-          <button type="button" className="d4-sso-btn" disabled title="Coming soon">
-            <i className="bi bi-apple"></i> Apple
-          </button>
-        </div>
-
-        <button type="button" className="d4-form-demo" onClick={useDemo}>
-          Fill demo credentials
-        </button>
-      </form>
-    </AuthShell>
+          <p
+            style={{
+              marginTop: 18,
+              fontSize: 14,
+              color: "#666",
+              textAlign: "center",
+            }}
+          >
+            New to CarPapi?{" "}
+            <Link
+              to={`/register?next=${encodeURIComponent(next)}`}
+              style={{ color: "#111", fontWeight: 600 }}
+            >
+              Create an account
+            </Link>
+          </p>
+        </motion.div>
+      </main>
+    </div>
   );
 }

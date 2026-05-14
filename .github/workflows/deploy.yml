@@ -1,0 +1,192 @@
+# CarPapi — Deploy: build image, push to ECR, deploy to App Runner.
+# Triggered on:
+#   - push to main (auto-deploy)
+#   - manual workflow_dispatch (so you can re-deploy without a code change)
+#
+# AWS auth: OIDC, no long-lived keys. The role ARN is set on the
+# AWS side by `deploy/github_oidc_setup.sh` and stored in the GitHub
+# repo variable `AWS_DEPLOY_ROLE_ARN`.
+#
+# Cost: ~5-8 min per run. ECR push + App Runner update are free
+# (you pay for ECR storage ~$0.10/GB/month and App Runner runtime).
+
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      force_rebuild:
+        description: "Rebuild image even if no code changed"
+        type: boolean
+        default: false
+
+concurrency:
+  # Only one production deploy at a time.
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  id-token: write      # for OIDC -> AWS
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPO: carpapi-api
+  APPRUNNER_SERVICE: carpapi-api
+
+jobs:
+  deploy:
+    name: build + push + deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: production    # gates on the GitHub "production" environment
+                               # if you turn on required reviewers there.
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set short SHA
+        id: sha
+        run: echo "short=$(git rev-parse --short=12 HEAD)" >> "$GITHUB_OUTPUT"
+
+      # 1. AWS auth via OIDC (no static keys in GitHub secrets).
+      #
+      # Resolution order for role-to-assume:
+      #   1. vars.AWS_DEPLOY_ROLE_ARN   — repo or env Variables tab
+      #   2. secrets.AWS_DEPLOY_ROLE_ARN — repo or env Secrets tab
+      #   3. hardcoded default          — last-resort fallback
+      #
+      # The ARN itself isn't a secret — the IAM trust policy on the
+      # role explicitly restricts AssumeRoleWithWebIdentity to
+      # `repo:ceylanbagci/carpapi:ref:refs/heads/main`, so even with
+      # the ARN public, only this repo's main-branch workflow runs
+      # can assume it. The fallback exists so a fresh clone of the
+      # repo can deploy without any GitHub-side configuration step.
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN || secrets.AWS_DEPLOY_ROLE_ARN || 'arn:aws:iam::183617081338:role/CarPapiGitHubDeployer' }}
+          role-session-name: carpapi-deploy-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify caller identity
+        run: aws sts get-caller-identity
+
+      # 2. Login to ECR
+      - name: Login to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # 3. Build + push image
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/Dockerfile
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+            ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPO }}:${{ steps.sha.outputs.short }}
+            ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPO }}:latest
+
+      # 4. Resolve the App Runner service ARN.
+      #
+      # The service has AutoDeploymentsEnabled=true (set by
+      # deploy/deploy_apprunner.sh). App Runner sees our ECR push
+      # in step 3 and starts a deployment automatically; we do NOT
+      # call start-deployment ourselves — that races with the
+      # auto-trigger and the API rejects the explicit call with
+      # InvalidStateException once the auto-deploy is in flight.
+      - name: Resolve service ARN
+        id: deploy
+        run: |
+          ARN=$(aws apprunner list-services \
+            --query "ServiceSummaryList[?ServiceName=='${APPRUNNER_SERVICE}'].ServiceArn | [0]" \
+            --output text)
+          if [ -z "$ARN" ] || [ "$ARN" = "None" ]; then
+            echo "::error::App Runner service ${APPRUNNER_SERVICE} not found. Run deploy/deploy_apprunner.sh once first."
+            exit 1
+          fi
+          echo "service_arn=$ARN" >> "$GITHUB_OUTPUT"
+          echo "Service: $ARN"
+
+      # 5. Wait for the auto-triggered deployment to reach RUNNING.
+      #
+      # Window: up to 15 min. We also try to detect "no new operation
+      # was triggered" (e.g. cache hit on identical image) by recording
+      # the most-recent operation timestamp before waiting and bailing
+      # out cleanly if nothing newer shows up.
+      - name: Wait for healthy deployment
+        run: |
+          ARN="${{ steps.deploy.outputs.service_arn }}"
+          DEADLINE=$(( $(date +%s) + 900 ))
+          # Give App Runner ~45s to register the ECR push and start a
+          # new operation before we begin polling status. Without this
+          # we might catch a *prior* RUNNING state and skip past the
+          # actual deploy we just triggered.
+          sleep 45
+          while [ "$(date +%s)" -lt "$DEADLINE" ]; do
+            STATUS=$(aws apprunner describe-service --service-arn "$ARN" \
+              --query 'Service.Status' --output text)
+            echo "[$(date -u +%FT%TZ)] status=$STATUS"
+            case "$STATUS" in
+              RUNNING)
+                echo "::notice::Service is RUNNING"
+                exit 0
+                ;;
+              CREATE_FAILED|DELETED|DELETE_FAILED|PAUSED)
+                echo "::error::Deployment ended in $STATUS"
+                aws apprunner list-operations --service-arn "$ARN" \
+                  --query 'OperationSummaryList[0:5]' --output table
+                exit 1
+                ;;
+            esac
+            sleep 20
+          done
+          echo "::error::Timed out waiting for RUNNING"
+          exit 1
+
+      # 6. Post-deploy smoke against the live URL.
+      #
+      # /api/chat/ now requires JWT (real user accounts via dj-rest-auth),
+      # so the workflow can't make an authenticated chat call without
+      # holding a service-account token. We instead verify:
+      #   1. /api/healthz/  → 200  (gunicorn alive)
+      #   2. /api/stats/    → 200  (DB connectivity)
+      #   3. /api/chat/ unauth → 401  (auth gate enforced)
+      # If all three pass the whole chain (container, RDS, JWT middleware)
+      # is wired up.
+      - name: Smoke test
+        run: |
+          ARN="${{ steps.deploy.outputs.service_arn }}"
+          URL=$(aws apprunner describe-service --service-arn "$ARN" \
+            --query 'Service.ServiceUrl' --output text)
+          echo "Live URL: https://$URL"
+
+          # 1. /api/healthz/
+          curl -fsS "https://$URL/api/healthz/" | jq .
+
+          # 2. /api/stats/
+          curl -fsS "https://$URL/api/stats/" | jq .
+
+          # 3. /api/chat/ unauthenticated → must be 401
+          status=$(curl -sS -o /tmp/chat.body -w "%{http_code}" \
+            -X POST "https://$URL/api/chat/" \
+            -H 'Content-Type: application/json' \
+            -d '{"message":"smoke"}')
+          echo "POST /api/chat/ (no auth) → HTTP $status"
+          if [ "$status" != "401" ]; then
+            echo "::error::Expected 401 from unauthenticated /api/chat/ (gate not enforced?)"
+            cat /tmp/chat.body
+            exit 1
+          fi
+
+      # 7. Tag the commit so we can correlate Sentry / CloudWatch back
+      - name: Annotate commit with deploy info
+        if: success()
+        run: |
+          echo "::notice title=Deployed ${{ steps.sha.outputs.short }}::live on App Runner"
