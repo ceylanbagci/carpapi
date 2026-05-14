@@ -3,11 +3,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>CarPapi — Premium dealer inventory, in real time</title>
+    <title>CarPapi — find your next car by chatting</title>
     <meta
       name="description"
-      content="CarPapi indexes thousands of listings across hundreds of dealers — searchable, filterable, and updated as the lot changes."
+      content="CarPapi indexes thousands of used-car listings across hundreds of dealers — searchable in plain English, updated as inventory changes."
     />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -15,960 +16,291 @@
       rel="stylesheet"
     />
     <style>
-      /* ---------- Tokens ---------- */
       :root {
-        --bg: #0a1023;
-        --bg-2: #0e1530;
-        --bg-3: #131b3a;
-        --text: #f5f7fa;
-        --muted: #93a0b8;
-        --accent: #4f9eff;
-        --accent-strong: #2563eb;
-        --accent-glow: rgba(79, 158, 255, 0.25);
+        --bg: #0b0d12;
+        --bg-soft: #11141c;
+        --fg: #f6f7fb;
+        --fg-muted: #9aa3b2;
+        --accent: #ffd86b;
+        --accent-fg: #1a1c20;
         --border: rgba(255, 255, 255, 0.08);
-        --card-bg: rgba(255, 255, 255, 0.04);
-        --card-border: rgba(255, 255, 255, 0.07);
-        --container: 1180px;
       }
-
-      *,
-      *::before,
-      *::after {
-        box-sizing: border-box;
-      }
-
-      html {
-        scroll-behavior: smooth;
-      }
-
-      html,
-      body {
+      * { box-sizing: border-box; }
+      html, body {
         margin: 0;
         padding: 0;
+        font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
         background: var(--bg);
-        color: var(--text);
-        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
-          Roboto, sans-serif;
-        font-size: 16px;
-        line-height: 1.5;
+        color: var(--fg);
         -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-        overflow-x: hidden;
+        line-height: 1.5;
       }
-
-      a {
-        color: inherit;
-        text-decoration: none;
-      }
-
-      .container {
-        max-width: var(--container);
-        margin: 0 auto;
-        padding: 0 1.5rem;
-      }
-
-      .eyebrow {
-        display: inline-block;
-        font-size: 0.78rem;
-        font-weight: 600;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        color: var(--accent);
-        margin-bottom: 1.1rem;
-      }
-
-      .btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.85rem 1.4rem;
-        border-radius: 999px;
-        font-weight: 600;
-        font-size: 0.98rem;
-        cursor: pointer;
-        border: 1px solid transparent;
-        transition:
-          transform 0.15s ease,
-          box-shadow 0.2s ease,
-          background 0.2s ease,
-          border-color 0.2s ease;
-        text-decoration: none;
-      }
-      .btn-primary {
-        background: var(--accent);
-        color: #061025;
-        box-shadow: 0 6px 24px var(--accent-glow);
-      }
-      .btn-primary:hover {
-        transform: translateY(-2px);
-        background: #6cb1ff;
-        box-shadow: 0 12px 36px var(--accent-glow);
-      }
-      .btn-ghost {
-        background: transparent;
-        color: var(--text);
-        border-color: var(--border);
-      }
-      .btn-ghost:hover {
-        border-color: var(--accent);
-        color: var(--accent);
-      }
-
-      /* ---------- Nav ---------- */
-      .nav {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        z-index: 50;
-        padding: 1.1rem 1.5rem;
+      a { color: inherit; text-decoration: none; }
+      .wrap { max-width: 980px; margin: 0 auto; padding: 24px 24px 80px; }
+      header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        backdrop-filter: blur(8px) saturate(140%);
-        background: rgba(10, 16, 35, 0.55);
-        border-bottom: 1px solid transparent;
-        transition: background 0.25s, border-color 0.25s;
+        padding: 12px 0;
+        margin-bottom: 60px;
       }
-      .nav.scrolled {
-        background: rgba(10, 16, 35, 0.85);
-        border-bottom-color: var(--border);
+      .brand { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 18px; }
+      .logo-dot {
+        width: 32px; height: 32px; border-radius: 8px;
+        background: var(--accent); color: var(--accent-fg);
+        display: grid; place-items: center; font-weight: 800;
       }
-      .nav-brand {
-        display: flex;
-        align-items: center;
-        gap: 0.6rem;
-        font-weight: 700;
-        font-size: 1.05rem;
-        letter-spacing: -0.01em;
+      nav { display: flex; gap: 6px; flex-wrap: wrap; }
+      nav a {
+        padding: 8px 14px; border-radius: 8px;
+        color: var(--fg-muted); font-weight: 500; font-size: 14px;
+        transition: 0.15s;
       }
-      .nav-brand .dot {
-        width: 26px;
-        height: 26px;
-        border-radius: 7px;
-        background: var(--accent);
-        display: grid;
-        place-items: center;
-        color: #061025;
-        font-weight: 800;
+      nav a:hover { background: var(--bg-soft); color: var(--fg); }
+      nav a.primary {
+        background: var(--accent); color: var(--accent-fg); font-weight: 700;
       }
-      .nav-links {
-        display: flex;
-        align-items: center;
-        gap: 1.5rem;
-        font-size: 0.95rem;
-        color: var(--muted);
-      }
-      .nav-links a:hover {
-        color: var(--text);
-      }
-      .nav-links .btn {
-        padding: 0.55rem 1rem;
-        font-size: 0.88rem;
-      }
-
-      /* ---------- Hero ---------- */
-      .hero {
-        position: relative;
-        height: 100vh;
-        min-height: 640px;
-        overflow: hidden;
-        display: grid;
-        place-items: center;
-        text-align: center;
-      }
-
-      .hero-video {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        z-index: 0;
-        will-change: transform;
-        filter: saturate(1.05) contrast(1.05);
-      }
-
-      .hero-overlay {
-        position: absolute;
-        inset: 0;
-        z-index: 1;
-        background:
-          radial-gradient(
-            65% 60% at 50% 40%,
-            rgba(10, 16, 35, 0.35) 0%,
-            rgba(10, 16, 35, 0.78) 70%,
-            rgba(10, 16, 35, 0.95) 100%
-          ),
-          linear-gradient(
-            180deg,
-            rgba(10, 16, 35, 0.6) 0%,
-            rgba(10, 16, 35, 0.2) 35%,
-            rgba(10, 16, 35, 0.95) 100%
-          );
-      }
-
-      .hero-content {
-        position: relative;
-        z-index: 2;
-        max-width: 880px;
-        padding: 0 1.5rem;
-      }
-
+      nav a.primary:hover { filter: brightness(1.05); }
+      .hero { margin: 40px 0 56px; }
       .hero h1 {
-        font-size: clamp(2.4rem, 6vw, 4.6rem);
-        font-weight: 800;
-        line-height: 1.05;
-        letter-spacing: -0.03em;
-        margin: 0 0 1.4rem;
-      }
-      .hero h1 .accent {
-        background: linear-gradient(
-          120deg,
-          #ffffff 0%,
-          #b9d6ff 50%,
-          var(--accent) 100%
-        );
-        -webkit-background-clip: text;
-        background-clip: text;
-        -webkit-text-fill-color: transparent;
-      }
-      .hero p {
-        font-size: clamp(1.05rem, 1.4vw, 1.25rem);
-        color: var(--muted);
-        max-width: 640px;
-        margin: 0 auto 2rem;
-        line-height: 1.6;
-      }
-      .hero-ctas {
-        display: flex;
-        gap: 1rem;
-        justify-content: center;
-        flex-wrap: wrap;
-      }
-
-      .scroll-hint {
-        position: absolute;
-        bottom: 2.2rem;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 2;
-        color: var(--muted);
-        font-size: 0.78rem;
-        letter-spacing: 0.16em;
-        text-transform: uppercase;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.6rem;
-      }
-      .scroll-hint .line {
-        width: 1px;
-        height: 36px;
-        background: linear-gradient(
-          180deg,
-          transparent,
-          var(--accent),
-          transparent
-        );
-        animation: scrollLine 2.4s ease-in-out infinite;
-      }
-      @keyframes scrollLine {
-        0%,
-        100% {
-          opacity: 0.3;
-          transform: scaleY(0.6);
-        }
-        50% {
-          opacity: 1;
-          transform: scaleY(1);
-        }
-      }
-
-      /* ---------- Section base ---------- */
-      section {
-        position: relative;
-      }
-      .section {
-        padding: 7rem 0;
-      }
-      .section-head {
-        text-align: center;
-        max-width: 720px;
-        margin: 0 auto 4rem;
-      }
-      .section-head h2 {
-        font-size: clamp(2rem, 3.8vw, 2.8rem);
-        font-weight: 700;
-        letter-spacing: -0.02em;
+        font-size: clamp(34px, 6vw, 56px);
         line-height: 1.1;
-        margin: 0 0 1rem;
-      }
-      .section-head p {
-        color: var(--muted);
-        font-size: 1.05rem;
-        line-height: 1.6;
-        margin: 0;
-      }
-
-      /* ---------- Features ---------- */
-      .features {
-        background:
-          radial-gradient(
-            45% 60% at 100% 0%,
-            rgba(79, 158, 255, 0.08),
-            transparent 60%
-          ),
-          radial-gradient(
-            45% 60% at 0% 100%,
-            rgba(79, 158, 255, 0.06),
-            transparent 60%
-          );
-      }
-
-      .feature-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 1.5rem;
-      }
-
-      .feature-card {
-        background: var(--card-bg);
-        border: 1px solid var(--card-border);
-        border-radius: 18px;
-        padding: 2.25rem;
-        position: relative;
-        overflow: hidden;
-        transition:
-          transform 0.3s ease,
-          border-color 0.3s ease,
-          box-shadow 0.3s ease;
-      }
-      .feature-card::before {
-        content: "";
-        position: absolute;
-        inset: -1px;
-        border-radius: 18px;
-        padding: 1px;
-        background: linear-gradient(
-          135deg,
-          transparent 30%,
-          rgba(79, 158, 255, 0.4),
-          transparent 70%
-        );
-        -webkit-mask: linear-gradient(#fff 0 0) content-box,
-          linear-gradient(#fff 0 0);
-        -webkit-mask-composite: xor;
-        mask-composite: exclude;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-        pointer-events: none;
-      }
-      .feature-card:hover {
-        transform: translateY(-4px);
-        border-color: rgba(79, 158, 255, 0.35);
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-      }
-      .feature-card:hover::before {
-        opacity: 1;
-      }
-
-      .feature-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 12px;
-        background: rgba(79, 158, 255, 0.12);
-        display: grid;
-        place-items: center;
-        margin-bottom: 1.5rem;
-        color: var(--accent);
-      }
-      .feature-icon svg {
-        width: 24px;
-        height: 24px;
-      }
-      .feature-card h3 {
-        font-size: 1.25rem;
-        font-weight: 600;
-        margin: 0 0 0.7rem;
-        letter-spacing: -0.01em;
-      }
-      .feature-card p {
-        color: var(--muted);
-        font-size: 0.97rem;
-        margin: 0;
-        line-height: 1.6;
-      }
-
-      /* ---------- Timeline (horizontal scroll) ---------- */
-      .timeline-wrap {
-        background: var(--bg-2);
-        border-top: 1px solid var(--border);
-        border-bottom: 1px solid var(--border);
-        overflow: hidden;
-      }
-      .timeline-pin {
-        height: 100vh;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        position: relative;
-      }
-      .timeline-head {
-        padding: 0 1.5rem;
-        margin-bottom: 3rem;
-        max-width: var(--container);
-        width: 100%;
-        margin-left: auto;
-        margin-right: auto;
-      }
-      .timeline-head h2 {
-        font-size: clamp(1.8rem, 3.5vw, 2.6rem);
-        font-weight: 700;
-        margin: 0.5rem 0 0;
+        font-weight: 800;
+        margin: 0 0 18px;
         letter-spacing: -0.02em;
       }
-      .timeline-track {
-        display: flex;
-        gap: 1.5rem;
-        padding: 0 6vw;
-        will-change: transform;
+      .hero h1 em { font-style: normal; color: var(--accent); }
+      .hero p.sub {
+        font-size: 18px;
+        color: var(--fg-muted);
+        max-width: 620px;
+        margin: 0 0 32px;
       }
-      .timeline-step {
-        flex: 0 0 380px;
-        background: var(--bg-3);
-        border: 1px solid var(--card-border);
-        border-radius: 18px;
-        padding: 2rem;
-        position: relative;
+      .cta-row { display: flex; flex-wrap: wrap; gap: 12px; }
+      .btn {
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: 14px 22px; border-radius: 12px;
+        border: 1px solid var(--border);
+        font-weight: 600; font-size: 15px; cursor: pointer;
+        transition: 0.15s;
       }
-      .timeline-step::before {
-        content: "";
-        position: absolute;
-        top: -1px;
-        left: 2rem;
-        width: 36px;
-        height: 3px;
-        background: var(--accent);
-        border-radius: 0 0 3px 3px;
+      .btn.primary {
+        background: var(--accent); color: var(--accent-fg);
+        border-color: var(--accent);
       }
-      .timeline-quarter {
-        font-size: 0.78rem;
+      .btn.primary:hover { filter: brightness(1.05); transform: translateY(-1px); }
+      .btn.secondary { background: transparent; color: var(--fg); }
+      .btn.secondary:hover { background: var(--bg-soft); }
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin: 56px 0;
+        padding: 28px;
+        background: var(--bg-soft);
+        border-radius: 16px;
+        border: 1px solid var(--border);
+      }
+      .stat .num {
+        font-size: clamp(22px, 3vw, 28px);
         font-weight: 700;
-        color: var(--accent);
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        margin-bottom: 1rem;
-      }
-      .timeline-step h3 {
-        font-size: 1.4rem;
-        font-weight: 600;
-        margin: 0 0 0.7rem;
         letter-spacing: -0.01em;
       }
-      .timeline-step p {
-        color: var(--muted);
-        margin: 0;
-        font-size: 0.97rem;
-        line-height: 1.6;
+      .stat .label {
+        font-size: 12px;
+        color: var(--fg-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-top: 4px;
       }
-      .timeline-progress {
-        position: absolute;
-        bottom: 1.5rem;
-        left: 50%;
-        transform: translateX(-50%);
-        width: min(680px, 60vw);
-        height: 2px;
-        background: rgba(255, 255, 255, 0.08);
-        border-radius: 2px;
-        overflow: hidden;
-      }
-      .timeline-progress-bar {
-        height: 100%;
-        width: 0%;
-        background: linear-gradient(90deg, var(--accent), #93c5fd);
-        border-radius: 2px;
-      }
-
-      /* ---------- Contact ---------- */
-      .contact {
-        background:
-          radial-gradient(
-            45% 60% at 50% 0%,
-            rgba(79, 158, 255, 0.07),
-            transparent 70%
-          );
-      }
-      .contact-card {
-        background: var(--card-bg);
-        border: 1px solid var(--card-border);
-        border-radius: 24px;
-        padding: 3rem;
-        max-width: 720px;
-        margin: 0 auto;
-      }
-      .contact-form {
+      .features {
         display: grid;
-        gap: 1rem;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+        margin: 16px 0 48px;
       }
-      .field {
-        display: grid;
-        gap: 0.4rem;
+      @media (max-width: 720px) {
+        .stats { grid-template-columns: repeat(2, 1fr); }
+        .features { grid-template-columns: 1fr; }
       }
-      .field label {
-        font-size: 0.85rem;
-        color: var(--muted);
-        font-weight: 500;
-      }
-      .field input,
-      .field textarea {
-        background: rgba(255, 255, 255, 0.03);
+      .feature {
+        padding: 22px;
+        background: var(--bg-soft);
+        border-radius: 12px;
         border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 0.85rem 1rem;
-        color: var(--text);
-        font-family: inherit;
-        font-size: 0.98rem;
-        outline: none;
-        transition: border-color 0.2s ease, background 0.2s ease;
       }
-      .field input:focus,
-      .field textarea:focus {
-        border-color: var(--accent);
-        background: rgba(79, 158, 255, 0.05);
+      .feature .ico { font-size: 22px; margin-bottom: 8px; }
+      .feature h3 { margin: 0 0 6px; font-size: 16px; font-weight: 700; }
+      .feature p { margin: 0; color: var(--fg-muted); font-size: 14px; }
+      .chat-preview {
+        margin: 56px 0;
+        background: var(--bg-soft);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 28px;
       }
-      .field textarea {
-        min-height: 120px;
-        resize: vertical;
+      .chat-preview h2 { margin: 0 0 18px; font-size: 20px; font-weight: 700; }
+      .bubble {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 14px 16px;
+        margin-bottom: 10px;
+        font-size: 14px;
+        line-height: 1.55;
       }
-      .row-2 {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1rem;
+      .bubble.user {
+        background: rgba(255, 216, 107, 0.06);
+        border-color: rgba(255, 216, 107, 0.15);
       }
-
-      /* ---------- Footer ---------- */
+      .bubble strong { color: var(--accent); }
       footer {
+        margin-top: 56px;
+        padding-top: 24px;
         border-top: 1px solid var(--border);
-        padding: 2.5rem 0;
-        color: var(--muted);
-        font-size: 0.88rem;
-      }
-      footer .container {
         display: flex;
-        align-items: center;
         justify-content: space-between;
         flex-wrap: wrap;
-        gap: 1rem;
+        gap: 8px;
+        font-size: 13px;
+        color: var(--fg-muted);
       }
-      footer a:hover {
-        color: var(--text);
-      }
-
-      /* ---------- Responsive ---------- */
-      @media (max-width: 880px) {
-        .feature-grid {
-          grid-template-columns: 1fr;
-        }
-        .row-2 {
-          grid-template-columns: 1fr;
-        }
-        .nav-links a:not(.btn) {
-          display: none;
-        }
-        .timeline-step {
-          flex: 0 0 78vw;
-        }
-      }
-
-      /* Reduced motion */
-      @media (prefers-reduced-motion: reduce) {
-        *,
-        *::before,
-        *::after {
-          animation: none !important;
-          transition: none !important;
-        }
+      footer a { color: var(--fg-muted); }
+      footer a:hover { color: var(--fg); }
+      .health { display: inline-flex; align-items: center; gap: 6px; }
+      .health-dot {
+        width: 8px; height: 8px; border-radius: 50%;
+        background: #22c55e; box-shadow: 0 0 6px #22c55e;
       }
     </style>
   </head>
   <body>
-    <header class="nav" id="nav">
-      <a href="#" class="nav-brand">
-        <span class="dot">C</span>
-        <span>CarPapi</span>
-      </a>
-      <nav class="nav-links">
-        <a href="#features">Features</a>
-        <a href="/pricing">Pricing</a>
-        <a href="/dashboard">Dashboard</a>
-        <a href="/login">Log in</a>
-        <a href="/signup" class="btn btn-ghost">Sign up</a>
-        <a href="/chat" class="btn btn-primary">Try It</a>
-      </nav>
-    </header>
+    <div class="wrap">
+      <header>
+        <div class="brand">
+          <span class="logo-dot">C</span>
+          <span>CarPapi</span>
+        </div>
+        <nav>
+          <a href="/pricing">Pricing</a>
+          <a href="/login">Sign in</a>
+          <a href="/signup" class="primary">Get started</a>
+        </nav>
+      </header>
 
-    <!-- ===================== HERO ===================== -->
-    <section class="hero">
-      <video
-        class="hero-video"
-        src="carpapi.mp4"
-        autoplay
-        muted
-        loop
-        playsinline
-        preload="auto"
-      ></video>
-      <div class="hero-overlay"></div>
-
-      <div class="hero-content">
-        <span class="eyebrow" data-anim="hero">Live dealer inventory</span>
-        <h1 data-anim="hero">
-          Premium dealer inventory,
-          <br />
-          <span class="accent">in real time.</span>
+      <section class="hero">
+        <h1>
+          Find your next car by <em>chatting</em>.<br />
+          Real inventory. Real dealers.
         </h1>
-        <p data-anim="hero">
-          CarPapi indexes thousands of listings across hundreds of dealers —
-          searchable, filterable, and updated as the lot changes.
+        <p class="sub">
+          CarPapi indexes thousands of listings across hundreds of dealers and
+          lets you search in plain English. Ask for what you want — make,
+          model, budget, mileage, region — and get matched against live
+          inventory in seconds.
         </p>
-        <div class="hero-ctas" data-anim="hero">
-          <a href="/chat" class="btn btn-primary">
-            Try It
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M5 12h14M13 6l6 6-6 6"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
+        <div class="cta-row">
+          <a class="btn primary" href="/chat">
+            Try the chat
+            <span aria-hidden="true">→</span>
           </a>
-          <a href="#features" class="btn btn-ghost">Explore the product</a>
+          <a class="btn secondary" href="/signup">Create an account</a>
+          <a class="btn secondary" href="/dashboard">Browse inventory</a>
         </div>
-      </div>
+      </section>
 
-      <div class="scroll-hint">
-        <span>Scroll</span>
-        <span class="line"></span>
-      </div>
-    </section>
+      <section class="stats" id="stats">
+        <div class="stat">
+          <div class="num" id="stat-listings">4,391</div>
+          <div class="label">Live listings</div>
+        </div>
+        <div class="stat">
+          <div class="num" id="stat-dealers">385</div>
+          <div class="label">Dealers indexed</div>
+        </div>
+        <div class="stat">
+          <div class="num" id="stat-makes">42</div>
+          <div class="label">Makes covered</div>
+        </div>
+        <div class="stat">
+          <div class="num" id="stat-models">456</div>
+          <div class="label">Distinct models</div>
+        </div>
+      </section>
 
-    <!-- ===================== FEATURES ===================== -->
-    <section class="section features" id="features">
-      <div class="container">
-        <div class="section-head">
-          <span class="eyebrow">Built for shoppers and operators</span>
-          <h2>One layer over every dealer lot.</h2>
+      <section class="features">
+        <div class="feature">
+          <div class="ico">💬</div>
+          <h3>Natural-language search</h3>
           <p>
-            Real-time signals, every major make, and zero aggregator middleman —
-            all wrapped in a clean operator interface.
+            "2020+ Toyota Camry under $25k near NJ" returns exactly that.
+            No filter clicking.
           </p>
         </div>
-
-        <div class="feature-grid">
-          <article class="feature-card" data-feature>
-            <div class="feature-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M5 12h14"/>
-                <path d="M12 5l7 7-7 7"/>
-              </svg>
-            </div>
-            <h3>Live inventory</h3>
-            <p>
-              Listings refresh continuously from the dealer network — what you
-              see is what's on the lot right now, not last week's snapshot.
-            </p>
-          </article>
-
-          <article class="feature-card" data-feature>
-            <div class="feature-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="11" cy="11" r="7"/>
-                <path d="M21 21l-4.3-4.3"/>
-              </svg>
-            </div>
-            <h3>Filter that scales</h3>
-            <p>
-              Make, model, year, price, mileage, region — every column is
-              sortable, every field is searchable, no premium tier required.
-            </p>
-          </article>
-
-          <article class="feature-card" data-feature>
-            <div class="feature-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 12l2-9h14l2 9"/>
-                <path d="M3 12v8h18v-8"/>
-                <path d="M7 16h2"/>
-                <path d="M15 16h2"/>
-              </svg>
-            </div>
-            <h3>Direct from dealers</h3>
-            <p>
-              Sourced from the dealer's own site — no aggregator stale data, no
-              hidden listings, no surprise markups when you walk on the lot.
-            </p>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <!-- ===================== TIMELINE (HORIZONTAL SCROLL) ===================== -->
-    <section class="timeline-wrap" id="timeline">
-      <div class="timeline-pin">
-        <div class="timeline-head container">
-          <span class="eyebrow">Product timeline</span>
-          <h2>From crawler to category.</h2>
-        </div>
-
-        <div class="timeline-track" id="timelineTrack">
-          <article class="timeline-step">
-            <div class="timeline-quarter">2024 · Q1</div>
-            <h3>Crawler launch</h3>
-            <p>
-              First scrape pipeline goes live. 1,000 listings/day from a
-              hand-picked NJ dealer roster, normalized into a single schema.
-            </p>
-          </article>
-
-          <article class="timeline-step">
-            <div class="timeline-quarter">2024 · Q3</div>
-            <h3>Dealer roster</h3>
-            <p>
-              491 New Jersey dealers indexed. CMS detection adds Dealer.com,
-              Dealer Inspire, and DealerOn parsers for structured inventory.
-            </p>
-          </article>
-
-          <article class="timeline-step">
-            <div class="timeline-quarter">2025 · Q1</div>
-            <h3>Real-time updates</h3>
-            <p>
-              Sub-minute revalidation per dealer. Token-cached LLM normalization
-              keeps cost flat as volume grows past 25k listings.
-            </p>
-          </article>
-
-          <article class="timeline-step">
-            <div class="timeline-quarter">2025 · Q4</div>
-            <h3>Natural-language search</h3>
-            <p>
-              Chat-API ships. "2020+ Camry under $25k near me" plans the query,
-              streams results, and grounds every answer in live inventory.
-            </p>
-          </article>
-
-          <article class="timeline-step">
-            <div class="timeline-quarter">2026 · Q2</div>
-            <h3>National rollout</h3>
-            <p>
-              Geographic expansion beyond NJ. Pilot launches in PA, NY, CT;
-              dealer SLA + monitoring framework moves to multi-region.
-            </p>
-          </article>
-        </div>
-
-        <div class="timeline-progress" aria-hidden="true">
-          <div class="timeline-progress-bar" id="timelineProgress"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ===================== CONTACT ===================== -->
-    <section class="section contact" id="contact">
-      <div class="container">
-        <div class="section-head">
-          <span class="eyebrow" data-anim="contact">Get in touch</span>
-          <h2 data-anim="contact">
-            Ready to see your inventory in real time?
-          </h2>
-          <p data-anim="contact">
-            Tell us which lots you'd like indexed and we'll get back within a
-            business day.
+        <div class="feature">
+          <div class="ico">⚡</div>
+          <h3>Sub-2-second answers</h3>
+          <p>
+            Smart routing keeps simple queries fast and uses the bigger
+            model only for nuance.
           </p>
         </div>
-
-        <form class="contact-card" data-anim="contact" onsubmit="event.preventDefault(); this.querySelector('button').textContent='Sent ✓'">
-          <div class="contact-form">
-            <div class="row-2">
-              <div class="field">
-                <label for="name">Name</label>
-                <input id="name" type="text" autocomplete="name" required />
-              </div>
-              <div class="field">
-                <label for="email">Email</label>
-                <input id="email" type="email" autocomplete="email" required />
-              </div>
-            </div>
-            <div class="field">
-              <label for="company">Dealership / company</label>
-              <input id="company" type="text" autocomplete="organization" />
-            </div>
-            <div class="field">
-              <label for="message">Message</label>
-              <textarea
-                id="message"
-                placeholder="Tell us what you're working on…"
-              ></textarea>
-            </div>
-            <button type="submit" class="btn btn-primary" style="justify-self: start;">
-              Send message
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M5 12h14M13 6l6 6-6 6"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </button>
-          </div>
-        </form>
-      </div>
-    </section>
-
-    <footer>
-      <div class="container">
-        <span>© <span id="year"></span> CarPapi · Built in New Jersey.</span>
-        <div style="display:flex; gap:1.25rem;">
-          <a href="#features">Features</a>
-          <a href="#timeline">Timeline</a>
-          <a href="#contact">Contact</a>
-          <a href="/dashboard">Dashboard</a>
+        <div class="feature">
+          <div class="ico">🔍</div>
+          <h3>Sourced from real dealers</h3>
+          <p>
+            Every result links straight back to the dealer's listing —
+            no aggregator middleman.
+          </p>
         </div>
-      </div>
-    </footer>
+      </section>
 
-    <!-- ===================== GSAP + ScrollTrigger ===================== -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+      <section class="chat-preview">
+        <h2>What a typical answer looks like</h2>
+        <div class="bubble user">
+          <strong>You:</strong> Which SUV is most reliable under $30k?
+        </div>
+        <div class="bubble">
+          <strong>CarPapi:</strong> Based on reliability reputation, the
+          <em>2009 Honda CR-V</em> [dd61bf10] and <em>2011 Toyota RAV4</em>
+          [edbff127] in our inventory are both strong picks under $30k —
+          long-running model lines with documented service histories.
+          Cards below.
+        </div>
+      </section>
+
+      <footer>
+        <div>© 2026 CarPapi · used-car search, in plain English.</div>
+        <div class="health">
+          <span class="health-dot"></span>
+          <span id="health-text">API live</span>
+        </div>
+      </footer>
+    </div>
+
     <script>
-      document.getElementById("year").textContent = new Date().getFullYear();
-
-      gsap.registerPlugin(ScrollTrigger);
-
-      // Sticky-nav background switch on scroll
-      ScrollTrigger.create({
-        start: 80,
-        end: 99999,
-        toggleClass: { className: "scrolled", targets: "#nav" },
-      });
-
-      // ----- Hero text stagger on load -----
-      gsap.from('[data-anim="hero"]', {
-        y: 40,
-        opacity: 0,
-        duration: 1.1,
-        stagger: 0.14,
-        ease: "power3.out",
-        delay: 0.25,
-      });
-
-      // ----- Subtle hero-video parallax + scale -----
-      gsap.to(".hero-video", {
-        yPercent: 18,
-        scale: 1.08,
-        ease: "none",
-        scrollTrigger: {
-          trigger: ".hero",
-          start: "top top",
-          end: "bottom top",
-          scrub: true,
-        },
-      });
-      gsap.to(".hero-overlay", {
-        opacity: 1,
-        scrollTrigger: {
-          trigger: ".hero",
-          start: "top top",
-          end: "bottom top",
-          scrub: true,
-        },
-      });
-
-      // ----- Feature cards: stagger in from below as they enter view -----
-      gsap.from("[data-feature]", {
-        scrollTrigger: {
-          trigger: ".features",
-          start: "top 75%",
-        },
-        y: 90,
-        opacity: 0,
-        scale: 0.97,
-        duration: 0.95,
-        ease: "power3.out",
-        stagger: 0.18,
-      });
-
-      // ----- Horizontal-scroll timeline (pinned) -----
-      const track = document.getElementById("timelineTrack");
-      const progressBar = document.getElementById("timelineProgress");
-      const wrap = document.querySelector(".timeline-wrap");
-
-      const setupTimeline = () => {
-        const distance = () =>
-          Math.max(0, track.scrollWidth - window.innerWidth + 120);
-
-        const tween = gsap.to(track, {
-          x: () => -distance(),
-          ease: "none",
-          scrollTrigger: {
-            trigger: wrap,
-            pin: ".timeline-pin",
-            scrub: 0.6,
-            start: "top top",
-            end: () => "+=" + distance(),
-            invalidateOnRefresh: true,
-            onUpdate: (self) => {
-              progressBar.style.width = (self.progress * 100).toFixed(2) + "%";
-            },
-          },
-        });
-
-        // small per-step scale-in as each card crosses center
-        gsap.utils.toArray(".timeline-step").forEach((step) => {
-          gsap.from(step, {
-            scale: 0.92,
-            opacity: 0.45,
-            ease: "power2.out",
-            scrollTrigger: {
-              trigger: step,
-              containerAnimation: tween,
-              start: "left center",
-              end: "center center",
-              scrub: true,
-            },
-          });
-        });
-      };
-
-      // Wait for fonts so widths are right when we measure
-      if (document.fonts && document.fonts.ready) {
-        document.fonts.ready.then(setupTimeline);
-      } else {
-        window.addEventListener("load", setupTimeline);
-      }
-
-      // ----- Contact stagger -----
-      gsap.from('[data-anim="contact"]', {
-        scrollTrigger: { trigger: ".contact", start: "top 80%" },
-        y: 50,
-        opacity: 0,
-        duration: 0.85,
-        stagger: 0.12,
-        ease: "power3.out",
-      });
-
-      // Refresh ScrollTrigger after the video has metadata (layout may shift)
-      const heroVideo = document.querySelector(".hero-video");
-      if (heroVideo) {
-        heroVideo.addEventListener("loadedmetadata", () =>
-          ScrollTrigger.refresh()
-        );
-      }
+      // Fetch live stats from the API so this landing always shows
+      // current numbers. Defaults baked into the HTML render if the
+      // fetch fails (offline / cold App Runner).
+      (async () => {
+        try {
+          const r = await fetch(
+            "https://gt3mapscrz.us-east-1.awsapprunner.com/api/stats/",
+            { cache: "no-store" },
+          );
+          if (!r.ok) throw new Error("stats " + r.status);
+          const d = await r.json();
+          const fmt = (n) => (n ?? 0).toLocaleString("en-US");
+          document.getElementById("stat-listings").textContent = fmt(d.listings);
+          document.getElementById("stat-dealers").textContent = fmt(d.dealers);
+          document.getElementById("stat-makes").textContent = fmt(d.makes);
+          document.getElementById("stat-models").textContent = fmt(d.models);
+        } catch (e) {
+          document.getElementById("health-text").textContent = "API reachable on retry";
+          const dot = document.querySelector(".health-dot");
+          if (dot) dot.style.background = "#f59e0b";
+        }
+      })();
     </script>
   </body>
 </html>
