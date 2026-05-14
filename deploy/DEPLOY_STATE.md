@@ -1,8 +1,35 @@
-> # 🟢 LIVE
+> # 🟢 LIVE — full SPA + RAG
 > **Frontend (React):** https://d372ww3313y553.cloudfront.net (S3 + CloudFront, OAC-protected)
+> &nbsp;&nbsp;&nbsp;&nbsp;`/login` — shared-passphrase gate (currently soft; see Auth note below)
+> &nbsp;&nbsp;&nbsp;&nbsp;`/chat`  — talks directly to the App Runner API for real RAG responses
 > **API (Django + RAG):** https://gt3mapscrz.us-east-1.awsapprunner.com
-> **Chat:**     `POST /api/chat/` `{"message":"…"}` — 4/4 smoke queries pass with real Bedrock synthesis (skip 2.4s, haiku 2.3s, sonnet 5.7s cold).
-> **Stats:**    `GET /api/stats/` — returns 4391 listings / 385 dealers / 42 makes from RDS.
+> &nbsp;&nbsp;&nbsp;&nbsp;`POST /api/chat/`   — RAG-backed chat (Bedrock + RDS pgvector)
+> &nbsp;&nbsp;&nbsp;&nbsp;`GET /api/stats/`   — dashboard counts (live: 4391 listings / 385 dealers / 42 makes)
+> &nbsp;&nbsp;&nbsp;&nbsp;`GET /api/healthz/` — db-free liveness probe
+> **CI/CD:** push to `main` triggers `.github/workflows/deploy.yml`
+> &nbsp;&nbsp;&nbsp;&nbsp;OIDC → ECR build/push → App Runner start-deployment → smoke
+> &nbsp;&nbsp;&nbsp;&nbsp;First success: run id `25862945804` (commit be57432)
+>
+> ### ⚠️ Auth gate: code complete, enforcement soft
+>
+> `/login` captures a passphrase, stores in localStorage, sends as
+> `X-CarPapi-Auth: <token>` on every `/api/chat/` request. Django
+> reads `settings.CARPAPI_API_KEY` and 401s on mismatch — but ONLY
+> when that env var is set.
+>
+> App Runner's `update-service` API has a quirk: it re-validates the
+> ECR access role on every env-var update and rolls back with
+> `Invalid Access Role in AuthenticationConfiguration` even when the
+> role is identical to the one already in use. Tried three different
+> roles + the omit-AuthConfig path; each attempt rolled back. So
+> `CARPAPI_API_KEY` is currently unset on App Runner → Django skips
+> the check → any passphrase on `/login` is accepted. The CHAT
+> itself is fully functional regardless.
+>
+> To activate the gate, recreate the service with `CARPAPI_API_KEY`
+> in the initial `CreateService` payload (that path works). The
+> frontend already sends the header from localStorage; no rebuild
+> needed once the env var lands.
 
 # CarPapi — live AWS state (snapshot)
 
