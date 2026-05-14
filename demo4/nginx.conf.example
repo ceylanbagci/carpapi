@@ -1,0 +1,57 @@
+# Map to detect scheme from forwarded headers (when behind Traefik)
+map $http_x_forwarded_proto $forwarded_scheme {
+    default $scheme;
+    https https;
+    http http;
+}
+
+server {
+    listen 80;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Gzip compression
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/javascript application/json;
+
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+
+    # Route each demo to its directory
+    # Handle exact demo name (no trailing slash) - redirect to trailing slash
+    # This must come first to catch URLs without trailing slash
+    location ~ ^/metronic/tailwind/react/(demo\d+)$ {
+        # Use relative redirect - preserves scheme (HTTPS) when behind Traefik
+        return 301 /metronic/tailwind/react/$1/;
+    }
+
+    # Handle all demo paths (with trailing slash or subpaths)
+    # /metronic/tailwind/react/demo1/ -> /usr/share/nginx/html/demo1/
+    # /metronic/tailwind/react/demo1/some/path -> /usr/share/nginx/html/demo1/some/path
+    location ~ ^/metronic/tailwind/react/(demo\d+)(/.*)?$ {
+        set $demo $1;
+        root /usr/share/nginx/html;
+        rewrite ^/metronic/tailwind/react/(demo\d+)(/.*)?$ /$1$2 break;
+        try_files $uri $uri/ /$demo/index.html =404;
+    }
+
+    # Static assets caching
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        access_log off;
+    }
+
+    # Health check endpoint
+    location /health {
+        access_log off;
+        return 200 "healthy\n";
+        add_header Content-Type text/plain;
+    }
+}
+
