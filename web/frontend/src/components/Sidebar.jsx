@@ -27,6 +27,12 @@ const NAV = [
       { to: "/dealers", label: "Dealers", icon: "bi-shop" },
     ],
   },
+  {
+    section: "Account",
+    items: [
+      { to: "/account", label: "Settings", icon: "bi-person-gear" },
+    ],
+  },
 ];
 
 export default function Sidebar({ open }) {
