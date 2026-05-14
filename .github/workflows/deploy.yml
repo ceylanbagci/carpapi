@@ -52,15 +52,21 @@ jobs:
 
       # 1. AWS auth via OIDC (no static keys in GitHub secrets).
       #
-      # The role ARN is not a secret — it's just an IAM identifier — but
-      # different teams paste it into different places. We accept it from
-      # either `vars.AWS_DEPLOY_ROLE_ARN` (preferred) or
-      # `secrets.AWS_DEPLOY_ROLE_ARN` (fallback) so wherever it lives
-      # in repo settings, the workflow works.
+      # Resolution order for role-to-assume:
+      #   1. vars.AWS_DEPLOY_ROLE_ARN   — repo or env Variables tab
+      #   2. secrets.AWS_DEPLOY_ROLE_ARN — repo or env Secrets tab
+      #   3. hardcoded default          — last-resort fallback
+      #
+      # The ARN itself isn't a secret — the IAM trust policy on the
+      # role explicitly restricts AssumeRoleWithWebIdentity to
+      # `repo:ceylanbagci/carpapi:ref:refs/heads/main`, so even with
+      # the ARN public, only this repo's main-branch workflow runs
+      # can assume it. The fallback exists so a fresh clone of the
+      # repo can deploy without any GitHub-side configuration step.
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN || secrets.AWS_DEPLOY_ROLE_ARN }}
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN || secrets.AWS_DEPLOY_ROLE_ARN || 'arn:aws:iam::183617081338:role/CarPapiGitHubDeployer' }}
           role-session-name: carpapi-deploy-${{ github.run_id }}
           aws-region: ${{ env.AWS_REGION }}
 
