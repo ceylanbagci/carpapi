@@ -47,13 +47,28 @@ COPY services/ /app/services/
 COPY web/backend/ /app/web/backend/
 
 # PYTHONPATH so `from carpapi.rag.answer import answer` resolves at
-# runtime. We deliberately skip `collectstatic` — the API is JSON-only
-# (/api/*), the React frontend is hosted separately, and Django's
-# settings.py has STATIC_URL but no STATIC_ROOT (which collectstatic
-# needs). If you later want the DRF browsable API or Django admin in
-# production, add `STATIC_ROOT = BASE_DIR / "staticfiles"` to
-# settings.py and restore a collectstatic step here.
+# runtime.
 ENV PYTHONPATH=/app
+
+# Collect Django + admin + DRF static assets into STATIC_ROOT so
+# WhiteNoise can serve them from /static/. settings.py wires
+# STATIC_ROOT to web/backend/staticfiles. We pass throwaway env
+# values for the build because settings.py reads DJANGO_SECRET_KEY
+# at import time; the real values are injected at runtime by
+# App Runner. Same for the DB creds — collectstatic doesn't touch
+# the DB but Django's app registry imports models which import
+# DATABASES.
+RUN cd /app/web/backend \
+ && DJANGO_SECRET_KEY=build-only-secret-not-used-at-runtime \
+    DJANGO_ALLOWED_HOSTS="*" \
+    CARPAPI_DB_HOST=skip CARPAPI_DB_PORT=5432 CARPAPI_DB_NAME=skip \
+    CARPAPI_DB_USER=skip CARPAPI_DB_PASSWORD=skip \
+    python manage.py collectstatic --noinput --clear
+
+# At container start, run any pending migrations before booting
+# gunicorn. Idempotent — `migrate` is a no-op when nothing's pending.
+# We do it in the CMD wrapper rather than as a separate ENTRYPOINT
+# so the user can override the command if they want to debug.
 
 # Non-root runtime user.
 RUN useradd --uid 10001 --user-group --no-create-home carpapi \
@@ -67,7 +82,8 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD curl -fsS "http://127.0.0.1:${PORT}/api/stats/" >/dev/null || exit 1
 
-# Gunicorn: 2 workers × 4 threads handles a small App Runner instance
-# comfortably. Bedrock calls are I/O-bound; threads outperform extra
-# workers under our profile.
-CMD ["sh", "-c", "cd /app/web/backend && gunicorn carpapi_web.wsgi:application --bind 0.0.0.0:${PORT} --workers 2 --threads 4 --timeout 60 --access-logfile - --error-logfile -"]
+# At boot: run pending migrations (idempotent; no-op when nothing
+# pending), then start gunicorn. 2 workers × 4 threads handles a
+# small App Runner instance comfortably. Bedrock calls are I/O-bound;
+# threads outperform extra workers under our profile.
+CMD ["sh", "-c", "cd /app/web/backend && python manage.py migrate --noinput && python manage.py ensure_superuser && gunicorn carpapi_web.wsgi:application --bind 0.0.0.0:${PORT} --workers 2 --threads 4 --timeout 60 --access-logfile - --error-logfile -"]
