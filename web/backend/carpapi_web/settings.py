@@ -173,13 +173,17 @@ REST_FRAMEWORK = {
 }
 
 # JWT settings for dj-rest-auth.
+#
+# Bearer-only — no cookies. The SPA on CloudFront stores the
+# access/refresh tokens in localStorage and sends them as
+# `Authorization: Bearer <jwt>` on each request. Avoids the
+# cross-site-cookie + Secure + SameSite=None complexity, and works
+# identically for mobile clients later.
 REST_AUTH = {
     "USE_JWT": True,
-    "JWT_AUTH_COOKIE": "carpapi-auth",
-    "JWT_AUTH_REFRESH_COOKIE": "carpapi-refresh",
-    "JWT_AUTH_HTTPONLY": True,
-    "JWT_AUTH_SAMESITE": "None",  # cross-site (CloudFront → AppRunner)
-    "JWT_AUTH_SECURE": True,
+    "JWT_AUTH_COOKIE": None,
+    "JWT_AUTH_REFRESH_COOKIE": None,
+    "JWT_AUTH_HTTPONLY": False,
     "SESSION_LOGIN": False,
     "REGISTER_SERIALIZER": "accounts.serializers.CarPapiRegisterSerializer",
     "USER_DETAILS_SERIALIZER": "accounts.serializers.CarPapiUserSerializer",

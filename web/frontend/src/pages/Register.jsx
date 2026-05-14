@@ -1,23 +1,18 @@
 /**
- * /login — real email + password (no more shared passphrase).
+ * /register — real-world signup.
  *
- * Calls api.login(email, password) which POSTs to
- * /api/auth/login/ on the Django backend. On success the JWT
- * tokens + user object are persisted to localStorage by api.js;
- * we then bounce to `?next=` (default /chat).
+ * Fields: email, password (× 1 — Django backend handles password
+ * confirmation by accepting password1 == password2; we simplify
+ * to one client-side field with a min-length check), full name,
+ * phone (optional, E.164), marketing opt-in.
  *
- * Google button links to the backend's /accounts/google/login/
- * endpoint — allauth handles the full OAuth dance and bounces
- * the user back to `?next=`.
+ * On success: api.register() persists JWT auth to localStorage,
+ * we bounce to ?next (default /chat).
  */
 import { useState } from "react";
-import {
-  Link,
-  useNavigate,
-  useSearchParams,
-} from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { googleLoginUrl, login as apiLogin } from "../api.js";
+import { googleLoginUrl, register as apiRegister } from "../api.js";
 import { useAuth } from "../auth.jsx";
 
 const inputBaseStyle = {
@@ -47,35 +42,50 @@ const buttonBase = {
   gap: 10,
 };
 
-export default function Login() {
+export default function Register() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const { signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
 
   const next = params.get("next") || "/chat";
 
+  const passwordOk = password.length >= 8;
+
   const onSubmit = async (e) => {
     e.preventDefault();
-    if (!email.trim() || !password || busy) return;
+    if (busy || !email.trim() || !passwordOk) return;
     setBusy(true);
     setError(null);
     try {
-      const auth = await apiLogin({ email: email.trim(), password });
+      const auth = await apiRegister({
+        email: email.trim(),
+        password,
+        full_name: fullName.trim(),
+        phone: phone.trim() || null,
+        marketing_opt_in: marketingOptIn,
+      });
       signIn(auth);
       navigate(next, { replace: true });
     } catch (err) {
+      // dj-rest-auth returns field-level errors as
+      // { email: ["..."], password1: [...], phone: [...] }
+      const p = err.payload || {};
       const detail =
-        (err.payload &&
-          (err.payload.detail ||
-            err.payload.non_field_errors?.[0] ||
-            err.payload.email?.[0] ||
-            err.payload.password?.[0])) ||
+        p.detail ||
+        p.email?.[0] ||
+        p.password1?.[0] ||
+        p.password2?.[0] ||
+        p.phone?.[0] ||
+        p.non_field_errors?.[0] ||
         err.message ||
-        "Login failed. Check your credentials.";
+        "Couldn't create the account. Try again.";
       setError(detail);
     } finally {
       setBusy(false);
@@ -100,14 +110,13 @@ export default function Login() {
           style={{ maxWidth: 460 }}
         >
           <div className="d4-chat-empty-logo">
-            <i className="bi bi-shield-lock-fill"></i>
+            <i className="bi bi-person-plus-fill"></i>
           </div>
-          <h1 className="d4-chat-empty-title">Sign in to CarPapi</h1>
+          <h1 className="d4-chat-empty-title">Create your CarPapi account</h1>
           <p className="d4-chat-empty-sub">
-            Welcome back. Sign in to chat with live dealer inventory.
+            Sign up to chat with live inventory and save the cars you like.
           </p>
 
-          {/* Google */}
           <a
             href={googleLoginUrl(next)}
             style={{
@@ -137,10 +146,9 @@ export default function Login() {
                 d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.892 11.426 0 9 0 5.482 0 2.438 2.017.957 4.96L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z"
               />
             </svg>
-            Continue with Google
+            Sign up with Google
           </a>
 
-          {/* Email / password */}
           <div
             style={{
               display: "flex",
@@ -158,12 +166,22 @@ export default function Login() {
 
           <form onSubmit={onSubmit} style={{ width: "100%" }} autoComplete="on">
             <input
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Full name"
+              autoComplete="name"
+              disabled={busy}
+              aria-label="Full name"
+              style={inputBaseStyle}
+            />
+            <div style={{ height: 10 }} />
+            <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               autoComplete="email"
-              autoFocus
               disabled={busy}
               required
               aria-label="Email"
@@ -171,16 +189,47 @@ export default function Login() {
             />
             <div style={{ height: 10 }} />
             <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="Phone (optional, e.g. +14155551234)"
+              autoComplete="tel"
+              disabled={busy}
+              aria-label="Phone number"
+              style={inputBaseStyle}
+            />
+            <div style={{ height: 10 }} />
+            <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
-              autoComplete="current-password"
+              placeholder="Password (min 8 characters)"
+              autoComplete="new-password"
               disabled={busy}
               required
+              minLength={8}
               aria-label="Password"
               style={inputBaseStyle}
             />
+
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                marginTop: 14,
+                fontSize: 14,
+                color: "#444",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={marketingOptIn}
+                onChange={(e) => setMarketingOptIn(e.target.checked)}
+                disabled={busy}
+              />
+              Email me about new listings + dealer promos
+            </label>
 
             {error && (
               <div
@@ -199,15 +248,15 @@ export default function Login() {
 
             <button
               type="submit"
-              disabled={!email.trim() || !password || busy}
+              disabled={!email.trim() || !passwordOk || busy}
               style={{
                 ...buttonBase,
                 background: "#111",
                 color: "#fff",
-                opacity: !email.trim() || !password || busy ? 0.55 : 1,
+                opacity: !email.trim() || !passwordOk || busy ? 0.55 : 1,
               }}
             >
-              {busy ? "Signing in…" : "Sign in"}
+              {busy ? "Creating account…" : "Create account"}
             </button>
           </form>
 
@@ -219,12 +268,12 @@ export default function Login() {
               textAlign: "center",
             }}
           >
-            New to CarPapi?{" "}
+            Already have an account?{" "}
             <Link
-              to={`/register?next=${encodeURIComponent(next)}`}
+              to={`/login?next=${encodeURIComponent(next)}`}
               style={{ color: "#111", fontWeight: 600 }}
             >
-              Create an account
+              Sign in
             </Link>
           </p>
         </motion.div>

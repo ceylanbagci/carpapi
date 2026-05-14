@@ -1,13 +1,14 @@
 /**
- * Tiny shared-passphrase auth for the chat endpoint.
+ * Auth context for the SPA.
  *
- * Not user accounts — just a single API key that the user enters once
- * on /login and that gets sent as `X-CarPapi-Auth: <token>` on every
- * API call. The backend validates against the `CARPAPI_API_KEY` env
- * var. When that matches, the request proceeds; otherwise 401.
+ * Wraps localStorage-backed JWT auth (access + refresh + user) from
+ * api.js into a React context so any component can:
+ *   - read `useAuth().user` to render a name/avatar/logged-out state
+ *   - call `useAuth().signIn(auth)` after login/register
+ *   - call `useAuth().signOut()` to clear local state
  *
- * For real users we'd swap this for Cognito or Clerk. The contract
- * (`X-CarPapi-Auth` header) stays the same.
+ * Cross-tab logout: a `storage` listener mirrors changes from other
+ * tabs so signing out in one tab signs out the rest.
  */
 import {
   createContext,
@@ -18,42 +19,52 @@ import {
   useState,
 } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { AUTH_STORAGE_KEY, getApiToken, setApiToken } from "./api.js";
+import {
+  AUTH_STORAGE_KEY,
+  getAuth,
+  logout as apiLogout,
+  setAuth,
+} from "./api.js";
 
 const AuthCtx = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [token, setTokenState] = useState(() => getApiToken());
+  const [auth, setAuthState] = useState(() => getAuth());
 
-  // Keep state in sync if another tab logs in/out.
+  // Mirror cross-tab changes.
   useEffect(() => {
     const onStorage = (e) => {
       if (e.key === AUTH_STORAGE_KEY) {
-        setTokenState(e.newValue || null);
+        try {
+          setAuthState(e.newValue ? JSON.parse(e.newValue) : null);
+        } catch {
+          setAuthState(null);
+        }
       }
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-  const signIn = useCallback((newToken) => {
-    setApiToken(newToken);
-    setTokenState(newToken || null);
+  const signIn = useCallback((newAuth) => {
+    setAuth(newAuth);
+    setAuthState(newAuth || null);
   }, []);
 
-  const signOut = useCallback(() => {
-    setApiToken(null);
-    setTokenState(null);
+  const signOut = useCallback(async () => {
+    await apiLogout(); // best-effort POST + clears localStorage
+    setAuthState(null);
   }, []);
 
   const value = useMemo(
     () => ({
-      token,
-      isAuthed: !!token,
+      auth,
+      user: auth ? auth.user : null,
+      isAuthed: !!(auth && auth.access),
       signIn,
       signOut,
     }),
-    [token, signIn, signOut],
+    [auth, signIn, signOut],
   );
 
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;

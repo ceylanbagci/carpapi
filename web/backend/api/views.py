@@ -340,23 +340,34 @@ def _rag_cache():
 def chat(request):
     """RAG-backed chat: plan -> retrieve -> synthesize.
 
-    Auth model (shared passphrase): if CARPAPI_API_KEY is set in
-    settings, every request must include `X-CarPapi-Auth: <key>`.
-    An empty CARPAPI_API_KEY disables the check (local dev mode).
-    The frontend stores the key in localStorage and sends it
-    automatically via api.js's authHeaders().
+    Auth: JWT Bearer. Real user accounts via accounts.User; the SPA
+    sends `Authorization: Bearer <access-token>` on every request.
+    Unauthenticated requests get DRF's 401 automatically.
+
+    Legacy passphrase path: if `CARPAPI_API_KEY` is set in settings,
+    we also accept `X-CarPapi-Auth: <key>` from clients that haven't
+    migrated to JWT yet. Empty key disables the legacy path entirely.
     """
     from django.conf import settings
     from rest_framework import status
 
-    required_key = getattr(settings, "CARPAPI_API_KEY", "") or ""
-    if required_key:
-        # Header lookups in Django: HTTP_X_CARPAPI_AUTH. DRF also
-        # normalizes to lowercase via request.headers (case-insensitive).
-        sent = (request.headers.get("X-CarPapi-Auth") or "").strip()
-        if sent != required_key:
+    # Legacy passphrase fallback (only when no JWT was provided AND
+    # the env-var path is enabled). Lets old SPA bundles still work
+    # during the rollout window.
+    if not request.user.is_authenticated:
+        required_key = getattr(settings, "CARPAPI_API_KEY", "") or ""
+        if required_key:
+            sent = (request.headers.get("X-CarPapi-Auth") or "").strip()
+            if sent != required_key:
+                return Response(
+                    {"error": "unauthorized"},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+        # else: no JWT and no legacy key configured → fall through. Local
+        # dev mode (DJANGO_DEBUG=true) skips the gate.
+        elif not getattr(settings, "DEBUG", False):
             return Response(
-                {"error": "unauthorized", "detail": "missing or invalid X-CarPapi-Auth header"},
+                {"error": "unauthorized", "detail": "sign in to use the chat"},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 

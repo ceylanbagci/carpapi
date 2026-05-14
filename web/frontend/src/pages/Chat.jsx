@@ -8,11 +8,8 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { SAMPLE_PROMPTS } from "../data/mockChat.js";
-import {
-  AuthRequiredError,
-  chat as chatApi,
-  setApiToken,
-} from "../api.js";
+import { AuthRequiredError, chat as chatApi } from "../api.js";
+import { useAuth } from "../auth.jsx";
 
 // One message in the thread.
 // id: stable key for React
@@ -48,6 +45,7 @@ function initialTheme() {
 
 export default function Chat() {
   const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const [messages, setMessages] = useState(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -127,7 +125,7 @@ export default function Chat() {
       // 401 from the backend means the saved token isn't valid — clear
       // it and bounce to /login so the user can re-enter the passphrase.
       if (err instanceof AuthRequiredError) {
-        setApiToken(null);
+        // api.js already wiped the bad token; just bounce.
         navigate("/login?next=/chat", { replace: true });
         return;
       }
@@ -184,6 +182,27 @@ export default function Chat() {
               New chat
             </button>
           )}
+          {user && (
+            <span
+              className="d4-chat-link"
+              title={user.email}
+              style={{ cursor: "default", opacity: 0.75 }}
+            >
+              <i className="bi bi-person-circle me-1"></i>
+              {(user.full_name || user.email).split(/\s|@/)[0]}
+            </span>
+          )}
+          <button
+            type="button"
+            className="d4-chat-link"
+            onClick={async () => {
+              await signOut();
+              navigate("/login", { replace: true });
+            }}
+            title="Sign out"
+          >
+            Sign out
+          </button>
           <button
             type="button"
             className="d4-chat-theme-toggle"

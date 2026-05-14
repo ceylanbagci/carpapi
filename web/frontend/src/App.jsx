@@ -3,6 +3,7 @@ import Layout from "./components/Layout.jsx";
 import Landing from "./pages/Landing.jsx";
 import Chat from "./pages/Chat.jsx";
 import Login from "./pages/Login.jsx";
+import Register from "./pages/Register.jsx";
 import Home from "./pages/Home.jsx";
 import Cars from "./pages/Cars.jsx";
 import Dealers from "./pages/Dealers.jsx";
@@ -17,6 +18,7 @@ export default function App() {
       <Routes>
         <Route index element={<Landing />} />
         <Route path="login" element={<Login />} />
+        <Route path="register" element={<Register />} />
         <Route
           path="chat"
           element={

@@ -1,24 +1,21 @@
 // API client.
 //
-// VITE_API_BASE behaviour:
-//   - default ("/api")          : relative; works in dev (vite proxy) +
-//                                 any setup where the API is same-origin
-//                                 with the static site.
-//   - absolute (https://...)    : production cloud deploys where the API
-//                                 lives on a separate host (App Runner).
-//                                 The fetch goes cross-origin; the Django
-//                                 side needs CORS to allow our origin.
+// Auth model (JWT Bearer):
+//   1. Login or register → backend returns { access, refresh, user }
+//   2. We persist all three to localStorage under
+//      carpapi.auth.v2 (single JSON blob; easier than 3 keys to
+//      keep in sync across tabs).
+//   3. Every API call sends `Authorization: Bearer <access>`.
+//   4. 401 from any call → clear the saved auth + throw
+//      AuthRequiredError so the caller can bounce to /login.
 //
-// Auth model (shared passphrase, not user accounts):
-//   - getApiToken() returns the token saved by the Login page.
-//   - It's sent as `X-CarPapi-Auth: <token>` on every request.
-//   - The Django side validates the header against env CARPAPI_API_KEY.
-//   - 401 from any call triggers a redirect back to /login via the
-//     thrown AuthRequiredError instance.
+// VITE_API_BASE — same behaviour as before. Default "/api" (relative)
+// works in dev + when the API is same-origin. Absolute URL points at
+// App Runner in production.
 const API_BASE = import.meta.env.VITE_API_BASE || "/api";
 const IS_ABSOLUTE = /^https?:\/\//i.test(API_BASE);
 
-export const AUTH_STORAGE_KEY = "carpapi.auth.token.v1";
+export const AUTH_STORAGE_KEY = "carpapi.auth.v2";
 
 export class AuthRequiredError extends Error {
   constructor(message = "auth required") {
@@ -27,41 +24,107 @@ export class AuthRequiredError extends Error {
   }
 }
 
-export function getApiToken() {
+// ──────────────────────────────────────────────────────────────────── //
+// Auth state in localStorage
+// ──────────────────────────────────────────────────────────────────── //
+
+export function getAuth() {
   if (typeof window === "undefined") return null;
   try {
-    return localStorage.getItem(AUTH_STORAGE_KEY) || null;
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
   }
 }
 
-export function setApiToken(token) {
+export function setAuth(auth) {
   if (typeof window === "undefined") return;
   try {
-    if (token) localStorage.setItem(AUTH_STORAGE_KEY, token);
+    if (auth) localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(auth));
     else localStorage.removeItem(AUTH_STORAGE_KEY);
   } catch {
     /* ignore quota */
   }
 }
 
+function authHeaders() {
+  const a = getAuth();
+  return a && a.access ? { Authorization: `Bearer ${a.access}` } : {};
+}
+
+// ──────────────────────────────────────────────────────────────────── //
+// URL helpers
+// ──────────────────────────────────────────────────────────────────── //
+
 function buildUrl(path, params) {
   const cleanPath = path.startsWith("/") ? path : "/" + path;
-  const base = IS_ABSOLUTE
-    ? API_BASE.replace(/\/$/, "")
-    : API_BASE.replace(/\/$/, "");
-  const baseOrigin = IS_ABSOLUTE ? "" : window.location.origin;
-  const url = new URL(base + cleanPath, baseOrigin || undefined);
+  const base = API_BASE.replace(/\/$/, "");
+  const origin = IS_ABSOLUTE ? "" : window.location.origin;
+  const url = new URL(base + cleanPath, origin || undefined);
   for (const [k, v] of Object.entries(params || {})) {
     if (v !== undefined && v !== null && v !== "") url.searchParams.set(k, v);
   }
   return url;
 }
 
-function authHeaders() {
-  const t = getApiToken();
-  return t ? { "X-CarPapi-Auth": t } : {};
+/** Absolute backend origin — used for OAuth redirects to /accounts/...
+ *  Those endpoints live outside /api/ so we strip the /api suffix. */
+export function backendOrigin() {
+  if (IS_ABSOLUTE) {
+    return API_BASE.replace(/\/api\/?$/, "");
+  }
+  return window.location.origin;
+}
+
+// ──────────────────────────────────────────────────────────────────── //
+// Low-level HTTP
+// ──────────────────────────────────────────────────────────────────── //
+
+async function httpJson(method, path, body, opts) {
+  const url = buildUrl(path);
+  const init = {
+    method,
+    headers: {
+      Accept: "application/json",
+      ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
+      ...authHeaders(),
+      ...(opts && opts.headers ? opts.headers : {}),
+    },
+  };
+  if (body !== undefined) init.body = JSON.stringify(body);
+
+  const res = await fetch(url.toString(), init);
+
+  // Try to surface JSON error bodies even on non-2xx.
+  let payload = null;
+  const ct = res.headers.get("Content-Type") || "";
+  if (ct.includes("application/json")) {
+    try {
+      payload = await res.json();
+    } catch {
+      payload = null;
+    }
+  }
+
+  if (res.status === 401) {
+    setAuth(null);
+    const err = new AuthRequiredError(
+      (payload && (payload.detail || payload.error)) || "auth required",
+    );
+    err.payload = payload;
+    throw err;
+  }
+  if (!res.ok) {
+    const err = new Error(
+      (payload && (payload.detail || payload.error)) ||
+        `${res.status} ${res.statusText}`,
+    );
+    err.status = res.status;
+    err.payload = payload;
+    throw err;
+  }
+  return payload;
 }
 
 export async function getJson(path, params = {}) {
@@ -69,44 +132,82 @@ export async function getJson(path, params = {}) {
   const res = await fetch(url.toString(), {
     headers: { Accept: "application/json", ...authHeaders() },
   });
-  if (res.status === 401) throw new AuthRequiredError();
-  if (!res.ok) {
-    throw new Error(`${res.status} ${res.statusText} for ${url}`);
+  if (res.status === 401) {
+    setAuth(null);
+    throw new AuthRequiredError();
   }
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url}`);
   return res.json();
 }
 
 export async function postJson(path, body) {
-  const url = buildUrl(path);
-  const res = await fetch(url.toString(), {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      ...authHeaders(),
-    },
-    body: JSON.stringify(body),
-  });
-  if (res.status === 401) throw new AuthRequiredError();
-  if (!res.ok) {
-    throw new Error(`${res.status} ${res.statusText} for ${url}`);
-  }
-  return res.json();
+  return httpJson("POST", path, body);
 }
 
-// --------------------------------------------------------------------- //
+// ──────────────────────────────────────────────────────────────────── //
+// Auth API
+// ──────────────────────────────────────────────────────────────────── //
+
+/** Email + password login. Returns the full auth blob. */
+export async function login({ email, password }) {
+  const res = await httpJson("POST", "/auth/login/", { email, password });
+  // dj-rest-auth response shape: { access, refresh, user }
+  const auth = { access: res.access, refresh: res.refresh, user: res.user };
+  setAuth(auth);
+  return auth;
+}
+
+/** Email/password registration. Returns the full auth blob. */
+export async function register({
+  email,
+  password,
+  full_name,
+  phone,
+  marketing_opt_in,
+}) {
+  const res = await httpJson("POST", "/auth/registration/", {
+    email,
+    password1: password,
+    password2: password,
+    full_name: full_name || "",
+    phone: phone || null,
+    marketing_opt_in: !!marketing_opt_in,
+  });
+  const auth = { access: res.access, refresh: res.refresh, user: res.user };
+  setAuth(auth);
+  return auth;
+}
+
+/** Logs the user out client-side. Backend logout is best-effort. */
+export async function logout() {
+  try {
+    await httpJson("POST", "/auth/logout/", {});
+  } catch {
+    /* server may have already invalidated; we wipe locally regardless */
+  }
+  setAuth(null);
+}
+
+/** Reads the saved user (cached) or null. */
+export function currentUser() {
+  const a = getAuth();
+  return a ? a.user : null;
+}
+
+/** URL the Sign-In-With-Google button links to. App Runner handles
+ *  the OAuth dance via allauth, then bounces back to `next`. */
+export function googleLoginUrl(next) {
+  const origin = backendOrigin();
+  const nextAbs = next.startsWith("http")
+    ? next
+    : window.location.origin + next;
+  return `${origin}/accounts/google/login/?next=${encodeURIComponent(nextAbs)}`;
+}
+
+// ──────────────────────────────────────────────────────────────────── //
 // Shape adapter — backend /api/chat/ → Chat.jsx CarCard
-// --------------------------------------------------------------------- //
-//
-// The backend returns `listings` with fields:
-//   { id, vin, title, make, model, year, trim, body_style,
-//     mileage, price, currency, city, region, url, dealer, similarity }
-// The frontend CarCard expects:
-//   { id, year, make, model, trim, body_style, mileage, mileage_unit,
-//     price_amount, currency, drivetrain, mpg_city, mpg_hwy, dealer,
-//     listing_url, maker_url }
-//
-// We translate at the API boundary so Chat.jsx stays clean.
+// ──────────────────────────────────────────────────────────────────── //
+
 export function adaptListing(l) {
   return {
     id: l.id,
