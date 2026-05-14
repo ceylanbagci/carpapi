@@ -1,4 +1,7 @@
 .env
+.env.local
+.logs/
+
 # Ignore generic migrations/ dirs (alembic, custom pipeline) BUT
 # re-include Django app migrations — those are first-class source
 # code that must be in the repo + the Docker image so `manage.py
