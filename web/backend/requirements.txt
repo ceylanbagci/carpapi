@@ -17,3 +17,9 @@ django-phonenumber-field[phonenumbers]>=8.0,<9
 whitenoise>=6.7,<7
 PyJWT>=2.9
 cryptography>=42
+
+# SMS — Twilio. Only imported when TWILIO_ACCOUNT_SID env is set
+# (lazy import inside accounts/otp.py::_send_via_twilio); falls back
+# to the Django email backend otherwise. Keeping the dep in the
+# image so the swap is one env-var change.
+twilio>=9.0,<10

@@ -68,10 +68,22 @@ def _gen_challenge_token() -> str:
 
 
 def _send_via_twilio(phone: str, code: str) -> tuple[bool, str]:
+    """Send SMS via Twilio.
+
+    Twilio takes a `From` field that can be EITHER:
+      - a phone number (`TWILIO_FROM_NUMBER`, e.g. +18885551234), or
+      - a Messaging Service SID (`TWILIO_MESSAGING_SERVICE_SID`, e.g.
+        MG...), which routes through a pool of numbers/short codes.
+
+    We prefer the Messaging Service SID when set (it's the modern Twilio
+    recommendation and handles country-specific compliance) and fall
+    back to the bare From number otherwise.
+    """
     sid = getattr(settings, "TWILIO_ACCOUNT_SID", "")
     token = getattr(settings, "TWILIO_AUTH_TOKEN", "")
+    service_sid = getattr(settings, "TWILIO_MESSAGING_SERVICE_SID", "")
     from_ = getattr(settings, "TWILIO_FROM_NUMBER", "")
-    if not (sid and token and from_):
+    if not (sid and token and (service_sid or from_)):
         return False, ""
     try:
         from twilio.rest import Client  # type: ignore
@@ -81,7 +93,12 @@ def _send_via_twilio(phone: str, code: str) -> tuple[bool, str]:
     try:
         client = Client(sid, token)
         body = f"CarPapi admin code: {code}\nValid for 10 minutes. Do not share."
-        client.messages.create(from_=from_, to=phone, body=body)
+        kwargs = {"to": phone, "body": body}
+        if service_sid:
+            kwargs["messaging_service_sid"] = service_sid
+        else:
+            kwargs["from_"] = from_
+        client.messages.create(**kwargs)
         # Mask: +1•••6526 — show country code + last 4
         hint = phone[:2] + "•" * (len(phone) - 6) + phone[-4:]
         return True, hint

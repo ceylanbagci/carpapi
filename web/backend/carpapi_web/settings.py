@@ -262,6 +262,10 @@ AWS_SES_REGION_ENDPOINT = f"email.{AWS_SES_REGION_NAME}.amazonaws.com"
 # ──────────────────────────────────────────────────────────────────── #
 TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "")
 TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "")
+# Prefer a Messaging Service SID (MG...) over a single From number.
+# Messaging Services handle multi-region pools + carrier compliance
+# automatically. Set either one — the OTP sender uses the SID first.
+TWILIO_MESSAGING_SERVICE_SID = os.environ.get("TWILIO_MESSAGING_SERVICE_SID", "")
 TWILIO_FROM_NUMBER = os.environ.get("TWILIO_FROM_NUMBER", "")
 # Optional comma-separated allow-list. When non-empty, OTP via SMS
 # only attempts delivery to numbers on this list (the user's stored
