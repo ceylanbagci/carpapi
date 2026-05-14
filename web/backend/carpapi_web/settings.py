@@ -121,3 +121,13 @@ _extra = [
     if o.strip()
 ]
 CORS_ALLOWED_ORIGINS = _extra
+
+# Allow our custom auth header on cross-origin POSTs. Without this,
+# browsers strip X-CarPapi-Auth from the preflight response and the
+# real request goes out without the header → Django returns 401.
+from corsheaders.defaults import default_headers as _default_cors_headers
+CORS_ALLOW_HEADERS = list(_default_cors_headers) + ["x-carpapi-auth"]
+
+# Shared-passphrase auth for /api/chat/ (see web/backend/api/views.py).
+# Empty string disables the check — fine for local dev, bad in prod.
+CARPAPI_API_KEY = _os.environ.get("CARPAPI_API_KEY", "")

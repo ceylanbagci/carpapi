@@ -338,8 +338,27 @@ def _rag_cache():
 
 @api_view(["POST"])
 def chat(request):
-    """RAG-backed chat: plan -> retrieve -> synthesize."""
+    """RAG-backed chat: plan -> retrieve -> synthesize.
+
+    Auth model (shared passphrase): if CARPAPI_API_KEY is set in
+    settings, every request must include `X-CarPapi-Auth: <key>`.
+    An empty CARPAPI_API_KEY disables the check (local dev mode).
+    The frontend stores the key in localStorage and sends it
+    automatically via api.js's authHeaders().
+    """
+    from django.conf import settings
     from rest_framework import status
+
+    required_key = getattr(settings, "CARPAPI_API_KEY", "") or ""
+    if required_key:
+        # Header lookups in Django: HTTP_X_CARPAPI_AUTH. DRF also
+        # normalizes to lowercase via request.headers (case-insensitive).
+        sent = (request.headers.get("X-CarPapi-Auth") or "").strip()
+        if sent != required_key:
+            return Response(
+                {"error": "unauthorized", "detail": "missing or invalid X-CarPapi-Auth header"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
 
     message = (request.data.get("message") or "").strip()
     if not message:

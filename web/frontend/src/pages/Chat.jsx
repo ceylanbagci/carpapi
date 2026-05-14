@@ -5,9 +5,14 @@ import {
   useRef,
   useState,
 } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { respond, SAMPLE_PROMPTS } from "../data/mockChat.js";
+import { SAMPLE_PROMPTS } from "../data/mockChat.js";
+import {
+  AuthRequiredError,
+  chat as chatApi,
+  setApiToken,
+} from "../api.js";
 
 // One message in the thread.
 // id: stable key for React
@@ -42,6 +47,7 @@ function initialTheme() {
 }
 
 export default function Chat() {
+  const navigate = useNavigate();
   const [messages, setMessages] = useState(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -100,7 +106,7 @@ export default function Chat() {
     return () => mq.removeEventListener?.("change", handler);
   }, []);
 
-  const send = (raw) => {
+  const send = async (raw) => {
     const text = (raw ?? draft).trim();
     if (!text || busy) return;
     setDraft("");
@@ -109,14 +115,34 @@ export default function Chat() {
     const userMsg = mkMsg("user", text);
     setMessages((m) => [...m, userMsg]);
 
-    // Simulate the backend "thinking" then return the canned result.
-    // 500–900ms gives the typing dots time to feel intentional.
-    const delay = 500 + Math.random() * 400;
-    setTimeout(() => {
-      const reply = respond(text);
-      setMessages((m) => [...m, mkMsg("assistant", reply.text, reply.results)]);
+    try {
+      // Real RAG call to the backend; api.chat() translates the
+      // listings payload into the shape Chat.jsx already renders.
+      const reply = await chatApi(text);
+      setMessages((m) => [
+        ...m,
+        mkMsg("assistant", reply.text, reply.results),
+      ]);
+    } catch (err) {
+      // 401 from the backend means the saved token isn't valid — clear
+      // it and bounce to /login so the user can re-enter the passphrase.
+      if (err instanceof AuthRequiredError) {
+        setApiToken(null);
+        navigate("/login?next=/chat", { replace: true });
+        return;
+      }
+      // Surface the error as an assistant message so the user sees
+      // *something* in the thread; the backend prose-fallback usually
+      // means cards-only with a templated rationale already, so this
+      // path is for actual transport-level errors (network down,
+      // 5xx from the gateway, etc).
+      const msg =
+        (err && err.message) ||
+        "Sorry — the backend is unreachable right now. Try again in a moment.";
+      setMessages((m) => [...m, mkMsg("assistant", `⚠ ${msg}`)]);
+    } finally {
       setBusy(false);
-    }, delay);
+    }
   };
 
   const onKey = (e) => {
@@ -411,8 +437,7 @@ const Composer = forwardRef(function Composer(
         </button>
       </div>
       <div className="d4-chat-footnote">
-        UI preview — responses come from a small mock dataset until the chat
-        backend ships.
+        Live results from CarPapi's dealer inventory + AI search.
       </div>
     </form>
   );
