@@ -12,13 +12,20 @@ from .base import (
     MakerLoginRequired,
     MakerUnsupported,
 )
+from .audi import AudiAdapter
+from .buick import BuickAdapter
+from .cadillac import CadillacAdapter
 from .chevrolet import ChevroletAdapter
 from .ford import FordAdapter
 from .gmc import GmcAdapter
 from .honda import HondaAdapter
 from .jeep import JeepAdapter
+from .kia import KiaAdapter
+from .mazda import MazdaAdapter
+from .nissan import NissanAdapter
 from .ram import RamAdapter
 from .toyota import ToyotaAdapter
+from .volkswagen import VolkswagenAdapter
 
 REGISTRY: dict[str, MakerAdapter] = {
     "Ford": FordAdapter(),
@@ -28,6 +35,15 @@ REGISTRY: dict[str, MakerAdapter] = {
     "GMC": GmcAdapter(),
     "Jeep": JeepAdapter(),
     "Ram": RamAdapter(),
+    # Phase-2 adapters
+    "Cadillac": CadillacAdapter(),
+    "Buick": BuickAdapter(),
+    "Mazda": MazdaAdapter(),
+    "Kia": KiaAdapter(),
+    "Nissan": NissanAdapter(),
+    "Volkswagen": VolkswagenAdapter(),
+    # CDN-blocked; here so REGISTRY enumerates the full set
+    "Audi": AudiAdapter(),
 }
 
 
