@@ -3,33 +3,58 @@
 > &nbsp;&nbsp;&nbsp;&nbsp;`/login` — shared-passphrase gate (currently soft; see Auth note below)
 > &nbsp;&nbsp;&nbsp;&nbsp;`/chat`  — talks directly to the App Runner API for real RAG responses
 > **API (Django + RAG):** https://gt3mapscrz.us-east-1.awsapprunner.com
-> &nbsp;&nbsp;&nbsp;&nbsp;`POST /api/chat/`   — RAG-backed chat (Bedrock + RDS pgvector)
-> &nbsp;&nbsp;&nbsp;&nbsp;`GET /api/stats/`   — dashboard counts (live: 4391 listings / 385 dealers / 42 makes)
-> &nbsp;&nbsp;&nbsp;&nbsp;`GET /api/healthz/` — db-free liveness probe
+> &nbsp;&nbsp;&nbsp;&nbsp;`POST /api/chat/`            — RAG-backed chat (Bedrock + RDS pgvector)
+> &nbsp;&nbsp;&nbsp;&nbsp;`GET /api/stats/`            — dashboard counts (live: 4391 listings / 385 dealers / 42 makes)
+> &nbsp;&nbsp;&nbsp;&nbsp;`GET /api/healthz/`          — db-free liveness probe
+> &nbsp;&nbsp;&nbsp;&nbsp;`POST /api/auth/login/`      — email/password → JWT access+refresh
+> &nbsp;&nbsp;&nbsp;&nbsp;`POST /api/auth/registration/` — email + password + full\_name + phone
+> &nbsp;&nbsp;&nbsp;&nbsp;`POST /api/auth/logout/`     — clears JWT cookies
+> &nbsp;&nbsp;&nbsp;&nbsp;`GET/PATCH /api/auth/user/`  — current user
+> &nbsp;&nbsp;&nbsp;&nbsp;`POST /api/auth/password/reset/` — email-link reset
+> &nbsp;&nbsp;&nbsp;&nbsp;`GET /accounts/google/login/` — kicks off Google OAuth (provider creds required, see below)
+> &nbsp;&nbsp;&nbsp;&nbsp;`GET /admin/`                — Django admin (bootstrap superuser: see secrets file)
 > **CI/CD:** push to `main` triggers `.github/workflows/deploy.yml`
 > &nbsp;&nbsp;&nbsp;&nbsp;OIDC → ECR build/push → App Runner start-deployment → smoke
 > &nbsp;&nbsp;&nbsp;&nbsp;First success: run id `25862945804` (commit be57432)
 >
-> ### ⚠️ Auth gate: code complete, enforcement soft
+> ### 🔐 Auth model (live)
 >
-> `/login` captures a passphrase, stores in localStorage, sends as
-> `X-CarPapi-Auth: <token>` on every `/api/chat/` request. Django
-> reads `settings.CARPAPI_API_KEY` and 401s on mismatch — but ONLY
-> when that env var is set.
+> - **Custom User** at `accounts.User` (email-as-username + full_name +
+>   phone + verification flags). Migration `accounts.0001_initial` is
+>   applied to RDS.
+> - **django-allauth + dj-rest-auth + djangorestframework-simplejwt**:
+>   email/password registration, email confirmation (currently
+>   `ACCOUNT_EMAIL_VERIFICATION=optional`; flip to `mandatory` after
+>   wiring real email sending), Google OAuth, password reset, JWT
+>   cookies cross-site-friendly for the CloudFront → App Runner hop.
+> - **Bootstrap superuser**: created at every container boot via
+>   `accounts.management.commands.ensure_superuser`, reads
+>   `DJANGO_SUPERUSER_{EMAIL,PASSWORD,FULL_NAME}`. Idempotent.
+>   Current super: `ceylanibagci@gmail.com` /
+>   `data/secrets/django_superuser_password.txt` (chmod 600, gitignored).
+> - **WhiteNoise** serves `/static/` (admin CSS, DRF browsable-API
+>   assets) from `STATIC_ROOT`; `collectstatic` runs at image build.
+> - **Migrations on boot**: `Dockerfile` CMD runs `manage.py migrate
+>   --noinput && manage.py ensure_superuser` before `gunicorn`. Idempotent.
 >
-> App Runner's `update-service` API has a quirk: it re-validates the
-> ECR access role on every env-var update and rolls back with
-> `Invalid Access Role in AuthenticationConfiguration` even when the
-> role is identical to the one already in use. Tried three different
-> roles + the omit-AuthConfig path; each attempt rolled back. So
-> `CARPAPI_API_KEY` is currently unset on App Runner → Django skips
-> the check → any passphrase on `/login` is accepted. The CHAT
-> itself is fully functional regardless.
+> ### ☑ Google OAuth — code wired, credentials still TODO
 >
-> To activate the gate, recreate the service with `CARPAPI_API_KEY`
-> in the initial `CreateService` payload (that path works). The
-> frontend already sends the header from localStorage; no rebuild
-> needed once the env var lands.
+> The provider is configured under `SOCIALACCOUNT_PROVIDERS.google`
+> with env-var lookup for `client_id` + `secret`. To turn it on:
+>
+> 1. Google Cloud Console → APIs & Services → Credentials → Create
+>    OAuth 2.0 Client (Web application).
+> 2. Authorized redirect URIs:
+>      `https://gt3mapscrz.us-east-1.awsapprunner.com/accounts/google/login/callback/`
+>      `https://d372ww3313y553.cloudfront.net/accounts/google/login/callback/` (if you ever proxy)
+> 3. Copy the **Client ID** and **Client secret**.
+> 4. On App Runner: update env-vars to add:
+>      `DJANGO_GOOGLE_CLIENT_ID=...`
+>      `DJANGO_GOOGLE_CLIENT_SECRET=...`
+> 5. The React frontend's "Sign in with Google" button should link to
+>    `https://gt3mapscrz.us-east-1.awsapprunner.com/accounts/google/login/?next=https://d372ww3313y553.cloudfront.net/chat`
+>    allauth handles the OAuth dance; the user lands back at the
+>    frontend with the JWT cookie already set.
 
 # CarPapi — live AWS state (snapshot)
 
