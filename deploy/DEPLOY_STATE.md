@@ -1,7 +1,9 @@
-> # 🟢 LIVE — full SPA + RAG
+> # 🟢 LIVE — full SPA + RAG + real user auth
 > **Frontend (React):** https://d372ww3313y553.cloudfront.net (S3 + CloudFront, OAC-protected)
-> &nbsp;&nbsp;&nbsp;&nbsp;`/login` — shared-passphrase gate (currently soft; see Auth note below)
-> &nbsp;&nbsp;&nbsp;&nbsp;`/chat`  — talks directly to the App Runner API for real RAG responses
+> &nbsp;&nbsp;&nbsp;&nbsp;`/`         — marketing landing (CF default root → S3 `landing.html`)
+> &nbsp;&nbsp;&nbsp;&nbsp;`/login`    — email + password sign in + "Continue with Google" button
+> &nbsp;&nbsp;&nbsp;&nbsp;`/register` — full real-world signup (email/password/full_name/phone/marketing-opt-in)
+> &nbsp;&nbsp;&nbsp;&nbsp;`/chat`     — JWT-gated; shows the user's name + Sign-out button
 > **API (Django + RAG):** https://gt3mapscrz.us-east-1.awsapprunner.com
 > &nbsp;&nbsp;&nbsp;&nbsp;`POST /api/chat/`            — RAG-backed chat (Bedrock + RDS pgvector)
 > &nbsp;&nbsp;&nbsp;&nbsp;`GET /api/stats/`            — dashboard counts (live: 4391 listings / 385 dealers / 42 makes)
