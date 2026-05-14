@@ -9,15 +9,16 @@ export default function ForgotPassword() {
   const [resetUrl, setResetUrl] = useState(null);
   const [busy, setBusy] = useState(false);
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
     setBusy(true);
-    const res = requestPasswordReset({ email });
+    const res = await requestPasswordReset({ email });
     setBusy(false);
     setSent(true);
-    // In a real backend the token would land in the user's email. For
-    // the UI mock we expose the would-be reset link so the demo flow
-    // is testable end-to-end.
+    // The real backend emails the reset link (or logs it to the
+    // Django console when EMAIL_BACKEND is the console backend in
+    // dev). The token never comes back in the API response, so
+    // resetUrl stays null in real-auth mode.
     if (res.token) {
       setResetUrl(`/reset-password?token=${res.token}`);
     }

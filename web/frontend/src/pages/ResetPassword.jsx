@@ -15,7 +15,7 @@ export default function ResetPassword() {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     if (pwd !== confirm) {
@@ -23,7 +23,7 @@ export default function ResetPassword() {
       return;
     }
     setBusy(true);
-    const res = resetPassword({ token, newPassword: pwd });
+    const res = await resetPassword({ token, newPassword: pwd });
     setBusy(false);
     if (!res.ok) {
       setError(res.error);

@@ -39,7 +39,7 @@ export default function Signup() {
 
   const strength = passwordStrength(password);
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     if (password !== confirm) {
@@ -51,7 +51,7 @@ export default function Signup() {
       return;
     }
     setBusy(true);
-    const res = signup({ name, email, password });
+    const res = await signup({ name, email, password });
     setBusy(false);
     if (!res.ok) {
       setError(res.error);

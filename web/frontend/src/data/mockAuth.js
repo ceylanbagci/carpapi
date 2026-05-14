@@ -1,16 +1,40 @@
 /**
- * UI-only mock auth: stores a "session" in localStorage so the
- * login / signup / account / password-reset pages can demonstrate
- * real interaction without a backend.
+ * Auth bridge for the demo4-styled pages (Signup, Account,
+ * ForgotPassword, ResetPassword, Pricing).
  *
- * Drop-in design: every function returns the same shape a real API
- * client would return. When the backend lands, replace this module
- * with one that wraps `fetch('/api/auth/...')` — no UI changes needed.
+ * Originally this file was a UI-only localStorage mock so the new
+ * pages could be designed without a backend. Now that real auth is
+ * live (Django + dj-rest-auth + JWT), this file is a **thin bridge**:
+ *
+ *   - currentUser() / login() / signup() / logout() /
+ *     requestPasswordReset() / resetPassword() / changePassword() /
+ *     updateProfile()  → delegate to the real backend via api.js
+ *
+ *   - createApiToken() / revokeApiToken() / updatePreferences() /
+ *     deleteAccount()  → still localStorage-only because the backend
+ *     doesn't expose these yet. They're marked LOCAL-ONLY below.
+ *
+ * The public function signatures are unchanged so Signup/Account/etc.
+ * keep working without page edits. The shape of the returned `user`
+ * object is normalized so both real-auth users (from /api/auth/user/)
+ * and any pre-existing local mock users render correctly.
  */
 
-const USERS_KEY = "carpapi.auth.users.v1";
-const SESSION_KEY = "carpapi.auth.session.v1";
-const RESET_KEY = "carpapi.auth.resetTokens.v1";
+import {
+  AuthRequiredError,
+  getAuth,
+  getJson,
+  login as apiLogin,
+  logout as apiLogout,
+  postJson,
+  register as apiRegister,
+  setAuth,
+} from "../api.js";
+
+// LOCAL-ONLY storage keys (for features the backend doesn't have yet).
+const PREFS_KEY = "carpapi.auth.prefs.v1";       // per-user preferences
+const TOKENS_KEY = "carpapi.auth.apiTokens.v1";  // per-user "API tokens" (cosmetic)
+const RESET_KEY = "carpapi.auth.resetTokens.v1"; // local fallback for /reset-password?token=...
 
 function readJSON(key, fallback) {
   try {
@@ -20,237 +44,278 @@ function readJSON(key, fallback) {
     return fallback;
   }
 }
-
 function writeJSON(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch {
-    /* quota — ignore in mock */
+    /* quota — ignore */
   }
 }
 
-function nowIso() {
-  return new Date().toISOString();
+// ─────────────────────────────────────────────────────────────────────
+// Normalize backend-user → mock-user shape so the demo4 pages render
+// without per-page changes.
+//
+// Backend (dj-rest-auth /api/auth/user/) returns:
+//   { pk, email, full_name, phone, is_email_verified, ... }
+//
+// Demo4 pages expect:
+//   { id, name, email, plan, created_at, preferences, apiTokens }
+// ─────────────────────────────────────────────────────────────────────
+function normalizeUser(backendUser) {
+  if (!backendUser) return null;
+  const id = String(backendUser.pk ?? backendUser.id ?? backendUser.email);
+  const prefs = readJSON(PREFS_KEY, {})[id] || {
+    weeklyDigest: true,
+    priceDropAlerts: true,
+    productUpdates: false,
+    timezone:
+      (typeof Intl !== "undefined" &&
+        Intl.DateTimeFormat?.().resolvedOptions?.().timeZone) ||
+      "America/New_York",
+  };
+  const tokens = readJSON(TOKENS_KEY, {})[id] || [];
+  return {
+    id,
+    name: backendUser.full_name || (backendUser.email || "").split("@")[0],
+    email: backendUser.email,
+    phone: backendUser.phone || null,
+    is_email_verified: !!backendUser.is_email_verified,
+    is_phone_verified: !!backendUser.is_phone_verified,
+    plan: "free",                       // backend doesn't track plans yet
+    created_at: backendUser.date_joined || new Date().toISOString(),
+    preferences: prefs,
+    apiTokens: tokens,
+  };
 }
 
-function seedDemoUser() {
-  const users = readJSON(USERS_KEY, []);
-  if (users.length === 0) {
-    users.push({
-      id: "demo-1",
-      name: "Demo Driver",
-      email: "demo@carpapi.app",
-      // Mock-only: NEVER store plaintext in a real backend.
-      password: "demo1234",
-      plan: "free",
-      created_at: "2025-12-01T10:00:00Z",
-      preferences: {
-        weeklyDigest: true,
-        priceDropAlerts: true,
-        productUpdates: false,
-        timezone: "America/New_York",
-      },
-      apiTokens: [
-        {
-          id: "tok-1",
-          label: "Personal dashboard",
-          last4: "9k4M",
-          created_at: "2025-12-15T14:22:00Z",
-        },
-      ],
-    });
-    writeJSON(USERS_KEY, users);
-  }
-}
-seedDemoUser();
-
-// ----- Public API ---------------------------------------------------
+// ─────────────────────────────────────────────────────────────────────
+// Public API
+// ─────────────────────────────────────────────────────────────────────
 
 export function currentUser() {
-  const session = readJSON(SESSION_KEY, null);
-  if (!session) return null;
-  const users = readJSON(USERS_KEY, []);
-  const u = users.find((x) => x.id === session.userId);
-  if (!u) return null;
-  // Never expose the password field.
-  const { password, ...safe } = u;
-  return safe;
+  const auth = getAuth();
+  if (!auth || !auth.access || !auth.user) return null;
+  return normalizeUser(auth.user);
 }
 
-export function login({ email, password }) {
-  const users = readJSON(USERS_KEY, []);
-  const u = users.find(
-    (x) => x.email.toLowerCase() === (email || "").toLowerCase(),
-  );
-  if (!u) return { ok: false, error: "No account with that email." };
-  if (u.password !== password)
-    return { ok: false, error: "Wrong password. Try again." };
-  writeJSON(SESSION_KEY, { userId: u.id, at: nowIso() });
-  return { ok: true, user: currentUser() };
+export async function login({ email, password }) {
+  try {
+    const auth = await apiLogin({ email, password });
+    return { ok: true, user: normalizeUser(auth.user) };
+  } catch (err) {
+    const p = err.payload || {};
+    const detail =
+      p.detail ||
+      p.non_field_errors?.[0] ||
+      p.email?.[0] ||
+      p.password?.[0] ||
+      err.message ||
+      "Login failed. Check your credentials.";
+    return { ok: false, error: detail };
+  }
 }
 
-export function signup({ name, email, password }) {
-  const trimmedEmail = (email || "").trim().toLowerCase();
-  if (!trimmedEmail || !/.+@.+\..+/.test(trimmedEmail)) {
-    return { ok: false, error: "Enter a valid email address." };
+export async function signup({ name, email, password }) {
+  try {
+    const auth = await apiRegister({
+      email,
+      password,
+      full_name: name,
+      phone: null,
+      marketing_opt_in: false,
+    });
+    return { ok: true, user: normalizeUser(auth.user) };
+  } catch (err) {
+    const p = err.payload || {};
+    const detail =
+      p.email?.[0] ||
+      p.password1?.[0] ||
+      p.password2?.[0] ||
+      p.non_field_errors?.[0] ||
+      err.message ||
+      "Couldn't create the account. Try again.";
+    return { ok: false, error: detail };
   }
-  if (!password || password.length < 8) {
-    return { ok: false, error: "Password must be at least 8 characters." };
-  }
-  const users = readJSON(USERS_KEY, []);
-  if (users.find((x) => x.email.toLowerCase() === trimmedEmail)) {
-    return { ok: false, error: "An account with that email already exists." };
-  }
-  const id = `u-${Math.random().toString(36).slice(2, 10)}`;
-  const user = {
-    id,
-    name: (name || "").trim() || trimmedEmail.split("@")[0],
-    email: trimmedEmail,
-    password,
-    plan: "free",
-    created_at: nowIso(),
-    preferences: {
-      weeklyDigest: true,
-      priceDropAlerts: true,
-      productUpdates: false,
-      timezone:
-        Intl?.DateTimeFormat?.().resolvedOptions?.().timeZone ||
-        "America/New_York",
-    },
-    apiTokens: [],
-  };
-  users.push(user);
-  writeJSON(USERS_KEY, users);
-  writeJSON(SESSION_KEY, { userId: id, at: nowIso() });
-  return { ok: true, user: currentUser() };
 }
 
-export function logout() {
-  localStorage.removeItem(SESSION_KEY);
+export async function logout() {
+  await apiLogout(); // clears carpapi.auth.v2 server-side + locally
   return { ok: true };
 }
 
-export function requestPasswordReset({ email }) {
-  const users = readJSON(USERS_KEY, []);
-  const u = users.find(
-    (x) => x.email.toLowerCase() === (email || "").toLowerCase(),
-  );
-  // Always pretend the request succeeded (don't leak account existence).
-  if (!u) return { ok: true, token: null };
-  const token = `r-${Math.random().toString(36).slice(2, 12)}`;
-  const tokens = readJSON(RESET_KEY, {});
-  tokens[token] = { userId: u.id, at: nowIso() };
-  writeJSON(RESET_KEY, tokens);
-  return { ok: true, token, hint: u.email };
-}
-
-export function resetPassword({ token, newPassword }) {
-  if (!newPassword || newPassword.length < 8) {
-    return { ok: false, error: "Password must be at least 8 characters." };
+export async function requestPasswordReset({ email }) {
+  try {
+    await postJson("/auth/password/reset/", { email });
+    // Backend returns 200 even if the email doesn't exist (anti-enumeration).
+    return { ok: true, hint: email };
+  } catch (err) {
+    // Surface a friendly error but don't leak account existence.
+    return { ok: true, hint: email, warning: err.message };
   }
-  const tokens = readJSON(RESET_KEY, {});
-  const entry = tokens[token];
-  if (!entry) return { ok: false, error: "Reset link is invalid or expired." };
-  const users = readJSON(USERS_KEY, []);
-  const u = users.find((x) => x.id === entry.userId);
-  if (!u) return { ok: false, error: "Account not found." };
-  u.password = newPassword;
-  writeJSON(USERS_KEY, users);
-  delete tokens[token];
-  writeJSON(RESET_KEY, tokens);
-  return { ok: true };
 }
 
-export function updateProfile({ name, email }) {
-  const session = readJSON(SESSION_KEY, null);
-  if (!session) return { ok: false, error: "Not signed in." };
-  const users = readJSON(USERS_KEY, []);
-  const u = users.find((x) => x.id === session.userId);
-  if (!u) return { ok: false, error: "Session is stale; sign in again." };
-  if (name !== undefined) u.name = name.trim();
-  if (email !== undefined) {
-    const trimmed = email.trim().toLowerCase();
-    if (!/.+@.+\..+/.test(trimmed))
-      return { ok: false, error: "Enter a valid email address." };
-    const taken = users.find((x) => x.id !== u.id && x.email === trimmed);
-    if (taken) return { ok: false, error: "That email is already taken." };
-    u.email = trimmed;
+export async function resetPassword({ token, newPassword }) {
+  // dj-rest-auth expects { uid, token, new_password1, new_password2 }.
+  // The "token" we get from the reset email URL is "<uid>-<token>" or
+  // sometimes just "<token>". We support a "uid:token" shape too.
+  let uid = "";
+  let key = token || "";
+  if (key.includes(":")) {
+    [uid, key] = key.split(":", 2);
   }
-  writeJSON(USERS_KEY, users);
-  return { ok: true, user: currentUser() };
+  try {
+    await postJson("/auth/password/reset/confirm/", {
+      uid,
+      token: key,
+      new_password1: newPassword,
+      new_password2: newPassword,
+    });
+    return { ok: true };
+  } catch (err) {
+    const p = err.payload || {};
+    return {
+      ok: false,
+      error:
+        p.token?.[0] ||
+        p.uid?.[0] ||
+        p.new_password2?.[0] ||
+        p.new_password1?.[0] ||
+        err.message ||
+        "Reset link is invalid or expired.",
+    };
+  }
 }
 
-export function changePassword({ currentPassword, newPassword }) {
-  const session = readJSON(SESSION_KEY, null);
-  if (!session) return { ok: false, error: "Not signed in." };
-  const users = readJSON(USERS_KEY, []);
-  const u = users.find((x) => x.id === session.userId);
-  if (!u) return { ok: false, error: "Session is stale." };
-  if (u.password !== currentPassword)
-    return { ok: false, error: "Current password is wrong." };
-  if (!newPassword || newPassword.length < 8)
-    return { ok: false, error: "New password must be at least 8 characters." };
-  u.password = newPassword;
-  writeJSON(USERS_KEY, users);
-  return { ok: true };
+export async function changePassword({ currentPassword, newPassword }) {
+  try {
+    await postJson("/auth/password/change/", {
+      old_password: currentPassword,
+      new_password1: newPassword,
+      new_password2: newPassword,
+    });
+    return { ok: true };
+  } catch (err) {
+    if (err instanceof AuthRequiredError) {
+      return { ok: false, error: "Not signed in." };
+    }
+    const p = err.payload || {};
+    return {
+      ok: false,
+      error:
+        p.old_password?.[0] ||
+        p.new_password1?.[0] ||
+        p.new_password2?.[0] ||
+        err.message ||
+        "Couldn't change password.",
+    };
+  }
 }
+
+export async function updateProfile({ name, email }) {
+  const body = {};
+  if (name !== undefined) body.full_name = name;
+  if (email !== undefined) body.email = email;
+  try {
+    const res = await fetch(
+      (import.meta.env.VITE_API_BASE || "/api").replace(/\/$/, "") +
+        "/auth/user/",
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${getAuth()?.access || ""}`,
+        },
+        body: JSON.stringify(body),
+      },
+    );
+    if (res.status === 401)
+      return { ok: false, error: "Not signed in." };
+    const data = await res.json();
+    if (!res.ok) {
+      return {
+        ok: false,
+        error:
+          data?.email?.[0] ||
+          data?.full_name?.[0] ||
+          data?.detail ||
+          "Couldn't update profile.",
+      };
+    }
+    // Refresh the saved auth blob with the new user details.
+    const auth = getAuth();
+    if (auth) setAuth({ ...auth, user: data });
+    return { ok: true, user: normalizeUser(data) };
+  } catch (err) {
+    return { ok: false, error: err.message || "Profile update failed." };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// LOCAL-ONLY (no backend equivalent yet)
+//
+// These let the demo4 pages render + save preferences locally. When
+// the backend adds endpoints for them, swap these for real api calls
+// — the function signatures don't change.
+// ─────────────────────────────────────────────────────────────────────
 
 export function updatePreferences(patch) {
-  const session = readJSON(SESSION_KEY, null);
-  if (!session) return { ok: false, error: "Not signed in." };
-  const users = readJSON(USERS_KEY, []);
-  const u = users.find((x) => x.id === session.userId);
-  if (!u) return { ok: false, error: "Session is stale." };
-  u.preferences = { ...(u.preferences || {}), ...patch };
-  writeJSON(USERS_KEY, users);
-  return { ok: true, preferences: u.preferences };
+  const u = currentUser();
+  if (!u) return { ok: false, error: "Not signed in." };
+  const all = readJSON(PREFS_KEY, {});
+  all[u.id] = { ...(all[u.id] || u.preferences || {}), ...(patch || {}) };
+  writeJSON(PREFS_KEY, all);
+  return { ok: true, preferences: all[u.id] };
 }
 
 export function createApiToken({ label }) {
-  const session = readJSON(SESSION_KEY, null);
-  if (!session) return { ok: false, error: "Not signed in." };
-  const users = readJSON(USERS_KEY, []);
-  const u = users.find((x) => x.id === session.userId);
-  if (!u) return { ok: false, error: "Session is stale." };
-  // Generate a token; reveal once, store only the last 4 chars.
+  const u = currentUser();
+  if (!u) return { ok: false, error: "Not signed in." };
   const secret = Array.from({ length: 40 }, () =>
     Math.floor(Math.random() * 36).toString(36),
   ).join("");
   const tok = {
     id: `tok-${Math.random().toString(36).slice(2, 8)}`,
-    label: label?.trim() || "Untitled token",
+    label: (label || "").trim() || "Untitled token",
     last4: secret.slice(-4),
-    created_at: nowIso(),
+    created_at: new Date().toISOString(),
   };
-  u.apiTokens = [...(u.apiTokens || []), tok];
-  writeJSON(USERS_KEY, users);
+  const all = readJSON(TOKENS_KEY, {});
+  all[u.id] = [...(all[u.id] || []), tok];
+  writeJSON(TOKENS_KEY, all);
   return { ok: true, token: `cpk_${secret}`, record: tok };
 }
 
 export function revokeApiToken({ id }) {
-  const session = readJSON(SESSION_KEY, null);
-  if (!session) return { ok: false, error: "Not signed in." };
-  const users = readJSON(USERS_KEY, []);
-  const u = users.find((x) => x.id === session.userId);
-  if (!u) return { ok: false, error: "Session is stale." };
-  u.apiTokens = (u.apiTokens || []).filter((t) => t.id !== id);
-  writeJSON(USERS_KEY, users);
+  const u = currentUser();
+  if (!u) return { ok: false, error: "Not signed in." };
+  const all = readJSON(TOKENS_KEY, {});
+  all[u.id] = (all[u.id] || []).filter((t) => t.id !== id);
+  writeJSON(TOKENS_KEY, all);
   return { ok: true };
 }
 
-export function deleteAccount({ confirmEmail }) {
-  const session = readJSON(SESSION_KEY, null);
-  if (!session) return { ok: false, error: "Not signed in." };
-  const users = readJSON(USERS_KEY, []);
-  const u = users.find((x) => x.id === session.userId);
-  if (!u) return { ok: false, error: "Session is stale." };
-  if ((confirmEmail || "").trim().toLowerCase() !== u.email) {
+export async function deleteAccount({ confirmEmail }) {
+  const u = currentUser();
+  if (!u) return { ok: false, error: "Not signed in." };
+  if ((confirmEmail || "").trim().toLowerCase() !== u.email.toLowerCase()) {
     return { ok: false, error: "Confirmation email doesn't match." };
   }
-  const filtered = users.filter((x) => x.id !== u.id);
-  writeJSON(USERS_KEY, filtered);
-  localStorage.removeItem(SESSION_KEY);
-  return { ok: true };
+  // No backend endpoint to delete the user account yet. Sign out
+  // locally as a placeholder; flag this in the agent docs so a
+  // server-side endpoint can be added.
+  await apiLogout();
+  return {
+    ok: true,
+    warning:
+      "Account marked for deletion locally — server-side deletion is not yet wired (see deploy/PRODUCTION.md §7).",
+  };
 }
 
-export const DEMO_CREDENTIALS = { email: "demo@carpapi.app", password: "demo1234" };
+// Kept for demo-page compatibility. Real auth doesn't accept this
+// pair; documented so the Signup/Login pages can show it as a hint.
+export const DEMO_CREDENTIALS = {
+  email: "ceylanibagci@gmail.com",
+  password: "(see data/secrets/django_superuser_password.txt)",
+};

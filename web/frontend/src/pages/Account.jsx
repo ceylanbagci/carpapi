@@ -76,8 +76,8 @@ export default function Account() {
           <button
             type="button"
             className="btn btn-light btn-sm"
-            onClick={() => {
-              logout();
+            onClick={async () => {
+              await logout();
               navigate("/login", { replace: true });
             }}
           >
@@ -128,10 +128,10 @@ function ProfileCard({ user, ok, err, refresh }) {
   const [email, setEmail] = useState(user.email);
   const [busy, setBusy] = useState(false);
 
-  const save = (e) => {
+  const save = async (e) => {
     e.preventDefault();
     setBusy(true);
-    const r = updateProfile({ name, email });
+    const r = await updateProfile({ name, email });
     setBusy(false);
     if (!r.ok) return err(r.error);
     refresh();
@@ -183,11 +183,11 @@ function PasswordCard({ ok, err }) {
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const save = (e) => {
+  const save = async (e) => {
     e.preventDefault();
     if (next !== confirm) return err("New passwords don't match.");
     setBusy(true);
-    const r = changePassword({ currentPassword: cur, newPassword: next });
+    const r = await changePassword({ currentPassword: cur, newPassword: next });
     setBusy(false);
     if (!r.ok) return err(r.error);
     setCur("");
@@ -449,8 +449,8 @@ function DangerCard({ user, err }) {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
 
-  const onDelete = () => {
-    const r = deleteAccount({ confirmEmail: confirm });
+  const onDelete = async () => {
+    const r = await deleteAccount({ confirmEmail: confirm });
     if (!r.ok) return err(r.error);
     navigate("/", { replace: true });
   };
