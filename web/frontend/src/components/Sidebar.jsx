@@ -27,12 +27,10 @@ const NAV = [
       { to: "/dealers", label: "Dealers", icon: "bi-shop" },
     ],
   },
-  {
-    section: "Account",
-    items: [
-      { to: "/account", label: "Settings", icon: "bi-person-gear" },
-    ],
-  },
+  // NOTE: User settings are NOT in the admin sidebar. They live at
+  // /settings under a non-admin shell so any signed-in user can reach
+  // them without the admin chrome. The admin Header / user menu links
+  // there separately.
 ];
 
 export default function Sidebar({ open }) {

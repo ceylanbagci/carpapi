@@ -89,3 +89,26 @@ export function ProtectedRoute({ children }) {
   }
   return children;
 }
+
+/**
+ * Wraps the admin shell. Non-authed users → /login.
+ * Authed-but-non-staff users → /settings (they don't see admin chrome).
+ *
+ * `is_staff` comes from the backend user object (`CarPapiUserSerializer`)
+ * and reflects Django's auth flag set via /admin/. Only true admins
+ * see the /dashboard, /cars, /listings, /makes, /models, /dealers
+ * tables. Regular users live at /chat + /settings.
+ */
+export function StaffProtectedRoute({ children }) {
+  const { isAuthed, user } = useAuth();
+  const location = useLocation();
+  if (!isAuthed) {
+    const next = location.pathname + location.search;
+    return <Navigate to={`/login?next=${encodeURIComponent(next)}`} replace />;
+  }
+  if (!user?.is_staff) {
+    // Logged in but not staff — send them somewhere useful.
+    return <Navigate to="/settings" replace />;
+  }
+  return children;
+}

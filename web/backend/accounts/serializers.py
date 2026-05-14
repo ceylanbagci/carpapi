@@ -48,6 +48,13 @@ class CarPapiUserSerializer(UserDetailsSerializer):
             "is_phone_verified",
             "marketing_opt_in",
             "date_joined",
+            # Role flags — read-only on the API; mutate via Django admin.
+            # The SPA uses these to gate StaffProtectedRoute on the
+            # admin shell (/dashboard, /cars, /listings, /makes, /models,
+            # /dealers). is_superuser is exposed too so a future
+            # super-admin-only section can gate on it.
+            "is_staff",
+            "is_superuser",
         )
         read_only_fields = (
             "pk",
@@ -55,4 +62,6 @@ class CarPapiUserSerializer(UserDetailsSerializer):
             "is_email_verified",
             "is_phone_verified",
             "date_joined",
+            "is_staff",
+            "is_superuser",
         )
