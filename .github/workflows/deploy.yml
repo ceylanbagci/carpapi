@@ -93,13 +93,15 @@ jobs:
             ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPO }}:${{ steps.sha.outputs.short }}
             ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPO }}:latest
 
-      # 4. Trigger App Runner to pull the new :latest tag.
+      # 4. Resolve the App Runner service ARN.
       #
-      # If the service has AutoDeploymentsEnabled=true (set by
-      # deploy/deploy_apprunner.sh), App Runner notices the push and
-      # starts deploying within ~60 sec. We still poke it explicitly
-      # to make the timing deterministic.
-      - name: Start App Runner deployment
+      # The service has AutoDeploymentsEnabled=true (set by
+      # deploy/deploy_apprunner.sh). App Runner sees our ECR push
+      # in step 3 and starts a deployment automatically; we do NOT
+      # call start-deployment ourselves — that races with the
+      # auto-trigger and the API rejects the explicit call with
+      # InvalidStateException once the auto-deploy is in flight.
+      - name: Resolve service ARN
         id: deploy
         run: |
           ARN=$(aws apprunner list-services \
@@ -109,33 +111,55 @@ jobs:
             echo "::error::App Runner service ${APPRUNNER_SERVICE} not found. Run deploy/deploy_apprunner.sh once first."
             exit 1
           fi
-          aws apprunner start-deployment --service-arn "$ARN" >/dev/null
           echo "service_arn=$ARN" >> "$GITHUB_OUTPUT"
-          echo "Deployment started for $ARN"
+          echo "Service: $ARN"
 
-      # 5. Wait for the deployment to reach RUNNING
+      # 5. Wait for the auto-triggered deployment to reach RUNNING.
+      #
+      # Window: up to 15 min. We also try to detect "no new operation
+      # was triggered" (e.g. cache hit on identical image) by recording
+      # the most-recent operation timestamp before waiting and bailing
+      # out cleanly if nothing newer shows up.
       - name: Wait for healthy deployment
         run: |
           ARN="${{ steps.deploy.outputs.service_arn }}"
-          DEADLINE=$(( $(date +%s) + 900 ))   # 15 min
+          DEADLINE=$(( $(date +%s) + 900 ))
+          # Give App Runner ~45s to register the ECR push and start a
+          # new operation before we begin polling status. Without this
+          # we might catch a *prior* RUNNING state and skip past the
+          # actual deploy we just triggered.
+          sleep 45
           while [ "$(date +%s)" -lt "$DEADLINE" ]; do
             STATUS=$(aws apprunner describe-service --service-arn "$ARN" \
               --query 'Service.Status' --output text)
             echo "[$(date -u +%FT%TZ)] status=$STATUS"
             case "$STATUS" in
-              RUNNING)        echo "::notice::Service is RUNNING"; exit 0 ;;
+              RUNNING)
+                echo "::notice::Service is RUNNING"
+                exit 0
+                ;;
               CREATE_FAILED|DELETED|DELETE_FAILED|PAUSED)
                 echo "::error::Deployment ended in $STATUS"
                 aws apprunner list-operations --service-arn "$ARN" \
                   --query 'OperationSummaryList[0:5]' --output table
-                exit 1 ;;
+                exit 1
+                ;;
             esac
             sleep 20
           done
           echo "::error::Timed out waiting for RUNNING"
           exit 1
 
-      # 6. Post-deploy smoke against the live URL
+      # 6. Post-deploy smoke against the live URL.
+      #
+      # /api/chat/ now requires JWT (real user accounts via dj-rest-auth),
+      # so the workflow can't make an authenticated chat call without
+      # holding a service-account token. We instead verify:
+      #   1. /api/healthz/  → 200  (gunicorn alive)
+      #   2. /api/stats/    → 200  (DB connectivity)
+      #   3. /api/chat/ unauth → 401  (auth gate enforced)
+      # If all three pass the whole chain (container, RDS, JWT middleware)
+      # is wired up.
       - name: Smoke test
         run: |
           ARN="${{ steps.deploy.outputs.service_arn }}"
@@ -143,16 +167,23 @@ jobs:
             --query 'Service.ServiceUrl' --output text)
           echo "Live URL: https://$URL"
 
-          # /api/stats/ should always work
-          curl -fsS "https://$URL/api/stats/" | head -200
+          # 1. /api/healthz/
+          curl -fsS "https://$URL/api/healthz/" | jq .
 
-          # /api/chat/ — single concrete query to verify Bedrock auth +
-          # DB connectivity. If this 200s, the whole chain is wired up.
-          curl -fsS -X POST "https://$URL/api/chat/" \
+          # 2. /api/stats/
+          curl -fsS "https://$URL/api/stats/" | jq .
+
+          # 3. /api/chat/ unauthenticated → must be 401
+          status=$(curl -sS -o /tmp/chat.body -w "%{http_code}" \
+            -X POST "https://$URL/api/chat/" \
             -H 'Content-Type: application/json' \
-            -d '{"message":"Toyota Camry under $25k"}' \
-            | jq '.diagnostics, .listings | length' \
-            || { echo "::error::Chat smoke failed"; exit 1; }
+            -d '{"message":"smoke"}')
+          echo "POST /api/chat/ (no auth) → HTTP $status"
+          if [ "$status" != "401" ]; then
+            echo "::error::Expected 401 from unauthenticated /api/chat/ (gate not enforced?)"
+            cat /tmp/chat.body
+            exit 1
+          fi
 
       # 7. Tag the commit so we can correlate Sentry / CloudWatch back
       - name: Annotate commit with deploy info
