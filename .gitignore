@@ -1,5 +1,11 @@
 .env
+# Ignore generic migrations/ dirs (alembic, custom pipeline) BUT
+# re-include Django app migrations — those are first-class source
+# code that must be in the repo + the Docker image so `manage.py
+# migrate` works at container boot.
 migrations/
+!web/backend/**/migrations/
+!web/backend/**/migrations/**
 db.sqlite3
 .DS_Store
 # Project-shared Claude Code agents under .claude/agents/ ARE tracked;
