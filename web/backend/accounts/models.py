@@ -117,3 +117,78 @@ class User(AbstractUser):
 
     def get_short_name(self) -> str:
         return self.full_name.split()[0] if self.full_name else self.email
+
+
+class AdminOTPChallenge(models.Model):
+    """One-time-code challenge for admin (is_staff) login step-up.
+
+    Lifecycle:
+      1. User POSTs /api/auth/login/ with email+password. Backend
+         validates the password. If the user is_staff, instead of
+         issuing a JWT, it creates an AdminOTPChallenge row, sends
+         a 6-digit `code` to the user's verified contact channel
+         (email today, SMS tomorrow), and returns the challenge
+         id (`challenge_token`) + expiry to the client.
+      2. SPA shows the OTP form; user enters the code.
+      3. SPA POSTs /api/admin-otp/verify/ with the challenge_token +
+         code. If still valid + unused + matches: mark `used_at`,
+         issue the JWT, and return it.
+      4. Any expired / mismatched / exhausted-attempts row is rejected.
+
+    Codes are 6-digit numeric, valid for 10 minutes, and capped at
+    5 wrong attempts before invalidation. We store the hash, not the
+    plaintext, so a DB read won't leak codes.
+    """
+
+    user = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.CASCADE,
+        related_name="admin_otp_challenges",
+    )
+    # Random URL-safe identifier the client echoes back to /verify/.
+    challenge_token = models.CharField(max_length=64, unique=True, db_index=True)
+    # SHA-256 of the 6-digit code. We never store the plaintext.
+    code_hash = models.CharField(max_length=64)
+    # Which channel the code was delivered through. Useful for the UI
+    # ("we sent a code to +1•••6526" vs "we emailed you a code").
+    channel = models.CharField(
+        max_length=16,
+        choices=[
+            ("email", "Email"),
+            ("sms", "SMS"),
+            ("log", "Log (dev only)"),
+        ],
+        default="email",
+    )
+    destination_hint = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Masked destination shown to the user, e.g. j••@gmail.com or +1•••6526.",
+    )
+    attempts = models.PositiveIntegerField(default=0)
+    used_at = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        indexes = [
+            models.Index(fields=("user", "created_at")),
+        ]
+
+    def __str__(self) -> str:
+        return f"AdminOTPChallenge<{self.user_id} {self.challenge_token[:8]} {self.channel}>"
+
+    @property
+    def is_expired(self) -> bool:
+        from django.utils import timezone
+        return timezone.now() >= self.expires_at
+
+    @property
+    def is_used(self) -> bool:
+        return self.used_at is not None
+
+    @property
+    def is_exhausted(self) -> bool:
+        return self.attempts >= 5

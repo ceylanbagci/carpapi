@@ -253,6 +253,26 @@ AWS_SES_REGION_NAME = os.environ.get("AWS_REGION", "us-east-1")
 AWS_SES_REGION_ENDPOINT = f"email.{AWS_SES_REGION_NAME}.amazonaws.com"
 
 # ──────────────────────────────────────────────────────────────────── #
+# Admin OTP (step-up auth for is_staff users)
+#
+# When a staff user logs in via /api/auth/login-step-up/, the API
+# returns a challenge instead of a JWT. The challenge code is
+# delivered via Twilio (if creds are set) or email (otherwise).
+# See accounts/otp.py for the full delivery chain.
+# ──────────────────────────────────────────────────────────────────── #
+TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "")
+TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "")
+TWILIO_FROM_NUMBER = os.environ.get("TWILIO_FROM_NUMBER", "")
+# Optional comma-separated allow-list. When non-empty, OTP via SMS
+# only attempts delivery to numbers on this list (the user's stored
+# `phone` must match). Useful for single-admin MVPs.
+ADMIN_ALLOWED_PHONES = [
+    p.strip()
+    for p in os.environ.get("ADMIN_ALLOWED_PHONES", "+12019376526").split(",")
+    if p.strip()
+]
+
+# ──────────────────────────────────────────────────────────────────── #
 # CORS (cross-origin between CloudFront frontend and App Runner API)
 # ──────────────────────────────────────────────────────────────────── #
 CORS_ALLOWED_ORIGIN_REGEXES = [

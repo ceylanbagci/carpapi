@@ -15,6 +15,7 @@ import ForgotPassword from "./pages/ForgotPassword.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
 import Settings from "./pages/Settings.jsx";
 import Pricing from "./pages/Pricing.jsx";
+import AdminVerify from "./pages/AdminVerify.jsx";
 import {
   AuthProvider,
   ProtectedRoute,
@@ -33,6 +34,9 @@ export default function App() {
         <Route path="signup" element={<Signup />} />
         <Route path="forgot-password" element={<ForgotPassword />} />
         <Route path="reset-password" element={<ResetPassword />} />
+        {/* Admin step-up OTP — reached only as a redirect from /login
+            when the backend returns a challenge for is_staff users. */}
+        <Route path="admin/verify" element={<AdminVerify />} />
 
         {/* Public pricing page — standalone */}
         <Route path="pricing" element={<Pricing />} />

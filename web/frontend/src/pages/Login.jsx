@@ -17,7 +17,7 @@ import {
   useSearchParams,
 } from "react-router-dom";
 import { motion } from "framer-motion";
-import { googleLoginUrl, login as apiLogin } from "../api.js";
+import { googleLoginUrl, postJson, setAuth } from "../api.js";
 import { useAuth } from "../auth.jsx";
 
 const inputBaseStyle = {
@@ -64,7 +64,36 @@ export default function Login() {
     setBusy(true);
     setError(null);
     try {
-      const auth = await apiLogin({ email: email.trim(), password });
+      // POST /api/auth/login-step-up/ — same shape as /api/auth/login/
+      // for regular users (returns { access, refresh, user }) but
+      // returns { challenge: "admin_otp", challenge_token, ... } for
+      // is_staff users. We handle both response shapes here.
+      const res = await postJson("/auth/login-step-up/", {
+        email: email.trim(),
+        password,
+      });
+
+      if (res.challenge === "admin_otp") {
+        // Staff user → second-factor required. Hand off the challenge
+        // details to /admin/verify via router state; that page POSTs
+        // /admin-otp/verify/ with the entered code and finishes the
+        // sign-in.
+        navigate("/admin/verify", {
+          replace: true,
+          state: {
+            challenge_token: res.challenge_token,
+            destination_hint: res.destination_hint,
+            channel: res.channel,
+            expires_at: res.expires_at,
+            next,
+          },
+        });
+        return;
+      }
+
+      // Regular user → JWT issued directly.
+      const auth = { access: res.access, refresh: res.refresh, user: res.user };
+      setAuth(auth);
       signIn(auth);
       navigate(next, { replace: true });
     } catch (err) {

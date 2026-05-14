@@ -29,12 +29,24 @@ def root(_request):
     )
 
 
+from accounts.views_admin_otp import login_step_up, resend_otp, verify_otp
+
 urlpatterns = [
     path("", root),
     # Django admin — staff-only management UI.
     path("admin/", admin.site.urls),
+    # Step-up login endpoint: same shape as /api/auth/login/ for
+    # non-staff users, but emits an OTP challenge for staff users
+    # instead of a JWT. The SPA calls this in place of /api/auth/login/
+    # and handles both response shapes.
+    path("api/auth/login-step-up/", login_step_up, name="auth-login-step-up"),
+    # OTP exchange endpoints.
+    path("api/admin-otp/verify/", verify_otp, name="admin-otp-verify"),
+    path("api/admin-otp/resend/", resend_otp, name="admin-otp-resend"),
     # REST auth — JWT-based login/logout/registration/password-reset.
     # dj-rest-auth ships a complete set of endpoints under /api/auth/.
+    # /api/auth/login/ remains available as a non-step-up login for
+    # API clients that haven't migrated to the step-up endpoint yet.
     path("api/auth/", include("dj_rest_auth.urls")),
     path("api/auth/registration/", include("dj_rest_auth.registration.urls")),
     # allauth — browser-side flows for email confirmation + Google OAuth.
