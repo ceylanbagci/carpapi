@@ -1,0 +1,28 @@
+# Runtime deps for the carpapi-agent-base image.
+#
+# Pinned to compatible upper bounds, not exact versions — the image
+# is rebuilt monthly via CI and these float forward within the
+# constraint. Lock the floor to whatever the rest of CarPapi uses
+# (web/backend/requirements.txt) so the agent and the API can't drift.
+
+# ── DB
+psycopg[binary]>=3.2,<4
+sqlalchemy>=2.0,<3
+pgvector>=0.3,<0.4
+
+# ── AWS
+boto3>=1.34,<2
+
+# ── HTTP / scraping (no Selenium — that goes into the heavy image)
+requests>=2.32,<3
+beautifulsoup4>=4.12,<5
+lxml>=5.2,<6
+
+# ── Schemas + validation
+jsonschema>=4.21,<5
+pydantic>=2.5,<3
+
+# ── Image pipeline
+Pillow>=10.4,<12
+potracer>=0.0.4,<0.1
+numpy>=1.26,<3
