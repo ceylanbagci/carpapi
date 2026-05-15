@@ -2,6 +2,7 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from . import views
+from . import views_agents
 
 router = DefaultRouter()
 router.register(r"dealers", views.DealerViewSet, basename="dealer")
@@ -19,5 +20,9 @@ urlpatterns = [
     # RAG-backed chat. POST { "message": "..." } -> { answer, listings, ... }
     # Implementation lives in carpapi/rag/answer.py; this is a thin HTTP shim.
     path("chat/", views.chat, name="chat"),
+    # Autonomous-agent fleet status. Merges the 14-agent static roster
+    # with live Lambda + EventBridge + CloudWatch data. Implementation
+    # in api/views_agents.py.
+    path("agents/", views_agents.agents_overview, name="agents-overview"),
     path("", include(router.urls)),
 ]

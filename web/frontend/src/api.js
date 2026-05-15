@@ -235,6 +235,21 @@ export async function sendTestNotification() {
   return httpJson("POST", "/notifications/test/", {});
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// Autonomous-agent fleet (backed by web/backend/api/views_agents.py)
+// ─────────────────────────────────────────────────────────────────────
+
+/** GET /api/agents/ — returns
+ *   { agents: [{slug, tier, type, cadence, desc, deployed, lambda,
+ *               schedule, metrics_24h, last_event, status}],
+ *     summary: {total, online, idle, ..., invocations_24h, errors_24h},
+ *     as_of_utc: "..." }
+ *  Each agent's status is one of: online | idle | degraded | failed |
+ *  not_deployed.  */
+export async function getAgents() {
+  return getJson("/agents/");
+}
+
 /** URL the Sign-In-With-Google button links to. App Runner handles
  *  the OAuth dance via allauth, then bounces back to `next`. */
 export function googleLoginUrl(next) {
