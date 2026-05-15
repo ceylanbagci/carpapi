@@ -39,7 +39,42 @@ in-place — production is the only target.
   | Chevrolet / GMC / Buick / Cadillac | `tools/Chevrolet-GMC-Buick.py` | GM dealer search |
   | Dodge / RAM / Chrysler / Jeep | `tools/dodge-ram-chrysler-jeep.py` | Stellantis dealer API |
 - **Output sink**: `public.dealers`. Loaded via
-  `web/backend/seed_dealers.py` (idempotent upsert keyed by `slug`).
+  `web/backend/seed_dealers.py` (idempotent upsert keyed by `slug`,
+  with `COALESCE` on conflict so a multi-brand dealer scraped twice
+  never loses an already-known address).
+
+## Address capture (postal_code + city)
+
+Every maker scraper extracts the dealer's address from its locator
+response and writes `postal_code` + `city` into the per-row dict in
+`output/dealers_final.json`. `seed_dealers.py` then writes both columns
+into `public.dealers`. The `Zip` column on `/dealers` reads
+`dealers.postal_code` directly. **Always preserve this contract** when
+adding a new maker: a missing postal_code is fine (the column renders
+"—"), but truncating an existing value is a bug.
+
+Per-maker extraction paths (where to look in the maker's locator response):
+
+| Maker | Postal code field | City field |
+|---|---|---|
+| Ford / Lincoln | `Address.Zip` (fallback `Address.ZipCode`) | `Address.City` |
+| Chevrolet (GM Quantum) | `address.postalCode` (fallback `address.zip`) | `address.addressLine2` ?? `address.city` |
+| Stellantis (Ram/Dodge/Chrysler/Jeep) | `dealerZip` (fallback `zip`) | `dealerCity` ?? `city` |
+| Nissan GraphQL | `address.postalCode` — request it in the query | `address.city` |
+| Subaru | `dealer.address.zip` ?? `address.postalCode` | `address.city` |
+| Lexus | `dealerAddress.zip` ?? `dealerAddress.postalCode` | `dealerAddress.city` |
+| Toyota directory page | n/a — HTML cards don't expose per-dealer zip; leave null | n/a |
+| Honda / Kia | endpoints currently blocked by maker WAFs — open follow-up | — |
+
+Truncate `postal_code` to 5 chars on write (ignore ZIP+4 suffixes) so
+the column matches `ref.zip_codes` for future joins. The `seed_dealers.py`
+upsert wraps both columns in `COALESCE(EXCLUDED.x, public.dealers.x)`,
+which means a later Subaru run that returns a known dealer with a NULL
+zip will NOT blank a Ford-supplied zip already in the row.
+
+**Backfill caveat:** rows seeded BEFORE this contract was added have
+`postal_code=NULL`. To populate them, re-run with `--restart`:
+`python scripts/scrape_all_states.py --restart --states <CSV>`.
 
 ## Operating modes
 

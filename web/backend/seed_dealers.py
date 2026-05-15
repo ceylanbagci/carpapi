@@ -43,12 +43,19 @@ def main() -> None:
             existing = set(row.get("makes_carried") or [])
             existing.add(d["make"])
             row["makes_carried"] = sorted(existing)
+            # First non-empty postal/city wins (don't overwrite once set).
+            if not row.get("postal_code") and d.get("postal_code"):
+                row["postal_code"] = d["postal_code"]
+            if not row.get("city") and d.get("city"):
+                row["city"] = d["city"]
             continue
         by_slug[slug] = {
             "slug": slug,
             "name": d["name"],
             "homepage_url": normalize_url(d.get("dealership_website")),
             "region": d.get("state"),
+            "city": d.get("city"),
+            "postal_code": d.get("postal_code"),
             "makes_carried": [d["make"]],
             "status": "active",
         }
@@ -65,14 +72,21 @@ def main() -> None:
 
     sql = """
         INSERT INTO public.dealers
-            (slug, name, homepage_url, region, makes_carried, status)
+            (slug, name, homepage_url, region, city, postal_code,
+             makes_carried, status)
         VALUES
             (%(slug)s, %(name)s, %(homepage_url)s, %(region)s,
+             %(city)s, %(postal_code)s,
              %(makes_carried)s, %(status)s)
         ON CONFLICT (slug) DO UPDATE SET
             name = EXCLUDED.name,
             homepage_url = EXCLUDED.homepage_url,
             region = EXCLUDED.region,
+            -- Keep an existing non-NULL city/postal_code over a fresh NULL
+            -- (e.g. a follow-up Subaru run for a multi-brand dealer
+            -- shouldn't blank the Ford-supplied address).
+            city = COALESCE(EXCLUDED.city, public.dealers.city),
+            postal_code = COALESCE(EXCLUDED.postal_code, public.dealers.postal_code),
             makes_carried = EXCLUDED.makes_carried,
             updated_at = now()
     """

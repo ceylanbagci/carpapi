@@ -107,11 +107,15 @@ def build_dealer_record(raw_dealer: dict, state_code: str, slug: str,
     name = (raw_dealer.get("dealerName") or "").strip()
     if not name:
         return None
+    postal = (raw_dealer.get("dealerZip") or raw_dealer.get("zip") or "").strip()
+    city = (raw_dealer.get("dealerCity") or raw_dealer.get("city") or "").strip() or None
     return {
         "name": name,
         "make": make_name,
         "make_id": make_id,
         "state": slug,
+        "city": city,
+        "postal_code": postal[:5] if postal else None,
         "dealership_website": website,
     }
 
