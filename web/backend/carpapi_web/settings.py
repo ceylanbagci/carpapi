@@ -260,6 +260,21 @@ AWS_SES_REGION_ENDPOINT = f"email.{AWS_SES_REGION_NAME}.amazonaws.com"
 # delivered via Twilio (if creds are set) or email (otherwise).
 # See accounts/otp.py for the full delivery chain.
 # ──────────────────────────────────────────────────────────────────── #
+# Toggle to disable the staff step-up entirely (local dev / CI). When
+# false, /api/auth/login-step-up/ issues JWTs to staff users without
+# the OTP detour. Default true so production behavior is unchanged.
+ADMIN_OTP_ENABLED = os.environ.get("ADMIN_OTP_ENABLED", "true").lower() in (
+    "1", "true", "yes",
+)
+
+TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "")
+TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "")
+# Prefer a Messaging Service SID (MG...) over a single From number.
+# Messaging Services handle multi-region pools + carrier compliance
+# automatically. Set either one — the OTP sender uses the SID first.
+TWILIO_MESSAGING_SERVICE_SID = os.environ.get("TWILIO_MESSAGING_SERVICE_SID", "")
+TWILIO_FROM_NUMBER = os.environ.get("TWILIO_FROM_NUMBER", "")
+
 # WhatsApp Cloud API (Meta) — preferred OTP delivery channel.
 # Requires a pre-approved "Authentication" message template in
 # WhatsApp Business Manager. See accounts/otp.py for the wire format.
@@ -294,6 +309,8 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^http://10\.\d+\.\d+\.\d+(:\d+)?$",
     # Production frontend on CloudFront (S3-backed React SPA).
     r"^https://[a-z0-9]+\.cloudfront\.net$",
+    # Production custom domain (carpappi.com — note the two p's).
+    r"^https://(www\.)?carpappi\.com$",
 ]
 
 # Extra explicit allow-list pulled from env so a new deploy can add a

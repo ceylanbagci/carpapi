@@ -1,6 +1,6 @@
 # CarPapi operational agent fleet
 
-14 agents organized into 5 tiers. Each agent has a markdown spec
+15 agents organized into 5 tiers. Each agent has a markdown spec
 under `.claude/agents/<name>.md` that Claude Code loads as a
 sub-agent. The same spec is the prompt for the autonomous Lambda
 variants (where applicable).
@@ -13,6 +13,7 @@ variants (where applicable).
 | INGEST | [`listing-validator`](listing-validator.md) | autonomous | per scrape batch | "reprocess quarantined", "why is listing X missing?" |
 | INGEST | [`dedupe-sweeper`](dedupe-sweeper.md) | autonomous | daily 06:00 UTC | "this car shows up twice", "why didn't dedup catch X?" |
 | INGEST | [`dealer-prospector`](dealer-prospector.md) | interactive | weekly | "find Toyota dealers in NJ", "expand to PA" |
+| INGEST | [`dealer-zip-scraper`](dealer-zip-scraper.md) | interactive | on demand | "scrape all Ford dealers in TX", "build dealer coverage nationwide" |
 | ENRICH | [`maker-enricher`](maker-enricher.md) | dual | daily 05:00 UTC | "enrich VIN X", "what's the enrichment backlog?" |
 | ENRICH | [`maker-site-doctor`](maker-site-doctor.md) | autonomous | daily 03:00 UTC | "is Ford's site stable?", "why did Honda enrichment stop?" |
 | QUALITY | [`scrape-watchdog`](scrape-watchdog.md) | autonomous | per scrape + hourly | "is scraping healthy today?", "what alarms fired?" |

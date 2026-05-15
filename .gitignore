@@ -2,6 +2,14 @@
 .env.local
 .logs/
 
+# Large regenerable data — produced by importing GeoNames + running
+# scrapers. Anyone can rebuild these with the import + scrape scripts.
+input/raw/
+input/us_postal_codes.tsv
+input/zip_codes_full.json
+output/scrape.log
+output/dealers_final.json
+
 # Ignore generic migrations/ dirs (alembic, custom pipeline) BUT
 # re-include Django app migrations — those are first-class source
 # code that must be in the repo + the Docker image so `manage.py
@@ -9,6 +17,9 @@
 migrations/
 !web/backend/**/migrations/
 !web/backend/**/migrations/**
+# Hand-authored SQL migrations applied to RDS by psql (not Django).
+!schema/migrations/
+!schema/migrations/**
 db.sqlite3
 .DS_Store
 # Project-shared Claude Code agents under .claude/agents/ ARE tracked;
