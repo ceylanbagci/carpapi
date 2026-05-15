@@ -260,13 +260,15 @@ AWS_SES_REGION_ENDPOINT = f"email.{AWS_SES_REGION_NAME}.amazonaws.com"
 # delivered via Twilio (if creds are set) or email (otherwise).
 # See accounts/otp.py for the full delivery chain.
 # ──────────────────────────────────────────────────────────────────── #
-TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "")
-TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "")
-# Prefer a Messaging Service SID (MG...) over a single From number.
-# Messaging Services handle multi-region pools + carrier compliance
-# automatically. Set either one — the OTP sender uses the SID first.
-TWILIO_MESSAGING_SERVICE_SID = os.environ.get("TWILIO_MESSAGING_SERVICE_SID", "")
-TWILIO_FROM_NUMBER = os.environ.get("TWILIO_FROM_NUMBER", "")
+# WhatsApp Cloud API (Meta) — preferred OTP delivery channel.
+# Requires a pre-approved "Authentication" message template in
+# WhatsApp Business Manager. See accounts/otp.py for the wire format.
+WHATSAPP_ACCESS_TOKEN = os.environ.get("WHATSAPP_ACCESS_TOKEN", "")
+WHATSAPP_PHONE_NUMBER_ID = os.environ.get("WHATSAPP_PHONE_NUMBER_ID", "")
+WHATSAPP_TEMPLATE_NAME = os.environ.get(
+    "WHATSAPP_TEMPLATE_NAME", "otp_authentication"
+)
+WHATSAPP_TEMPLATE_LANGUAGE = os.environ.get("WHATSAPP_TEMPLATE_LANGUAGE", "en")
 # Optional comma-separated allow-list. When non-empty, OTP via SMS
 # only attempts delivery to numbers on this list (the user's stored
 # `phone` must match). Useful for single-admin MVPs.

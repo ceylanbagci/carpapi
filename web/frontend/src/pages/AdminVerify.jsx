@@ -90,6 +90,7 @@ export default function AdminVerify() {
   }, []);
 
   const channelLabel = {
+    whatsapp: `WhatsApp to ${hint || "your phone"}`,
     sms: `SMS to ${hint || "your phone"}`,
     email: `email to ${hint || "your inbox"}`,
     log: "the dev log (no production channel wired)",
