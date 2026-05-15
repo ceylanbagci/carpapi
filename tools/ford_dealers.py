@@ -73,11 +73,17 @@ def build_dealer_record(raw_dealer: dict, state_code: str, slug: str) -> dict | 
     if not website:
         return None
 
+    # Ford returns Zip in Address.Zip (sometimes Address.ZipCode); accept either.
+    postal = (address.get("Zip") or address.get("ZipCode") or "").strip()
+    city = (address.get("City") or "").strip() or None
+
     return {
         "name": raw_dealer.get("Name", "").strip(),
         "make": FORD_MAKE,
         "make_id": FORD_MAKE_ID,
         "state": slug,
+        "city": city,
+        "postal_code": postal[:5] if postal else None,
         "dealership_website": website.strip(),
     }
 

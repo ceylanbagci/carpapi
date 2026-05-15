@@ -70,16 +70,20 @@ def normalize_website(url: str) -> str | None:
     return website
 
 
-def build_record(name: str, make: str, website: str, slug: str) -> dict | None:
+def build_record(name: str, make: str, website: str, slug: str,
+                 postal_code: str | None = None, city: str | None = None) -> dict | None:
     normalized_name = name.strip()
     normalized_website = normalize_website(website)
     if not normalized_name or not normalized_website:
         return None
+    z = (postal_code or "").strip()
     return {
         "name": normalized_name,
         "make": make,
         "make_id": MAKE_IDS[make],
         "state": slug,
+        "city": (city or "").strip() or None,
+        "postal_code": z[:5] if z else None,
         "dealership_website": normalized_website,
     }
 
@@ -110,7 +114,7 @@ def fetch_nissan_dealers_for_zip(zip_code: str) -> list[dict]:
         "query": """
             query getDealersBaseInfoByLatLng($market: Market!, $location: Geolocation!, $size: Int, $radius: Int, $isMarketingDealer: Boolean) {
               getDealersByLatLng(market: $market, location: $location, isMarketingDealer: $isMarketingDealer, size: $size, radius: $radius) {
-                id name address { stateCode } websiteURL
+                id name address { stateCode postalCode city } websiteURL
               }
             }
         """,
@@ -137,6 +141,8 @@ def collect_nissan(zip_codes: list[str], state_code: str, slug: str) -> list[dic
         id_key="id", state_filter=lambda d: (d.get("address") or {}).get("stateCode") == state_code,
         name_key="name", website_key="websiteURL",
         make="Nissan", slug=slug,
+        zip_extractor=lambda d: (d.get("address") or {}).get("postalCode"),
+        city_extractor=lambda d: (d.get("address") or {}).get("city"),
     )
 
 
@@ -154,6 +160,8 @@ def collect_subaru(zip_codes: list[str], state_code: str, slug: str) -> list[dic
         state_filter=lambda d: ((d.get("address") or {}).get("state") or "").upper() == state_code,
         name_key="name", website_key="siteUrl",
         make="Subaru", slug=slug,
+        zip_extractor=lambda d: (d.get("address") or {}).get("zip") or (d.get("address") or {}).get("postalCode"),
+        city_extractor=lambda d: (d.get("address") or {}).get("city"),
     )
 
 
@@ -171,6 +179,8 @@ def collect_lexus(zip_codes: list[str], state_code: str, slug: str) -> list[dict
         state_filter=lambda d: ((d.get("dealerAddress") or {}).get("state") or "").upper() == state_code,
         name_key="dealerName", website_key="dealerSiteUrl",
         make="Lexus", slug=slug,
+        zip_extractor=lambda d: (d.get("dealerAddress") or {}).get("zip") or (d.get("dealerAddress") or {}).get("postalCode"),
+        city_extractor=lambda d: (d.get("dealerAddress") or {}).get("city"),
     )
 
 
@@ -245,10 +255,13 @@ def collect_toyota(_zip_codes: list[str], state_code: str, slug: str) -> list[di
 
 # ---------------------------- shared worker ----------------------------
 
-def _collect_with_workers(zip_codes, fetcher, *, id_key, state_filter, name_key, website_key, make, slug):
+def _collect_with_workers(zip_codes, fetcher, *, id_key, state_filter,
+                          name_key, website_key, make, slug,
+                          zip_extractor=None, city_extractor=None):
     """Generic concurrent-zip collector. Each fetcher returns a list of
     dealer dicts; we de-dup by `id_key`, filter via `state_filter`, and
-    normalize via build_record()."""
+    normalize via build_record(). Optional `zip_extractor` / `city_extractor`
+    pull postal_code / city out of the maker-specific dealer dict."""
     ordered: list[dict] = []
     seen_ids: set[str] = set()
     zip_to_dealers: dict[str, list[dict]] = {}
@@ -264,7 +277,12 @@ def _collect_with_workers(zip_codes, fetcher, *, id_key, state_filter, name_key,
                 continue
             if not state_filter(dealer):
                 continue
-            record = build_record(dealer.get(name_key, ""), make, dealer.get(website_key, ""), slug)
+            zc = zip_extractor(dealer) if zip_extractor else None
+            ct = city_extractor(dealer) if city_extractor else None
+            record = build_record(
+                dealer.get(name_key, ""), make, dealer.get(website_key, ""), slug,
+                postal_code=zc, city=ct,
+            )
             if not record:
                 continue
             seen_ids.add(dealer_id)

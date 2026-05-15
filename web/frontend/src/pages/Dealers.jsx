@@ -41,6 +41,16 @@ const lastVisitedCell = (row) => {
   );
 };
 
+const zipCell = (row) => {
+  const z = row.postal_code;
+  if (!z) return <span style={{ color: "var(--d4-text-muted, #888)" }}>—</span>;
+  return (
+    <span style={{ fontVariantNumeric: "tabular-nums", fontFamily: "var(--d4-mono, ui-monospace, SF Mono, monospace)" }}>
+      {z}
+    </span>
+  );
+};
+
 const columns = [
   {
     key: "name",
@@ -54,9 +64,12 @@ const columns = [
         r.name
       ),
   },
-  { key: "city", label: "City" },
   { key: "region", label: "Region" },
-  { key: "cms", label: "CMS" },
+  {
+    key: "postal_code",
+    label: "Zip",
+    render: zipCell,
+  },
   {
     key: "makes_carried",
     label: "Makes",
@@ -65,7 +78,7 @@ const columns = [
   },
   {
     key: "cars_count",
-    label: "Cars",
+    label: "Listings",
     render: carsCell,
   },
   {

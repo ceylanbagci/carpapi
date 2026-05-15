@@ -103,11 +103,16 @@ def build_chevrolet_dealer_record(raw_dealer: dict, state_code: str, slug: str) 
     if not name:
         return None
 
+    postal = (address.get("postalCode") or address.get("zip") or "").strip()
+    city = (address.get("addressLine2") or address.get("city") or "").strip() or None
+
     return {
         "name": name,
         "make": CHEVROLET_MAKE,
         "make_id": CHEVROLET_MAKE_ID,
         "state": slug,
+        "city": city,
+        "postal_code": postal[:5] if postal else None,
         "dealership_website": website,
     }
 
