@@ -62,6 +62,11 @@ class ListingHit:
     dealer_id: Optional[str]
     dealer_name: Optional[str]
     seller_type: Optional[str]
+    # Image pipeline (carpapi/images/). Both are optional CDN URLs;
+    # the SPA prefers `image_url` (JPEG thumb) and falls back to the
+    # `image_svg_url` silhouette, then to a generic icon.
+    image_url: Optional[str] = None
+    image_svg_url: Optional[str] = None
     similarity: Optional[float] = None   # vector path only
     rank_reason: Optional[str] = None    # filled by the caller
 
@@ -83,6 +88,8 @@ class ListingHit:
             "region": self.region,
             "url": self.car_url or self.listing_url,
             "dealer": self.dealer_name,
+            "image_url": self.image_url,
+            "image_svg_url": self.image_svg_url,
             "similarity": (
                 round(float(self.similarity), 4) if self.similarity is not None else None
             ),
@@ -154,7 +161,8 @@ _BASE_SELECT = """
            l.body_style, l.mileage, l.price_amount, l.currency,
            l.region, l.city,
            l.listing_url, l.car_url,
-           l.dealer_id::text, d.name AS dealer_name, l.seller_type
+           l.dealer_id::text, d.name AS dealer_name, l.seller_type,
+           l.image_url, l.image_svg_url
 """
 
 
@@ -165,7 +173,7 @@ def _row_to_hit(row: tuple, with_similarity: bool = False) -> ListingHit:
     (
         rid, vin, title, make, model, year, trim, body_style, mileage,
         price_amount, currency, region, city, listing_url, car_url,
-        dealer_id, dealer_name, seller_type,
+        dealer_id, dealer_name, seller_type, image_url, image_svg_url,
     ) = base
     return ListingHit(
         id=rid, vin=vin, title=title or "",
@@ -177,6 +185,7 @@ def _row_to_hit(row: tuple, with_similarity: bool = False) -> ListingHit:
         listing_url=listing_url, car_url=car_url,
         dealer_id=dealer_id, dealer_name=dealer_name,
         seller_type=seller_type,
+        image_url=image_url, image_svg_url=image_svg_url,
         similarity=float(sim) if sim is not None else None,
     )
 

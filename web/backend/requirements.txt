@@ -21,3 +21,11 @@ cryptography>=42
 # WhatsApp OTP delivery uses Meta's Cloud API directly via plain
 # urllib (see accounts/otp.py::_send_via_whatsapp) — no SDK needed.
 # Twilio was the previous SMS channel; removed in favor of WhatsApp.
+
+# Image pipeline (carpapi/images/) — download dealer photos, resize
+# to JPEG thumbnails, upload to S3. Pillow for the resize, boto3 for
+# the upload, potracer (+ numpy) for the optional SVG silhouette.
+Pillow>=10.4
+boto3>=1.34
+potracer>=0.0.4
+numpy>=1.26

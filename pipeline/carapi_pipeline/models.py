@@ -74,6 +74,16 @@ class Listing(Base):
     is_on_sale: Mapped[bool] = mapped_column(default=False, nullable=False, server_default=text("false"))
     listing_group_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
 
+    # Image pipeline (`carpapi/images/`):
+    #   image_url     — public S3/CloudFront URL of a 240×160 JPEG thumbnail
+    #   image_svg_url — optional minimal SVG silhouette (potrace output)
+    # Both nullable; the frontend prefers JPEG and falls back to SVG.
+    # Schema is added via the Django RunSQL migration
+    # `accounts/migrations/0003_listings_image_columns.py` so it applies
+    # on every container boot (Listing isn't a Django model).
+    image_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    image_svg_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+
 
 def init_schema(engine) -> None:
     Base.metadata.create_all(engine)

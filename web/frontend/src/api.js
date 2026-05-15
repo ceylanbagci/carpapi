@@ -241,6 +241,9 @@ export function adaptListing(l) {
     region: l.region,
     listing_url: l.url,
     maker_url: null,
+    // Image pipeline output — see carpapi/images/ + .claude/agents/image-pipeline.md
+    image_url: l.image_url || null,
+    image_svg_url: l.image_svg_url || null,
   };
 }
 
