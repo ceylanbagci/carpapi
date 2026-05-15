@@ -30,6 +30,7 @@ def root(_request):
 
 
 from accounts.views_admin_otp import login_step_up, resend_otp, verify_otp
+from accounts.views_whatsapp_webhook import whatsapp_webhook
 
 urlpatterns = [
     path("", root),
@@ -43,6 +44,11 @@ urlpatterns = [
     # OTP exchange endpoints.
     path("api/admin-otp/verify/", verify_otp, name="admin-otp-verify"),
     path("api/admin-otp/resend/", resend_otp, name="admin-otp-resend"),
+    # WhatsApp Cloud API webhook callback. GET handles Meta's
+    # verification handshake; POST accepts (and logs) inbound events
+    # so they don't get retried. Required only when Meta is asked to
+    # subscribe to webhook fields for this WABA.
+    path("api/whatsapp/webhook/", whatsapp_webhook, name="whatsapp-webhook"),
     # REST auth — JWT-based login/logout/registration/password-reset.
     # dj-rest-auth ships a complete set of endpoints under /api/auth/.
     # /api/auth/login/ remains available as a non-step-up login for

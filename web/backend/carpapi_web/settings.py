@@ -269,6 +269,12 @@ WHATSAPP_TEMPLATE_NAME = os.environ.get(
     "WHATSAPP_TEMPLATE_NAME", "otp_authentication"
 )
 WHATSAPP_TEMPLATE_LANGUAGE = os.environ.get("WHATSAPP_TEMPLATE_LANGUAGE", "en")
+# Shared secret echoed back to Meta during webhook verification.
+# Pick any opaque string; paste the same value into Meta's App
+# Dashboard → WhatsApp → Configuration → "Verify token".
+WHATSAPP_WEBHOOK_VERIFY_TOKEN = os.environ.get(
+    "WHATSAPP_WEBHOOK_VERIFY_TOKEN", ""
+)
 # Optional comma-separated allow-list. When non-empty, OTP via SMS
 # only attempts delivery to numbers on this list (the user's stored
 # `phone` must match). Useful for single-admin MVPs.
