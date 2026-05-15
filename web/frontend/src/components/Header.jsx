@@ -1,5 +1,5 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "../auth.jsx";
+import { Link, useLocation } from "react-router-dom";
+import UserMenu from "./UserMenu.jsx";
 
 const TITLES = {
   "/dashboard": "Dashboard",
@@ -11,16 +11,15 @@ const TITLES = {
   "/agents": "Fleet Console",
 };
 
+/**
+ * Admin shell top-bar. The Chat + Settings links + the explicit
+ * "Sign out" button were replaced by <UserMenu />, which collapses
+ * the same actions behind the head-icon dropdown to match the
+ * demo4 design pattern and the public landing chrome.
+ */
 export default function Header({ onToggleSidebar }) {
   const { pathname } = useLocation();
-  const navigate = useNavigate();
-  const { user, signOut } = useAuth();
   const title = TITLES[pathname] || "CarPapi";
-
-  const onSignOut = async () => {
-    await signOut();
-    navigate("/login", { replace: true });
-  };
 
   return (
     <header className="d4-header">
@@ -35,26 +34,15 @@ export default function Header({ onToggleSidebar }) {
         </button>
         <h1 className="d4-header-title">{title}</h1>
       </div>
-      <div className="d4-header-actions" style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div
+        className="d4-header-actions"
+        style={{ display: "flex", alignItems: "center", gap: 12 }}
+      >
         <Link to="/chat" className="btn btn-light btn-sm" title="Open chat">
           <i className="bi bi-chat-dots me-1"></i>
           Chat
         </Link>
-        <Link to="/settings" className="btn btn-light btn-sm" title="User settings">
-          <i className="bi bi-person-gear me-1"></i>
-          Settings
-        </Link>
-        {user && (
-          <button
-            type="button"
-            className="btn btn-light btn-sm"
-            onClick={onSignOut}
-            title={`Signed in as ${user.email}`}
-          >
-            <i className="bi bi-box-arrow-right me-1"></i>
-            Sign out
-          </button>
-        )}
+        <UserMenu tone="light" />
       </div>
     </header>
   );

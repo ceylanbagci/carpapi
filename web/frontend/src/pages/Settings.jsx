@@ -36,6 +36,12 @@ import {
   updatePreferences,
   updateProfile,
 } from "../data/mockAuth.js";
+import {
+  getNotificationPreferences,
+  updateNotificationPreferences,
+  sendTestNotification,
+} from "../api.js";
+import { PublicTopBar, PublicFooter } from "../components/PublicChrome.jsx";
 
 // ─────────────────────────────────────────────────────────────────────
 // Small inline helpers (same visual language as Login.jsx)
@@ -168,25 +174,7 @@ export default function Settings() {
 
   return (
     <div className="d4-chat" data-theme="light">
-      <header className="d4-chat-header">
-        <Link to="/" className="d4-chat-brand" title="Back to landing">
-          <span className="logo-dot">C</span>
-          <span>CarPapi</span>
-        </Link>
-        <div className="d4-chat-header-actions">
-          <Link to="/chat" className="d4-chat-link">
-            Chat
-          </Link>
-          {user.is_staff && (
-            <Link to="/dashboard" className="d4-chat-link">
-              Admin
-            </Link>
-          )}
-          <button type="button" className="d4-chat-link" onClick={onSignOut}>
-            Sign out
-          </button>
-        </div>
-      </header>
+      <PublicTopBar />
 
       <main className="d4-chat-scroller">
         <motion.div
@@ -206,11 +194,13 @@ export default function Settings() {
 
           <ProfileCard user={user} refresh={refresh} ok={ok} err={err} />
           <PasswordCard ok={ok} err={err} />
-          <PreferencesCard user={user} refresh={refresh} ok={ok} err={err} />
+          <PreferencesCard ok={ok} err={err} />
           <ApiTokensCard user={user} refresh={refresh} ok={ok} err={err} />
           <DangerCard user={user} ok={ok} err={err} navigate={navigate} />
         </motion.div>
       </main>
+
+      <PublicFooter />
 
       <Toast msg={toast?.msg} kind={toast?.kind} onClose={() => setToast(null)} />
     </div>
@@ -382,91 +372,229 @@ function PasswordCard({ ok, err }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-// Section: Notification preferences (LOCAL-ONLY for now)
+// Section: Notification preferences — backed by /api/notifications/.
+//
+// Categories are returned by the backend so the UI never drifts from
+// the model (new agent type lands → backend ships → checkbox shows up
+// next render). Each toggle PATCHes back; cc_email is text-input
+// committed on blur.
 // ─────────────────────────────────────────────────────────────────────
 
-function PreferencesCard({ user, refresh, ok }) {
-  const prefs = user.preferences || {};
-  const toggle = (key) => {
-    updatePreferences({ [key]: !prefs[key] });
-    refresh();
-    ok("Preferences saved");
+function PreferencesCard({ ok, err }) {
+  const [categories, setCategories] = useState([]);
+  const [ccEmail, setCcEmail] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [testStatus, setTestStatus] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const data = await getNotificationPreferences();
+        if (!alive) return;
+        setCategories(data.categories || []);
+        setCcEmail(data.cc_email || "");
+      } catch (e) {
+        if (alive) err("Couldn't load notification settings");
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => { alive = false; };
+  }, [err]);
+
+  const toggle = async (key) => {
+    if (busy) return;
+    setBusy(true);
+    const next = categories.map((c) =>
+      c.key === key ? { ...c, enabled: !c.enabled } : c
+    );
+    setCategories(next);  // optimistic
+    try {
+      const payload = { [key]: !categories.find((c) => c.key === key).enabled };
+      const updated = await updateNotificationPreferences({ categories: payload });
+      setCategories(updated.categories || next);
+      ok("Saved");
+    } catch (e) {
+      setCategories(categories);  // rollback
+      err("Couldn't save preference");
+    } finally {
+      setBusy(false);
+    }
   };
-  const ROWS = [
-    {
-      key: "weeklyDigest",
-      title: "Weekly inventory digest",
-      sub: "Top new listings and price drops, Monday morning.",
-    },
-    {
-      key: "priceDropAlerts",
-      title: "Price-drop alerts",
-      sub: "Email me when a saved car drops 5% or more.",
-    },
-    {
-      key: "productUpdates",
-      title: "Product updates",
-      sub: "Occasional notes about new features. Low volume.",
-    },
-  ];
+
+  const commitCcEmail = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await updateNotificationPreferences({ cc_email: ccEmail.trim() });
+      ok(ccEmail.trim() ? "CC address saved" : "CC address cleared");
+    } catch (e) {
+      err("Couldn't save CC address");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const fireTest = async () => {
+    if (busy) return;
+    setBusy(true);
+    setTestStatus(null);
+    try {
+      const r = await sendTestNotification();
+      if (r.ok) {
+        setTestStatus({ kind: "ok", msg: `Sent (SES id: ${r.ses_message_id})` });
+        ok("Test email sent");
+      } else if (r.status === "skipped_sandbox") {
+        setTestStatus({
+          kind: "warn",
+          msg: "SES is in sandbox mode — your address must be verified. "
+             + "Ask admin to verify it or wait for production access.",
+        });
+      } else {
+        setTestStatus({ kind: "err", msg: r.error || r.status });
+      }
+    } catch (e) {
+      setTestStatus({ kind: "err", msg: String(e.message || e) });
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <section style={card}>
       <header style={cardHead}>
         <div>
           <h2 style={cardTitle}>Notifications</h2>
           <p style={cardSub}>
-            How CarPapi reaches out. Saved locally — backend wiring landing
-            soon.
+            How CarPapi reaches out by email. Toggles take effect immediately.
           </p>
         </div>
-      </header>
-      {ROWS.map((row) => (
-        <div
-          key={row.key}
+        <button
+          type="button"
+          onClick={fireTest}
+          disabled={busy || loading}
           style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "10px 0",
-            borderTop: "1px solid rgba(0,0,0,0.05)",
+            padding: "8px 14px",
+            borderRadius: 10,
+            border: "1px solid #d0d7de",
+            background: "#fff",
+            cursor: busy ? "default" : "pointer",
+            fontSize: 13,
+            fontWeight: 600,
+            opacity: busy || loading ? 0.6 : 1,
           }}
         >
-          <div>
-            <div style={{ fontWeight: 600, fontSize: 14, color: "#111" }}>
-              {row.title}
-            </div>
-            <div style={{ fontSize: 13, color: "#666" }}>{row.sub}</div>
-          </div>
-          <button
-            type="button"
-            onClick={() => toggle(row.key)}
-            aria-pressed={!!prefs[row.key]}
+          Send test email
+        </button>
+      </header>
+
+      {testStatus && (
+        <div
+          style={{
+            margin: "0 0 14px",
+            padding: "10px 14px",
+            borderRadius: 10,
+            background: testStatus.kind === "ok"
+              ? "rgba(16,185,129,0.10)"
+              : testStatus.kind === "warn"
+              ? "rgba(234,179,8,0.10)"
+              : "rgba(220,38,38,0.10)",
+            color: testStatus.kind === "ok"
+              ? "#047857"
+              : testStatus.kind === "warn"
+              ? "#854d0e"
+              : "#b91c1c",
+            fontSize: 13,
+          }}
+        >
+          {testStatus.msg}
+        </div>
+      )}
+
+      {loading ? (
+        <div style={{ padding: "10px 0", color: "#666", fontSize: 14 }}>
+          Loading…
+        </div>
+      ) : (
+        categories.map((row) => (
+          <div
+            key={row.key}
             style={{
-              width: 44,
-              height: 24,
-              borderRadius: 99,
-              border: "none",
-              cursor: "pointer",
-              background: prefs[row.key] ? "#111" : "#cbd5e1",
-              position: "relative",
-              transition: "background 0.15s",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "10px 0",
+              borderTop: "1px solid rgba(0,0,0,0.05)",
             }}
           >
-            <span
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 14, color: "#111" }}>
+                {row.label}
+              </div>
+              <div style={{ fontSize: 12, color: "#888" }}>
+                category: <code>{row.key}</code>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => toggle(row.key)}
+              aria-pressed={row.enabled}
+              disabled={busy}
               style={{
-                position: "absolute",
-                top: 3,
-                left: prefs[row.key] ? 23 : 3,
-                width: 18,
-                height: 18,
-                borderRadius: 99,
-                background: "#fff",
-                transition: "left 0.15s",
+                width: 44, height: 24, borderRadius: 99, border: "none",
+                cursor: busy ? "default" : "pointer",
+                background: row.enabled ? "#111" : "#cbd5e1",
+                position: "relative", transition: "background 0.15s",
+                opacity: busy ? 0.6 : 1,
               }}
-            />
-          </button>
-        </div>
-      ))}
+            >
+              <span
+                style={{
+                  position: "absolute", top: 3, left: row.enabled ? 23 : 3,
+                  width: 18, height: 18, borderRadius: 99, background: "#fff",
+                  transition: "left 0.15s",
+                }}
+              />
+            </button>
+          </div>
+        ))
+      )}
+
+      <div
+        style={{
+          marginTop: 18, paddingTop: 14,
+          borderTop: "1px solid rgba(0,0,0,0.05)",
+        }}
+      >
+        <label
+          style={{
+            fontSize: 13, fontWeight: 600, color: "#111",
+            display: "block", marginBottom: 4,
+          }}
+        >
+          CC address (optional)
+        </label>
+        <p style={{ fontSize: 12, color: "#666", margin: "0 0 8px" }}>
+          Mirror every notification to this address too. Useful for on-call
+          handoffs. Leave blank to disable.
+        </p>
+        <input
+          type="email"
+          value={ccEmail}
+          onChange={(e) => setCcEmail(e.target.value)}
+          onBlur={commitCcEmail}
+          placeholder="oncall@example.com"
+          disabled={busy || loading}
+          style={{
+            width: "100%", padding: "10px 14px", borderRadius: 10,
+            border: "1px solid rgba(0,0,0,0.15)", fontSize: 14,
+            background: "#fff", color: "#111", outline: "none",
+            boxSizing: "border-box",
+          }}
+        />
+      </div>
     </section>
   );
 }

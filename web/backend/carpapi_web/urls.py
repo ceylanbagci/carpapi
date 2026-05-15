@@ -60,6 +60,9 @@ urlpatterns = [
     # /accounts/google/login/, allauth handles the OAuth handshake, then
     # the frontend reads the JWT cookie issued by dj-rest-auth.
     path("accounts/", include("allauth.urls")),
+    # Notification preferences + test-send endpoints. SES-backed; see
+    # `notifications/email.py` for the handler.
+    path("api/notifications/", include("notifications.urls")),
     # Main API.
     path("api/", include("api.urls")),
 ]

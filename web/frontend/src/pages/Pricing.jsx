@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { currentUser } from "../data/mockAuth.js";
+import { PublicTopBar, PublicFooter } from "../components/PublicChrome.jsx";
 
 // Pricing is presentation-only — no payment integration yet.
 // CTAs route to /signup?plan=<id> (or /account if already signed in).
@@ -98,28 +99,7 @@ export default function Pricing() {
 
   return (
     <div className="d4-pricing">
-      <header className="d4-pricing-nav">
-        <Link to="/" className="d4-landing-brand">
-          <span className="logo-dot">C</span>
-          <span>CarPapi</span>
-        </Link>
-        <nav className="d4-landing-links">
-          <Link to="/chat">Try it</Link>
-          <Link to="/dashboard">Dashboard</Link>
-          {user ? (
-            <Link to="/account" className="btn btn-primary btn-sm">
-              {user.name.split(" ")[0] || "Account"}
-            </Link>
-          ) : (
-            <>
-              <Link to="/login">Log in</Link>
-              <Link to="/signup" className="btn btn-primary btn-sm">
-                Sign up
-              </Link>
-            </>
-          )}
-        </nav>
-      </header>
+      <PublicTopBar />
 
       <section className="d4-pricing-hero">
         <div className="d4-eyebrow">Simple, honest pricing</div>
@@ -248,16 +228,7 @@ export default function Pricing() {
         </div>
       </section>
 
-      <footer className="d4-landing-footer">
-        <div className="container d-flex justify-content-between align-items-center flex-wrap gap-2">
-          <span>© {new Date().getFullYear()} CarPapi</span>
-          <div className="d-flex gap-3">
-            <Link to="/">Home</Link>
-            <Link to="/dashboard">Dashboard</Link>
-            <Link to="/chat">Chat</Link>
-          </div>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }

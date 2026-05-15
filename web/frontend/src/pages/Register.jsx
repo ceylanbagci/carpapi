@@ -14,6 +14,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { googleLoginUrl, register as apiRegister } from "../api.js";
 import { useAuth } from "../auth.jsx";
+import { PublicTopBar, PublicFooter } from "../components/PublicChrome.jsx";
 
 const inputBaseStyle = {
   width: "100%",
@@ -94,12 +95,7 @@ export default function Register() {
 
   return (
     <div className="d4-chat" data-theme="light">
-      <header className="d4-chat-header">
-        <Link to="/" className="d4-chat-brand" title="Back to landing">
-          <span className="logo-dot">C</span>
-          <span>CarPapi</span>
-        </Link>
-      </header>
+      <PublicTopBar />
 
       <main className="d4-chat-scroller">
         <motion.div
@@ -278,6 +274,8 @@ export default function Register() {
           </p>
         </motion.div>
       </main>
+
+      <PublicFooter />
     </div>
   );
 }

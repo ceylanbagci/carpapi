@@ -63,6 +63,23 @@ class DealerRunResult:
 # --------------------------------------------------------------------- #
 
 
+def _dedup_key(listing: dict) -> str:
+    """Stable key used to detect duplicates across paginated pages.
+
+    Dealer.com numbers its inventory by VIN; in rare cases a non-VIN
+    Vehicle node appears (manager's specials, certified-pre-owned
+    placeholders) and we fall back to its listing_url. Empty when
+    neither field is set — those rows will deduplicate against each
+    other but not against canonical rows, which is fine.
+    """
+    return (
+        listing.get("vin")
+        or listing.get("listing_url")
+        or listing.get("external_id")
+        or ""
+    )
+
+
 def _robots_for(url: str) -> Optional[RobotFileParser]:
     parsed = urlparse(url)
     if not parsed.scheme or not parsed.hostname:
@@ -190,8 +207,14 @@ def run_for_dealer(
     pages_fetched = 0
 
     try:
-        # 6a. Fetch the inventory page (static, cheap).
-        page = dealer_dot_com.fetch(inventory_url)
+        # 6a. Fetch the inventory page (static, cheap). We walk pagination
+        #     on Dealer.com via `?numRecsPerPage=100&start=N` — a single
+        #     dealer can carry 60-200 new cars and the default page size
+        #     of 30 was capping us to that first page. The pagination
+        #     helper yields up to `max_pages` URLs; we stop early when a
+        #     page returns zero NEW vehicles (dedup by VIN / vehicle_id).
+        paginated_urls = dealer_dot_com.paginated_inventory_urls(inventory_url)
+        page = dealer_dot_com.fetch(paginated_urls[0])
         pages_fetched += 1
         if page.error or page.status >= 400:
             http_error_count += 1
@@ -212,81 +235,127 @@ def run_for_dealer(
                 city=city,
             )
             log.info(
-                "[%s] static listing page: %d inline listings, %d VDP candidates",
+                "[%s] static listing page 1: %d inline listings, %d VDP candidates",
                 dealer_slug, len(inline), len(vdps),
             )
             canonical_listings.extend(inline)
 
+            # Walk additional pages via static fetch when page 1 yielded
+            # inline JSON-LD (cheap path). If page 1 yielded nothing, the
+            # Selenium fallback below handles pagination itself.
+            if inline:
+                seen_keys = {_dedup_key(l) for l in inline}
+                for next_url in paginated_urls[1:]:
+                    time.sleep(rate_limit_seconds)
+                    np = dealer_dot_com.fetch(next_url)
+                    pages_fetched += 1
+                    if np.error or np.status >= 400:
+                        http_error_count += 1
+                        log.warning(
+                            "[%s] paginated page %s -> %s; stopping walk",
+                            dealer_slug, next_url, np.status or np.error,
+                        )
+                        break
+                    inline_n, vdps_n = dealer_dot_com.parse_listing_page(
+                        np,
+                        source_id=source_id,
+                        source_name=dealer_name,
+                        region=region,
+                        city=city,
+                    )
+                    new_inline = [
+                        l for l in inline_n if _dedup_key(l) not in seen_keys
+                    ]
+                    log.info(
+                        "[%s] static listing page %s: %d new inline (of %d), %d VDPs",
+                        dealer_slug, next_url, len(new_inline), len(inline_n), len(vdps_n),
+                    )
+                    if not new_inline and not vdps_n:
+                        break  # page exhausted
+                    seen_keys.update(_dedup_key(l) for l in new_inline)
+                    canonical_listings.extend(new_inline)
+                    vdps.extend(vdps_n)
+
             # 6b. Selenium fallback when the static page yielded nothing.
             #     Re-fetch with a real browser so JS-rendered inventory
-            #     hydrates, then re-run the same parser.
+            #     hydrates, then re-run the same parser. Walks pagination
+            #     URLs in order; stops on the first page with no new VINs.
             if (
                 allow_selenium
-                and not inline
+                and not canonical_listings
                 and not vdps
                 and not result.skipped_reason
             ):
                 log.info(
                     "[%s] no inline listings or VDPs in static HTML; "
-                    "falling back to Selenium-rendered fetch",
+                    "falling back to Selenium-rendered fetch (paginated)",
                     dealer_slug,
                 )
                 try:
                     with dealer_dot_com.selenium_session() as driver:
-                        rendered = dealer_dot_com.fetch_rendered(
-                            driver, inventory_url
-                        )
-                        pages_fetched += 1
-                        if rendered.error or rendered.status >= 400:
-                            log.warning(
-                                "[%s] selenium fetch error: %s",
-                                dealer_slug, rendered.error or rendered.status,
-                            )
-                            http_error_count += 1
-                        else:
-                            inline2, vdps2 = dealer_dot_com.parse_listing_page(
+                        seen_keys: set[str] = set()
+                        vdps = []
+                        for page_url in paginated_urls:
+                            rendered = dealer_dot_com.fetch_rendered(driver, page_url)
+                            pages_fetched += 1
+                            if rendered.error or rendered.status >= 400:
+                                log.warning(
+                                    "[%s] selenium fetch error %s: %s",
+                                    dealer_slug, page_url, rendered.error or rendered.status,
+                                )
+                                http_error_count += 1
+                                break
+                            inline_p, vdps_p = dealer_dot_com.parse_listing_page(
                                 rendered,
                                 source_id=source_id,
                                 source_name=dealer_name,
                                 region=region,
                                 city=city,
                             )
+                            new_inline = [
+                                l for l in inline_p if _dedup_key(l) not in seen_keys
+                            ]
                             log.info(
-                                "[%s] rendered listing page: %d inline, "
-                                "%d VDP candidates",
-                                dealer_slug, len(inline2), len(vdps2),
+                                "[%s] selenium %s: +%d inline (of %d), +%d VDPs",
+                                dealer_slug, page_url,
+                                len(new_inline), len(inline_p), len(vdps_p),
                             )
-                            canonical_listings.extend(inline2)
-                            vdps = vdps2
-                            # If still nothing, try walking VDPs by parsing
-                            # generic anchors to detail pages — many
-                            # Dealer.com themes have /new/<year>-<make>/...
-                            # patterns that don't always include a VIN in
-                            # the URL. We'll add that selector if needed
-                            # in a later pass.
+                            if not new_inline and not vdps_p:
+                                break  # page exhausted → done
+                            seen_keys.update(_dedup_key(l) for l in new_inline)
+                            canonical_listings.extend(new_inline)
+                            vdps.extend(vdps_p)
+                            time.sleep(rate_limit_seconds)
 
-                            # Walk VDPs (if any) using Selenium too, since
-                            # detail pages also tend to be JS-rendered.
-                            for vdp_url in vdps:
-                                if len(canonical_listings) >= max_listings:
-                                    break
-                                time.sleep(rate_limit_seconds)
-                                vdp_page = dealer_dot_com.fetch_rendered(
-                                    driver, vdp_url, wait_for_jsonld_seconds=4.0
-                                )
-                                pages_fetched += 1
-                                if vdp_page.error or vdp_page.status >= 400:
-                                    http_error_count += 1
-                                    continue
-                                listing = dealer_dot_com.parse_vdp(
-                                    vdp_page,
-                                    source_id=source_id,
-                                    source_name=dealer_name,
-                                    region=region,
-                                    city=city,
-                                )
-                                if listing is not None:
-                                    canonical_listings.append(listing)
+                        # Walk VDPs (if any) using Selenium too, since
+                        # detail pages also tend to be JS-rendered. This
+                        # runs AFTER the pagination loop — `vdps` is the
+                        # union of every page's VDP candidates, deduped
+                        # below.
+                        seen_vdps: set[str] = set()
+                        for vdp_url in vdps:
+                            if vdp_url in seen_vdps:
+                                continue
+                            seen_vdps.add(vdp_url)
+                            if len(canonical_listings) >= max_listings:
+                                break
+                            time.sleep(rate_limit_seconds)
+                            vdp_page = dealer_dot_com.fetch_rendered(
+                                driver, vdp_url, wait_for_jsonld_seconds=4.0
+                            )
+                            pages_fetched += 1
+                            if vdp_page.error or vdp_page.status >= 400:
+                                http_error_count += 1
+                                continue
+                            listing = dealer_dot_com.parse_vdp(
+                                vdp_page,
+                                source_id=source_id,
+                                source_name=dealer_name,
+                                region=region,
+                                city=city,
+                            )
+                            if listing is not None:
+                                canonical_listings.append(listing)
                 except RuntimeError as exc:
                     log.warning("[%s] selenium not available: %s", dealer_slug, exc)
             else:

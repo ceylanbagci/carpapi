@@ -101,6 +101,37 @@ If the user asks for a NEW CMS:
 3. Once the adapter exists at `carpapi/scrapers/<cms>.py`, update
    `dealers_final.json` so dealers on that CMS have `cms=<name>`.
 
+## Pagination contract (critical — most under-scraped dealers are paginated)
+
+Single-page fetches under-count any dealer with > 30 vehicles. The
+runner walks pages explicitly via
+`dealer_dot_com.paginated_inventory_urls()`:
+
+- **Page size**: `?numRecsPerPage=100` (Dealer.com caps at 100 on most
+  themes). Overrides anything the dealer hard-codes in the URL.
+- **Offset**: `?start=N` where `N ∈ {0, 100, 200, ...}` until either:
+  - a page returns **zero new VINs** (`_dedup_key` collision rate = 100%), OR
+  - we hit `DEFAULT_MAX_PAGES = 10` (1000 cars — no real dealer in the
+    NJ allowlist exceeds this).
+- **Dedup**: cross-page dedup on VIN, falling back to `listing_url` →
+  `external_id`. The runner deduplicates BEFORE the listings hit the
+  ingest batch; otherwise the same VIN would `RecordsRejected` on
+  conflict with itself.
+- **Rate limit**: every page fetch sleeps `rate_limit_seconds` (default
+  per `context/scraper-rules.md`). DO NOT increase concurrency to walk
+  pages in parallel — same-host courtesy still applies.
+
+When `parse_listing_page` returns inline JSON-LD on page 1 we walk via
+the static HTTP fetcher (cheap). When page 1 is empty (typical for
+JS-rendered Dealer.com themes) the Selenium fallback fetches each
+paginated URL itself, then walks any VDP candidates discovered along
+the way.
+
+**Diagnostic**: if a dealer's live page shows N vehicles but the scrape
+returned ~30, the pagination walk silently failed. Check the run logs
+for `selenium %s: +%d inline` lines — they list per-page yield. A
+single line at page 1 with no further pages = the walk didn't fire.
+
 ## Safety boundaries — things you NEVER do without explicit user authorization
 
 - **Scrape a CMS not in `context/scraper-rules.md` allowlist** (AutoTrader,

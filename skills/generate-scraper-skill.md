@@ -35,6 +35,29 @@ For an API source:
 2. Respect documented rate limits + add 2× safety margin.
 3. Use cursor/page tokens; never assume "list all."
 
+### Pagination is mandatory, not optional
+Inventory pages almost always paginate (30 / 50 / 100 per page is typical).
+**Never assume a single fetch covers all stock.** The reference implementation
+lives in `carpapi/scrapers/adapters/dealer_dot_com.py::paginated_inventory_urls()`.
+For each new adapter:
+
+1. Inspect the live URL after clicking "Next" in a browser — what query
+   parameter changes (`?start=`, `?page=`, `?offset=`)?
+2. Detect the host's max page size and use it (Dealer.com honors
+   `numRecsPerPage=100`).
+3. Walk pages until you see **zero new VINs** OR hit a sane upper bound
+   (no NJ dealer in the allowlist exceeds 1000 cars).
+4. Dedup across pages by VIN, falling back to `listing_url` →
+   `external_id`. Same-page duplicates are normal (manager's specials
+   sometimes appear on every page).
+5. Rate-limit between page fetches with the same `rate_limit_seconds`
+   the runner uses for VDPs — don't parallelize.
+
+A scraper that returns ~30 listings against a known-larger dealer
+inventory is the canonical pagination-walk-failed symptom. The
+`scrape-watchdog` agent surfaces this via the
+`-25% RecordsFetched vs 7-day median` rule in `monitoring-rules.md`.
+
 ## Anti-bot policy (HTML sources only)
 - Acceptable: identifying user-agent, session cookies, normal request rate, respecting robots.txt.
 - **Not acceptable:** CAPTCHA solvers, residential-proxy rotation specifically to evade blocks, JavaScript fingerprint randomization, browser-version spoofing.

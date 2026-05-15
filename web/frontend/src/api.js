@@ -208,6 +208,33 @@ export function currentUser() {
   return a ? a.user : null;
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// Notification preferences (backed by notifications/views.py)
+// ─────────────────────────────────────────────────────────────────────
+
+/** GET /api/notifications/preferences/ — returns
+ *  `{ categories: [{key,label,enabled}], cc_email, updated_at }`. */
+export async function getNotificationPreferences() {
+  return httpJson("GET", "/notifications/preferences/");
+}
+
+/** PATCH /api/notifications/preferences/.
+ *  `categories` is { key: bool, ... }. `cc_email` is a string or "".
+ *  Returns the updated payload (same shape as the GET). */
+export async function updateNotificationPreferences({ categories, cc_email }) {
+  const body = {};
+  if (categories) body.categories = categories;
+  if (cc_email !== undefined) body.cc_email = cc_email;
+  return httpJson("PATCH", "/notifications/preferences/", body);
+}
+
+/** POST /api/notifications/test/ — fires a sandbox-safe test email to
+ *  the logged-in user's address. Returns
+ *  `{ ok, status, ses_message_id, error, to, from }`. */
+export async function sendTestNotification() {
+  return httpJson("POST", "/notifications/test/", {});
+}
+
 /** URL the Sign-In-With-Google button links to. App Runner handles
  *  the OAuth dance via allauth, then bounces back to `next`. */
 export function googleLoginUrl(next) {

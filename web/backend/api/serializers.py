@@ -32,12 +32,18 @@ class ListingSerializer(serializers.ModelSerializer):
             "window_sticker",
             "maker_enriched_at",
             "maker_enrich_status",
+            # Thumbnail URLs surfaced by the carpapi.images pipeline.
+            # Both nullable until the row gets backfilled.
+            "image_url",
+            "image_svg_url",
         ]
 
 
 class DealerSerializer(serializers.ModelSerializer):
     # Annotated by DealerViewSet.get_queryset (Subquery on Listing.source_id).
-    # Coalesce to 0 here so the wire shape is always an int, never null.
+    # Coalesce to 0 in the getter so the wire shape is always an int,
+    # never null — the SPA's `?ordering=-cars_count` then sorts
+    # numerically (Postgres ORDER BY on an int column).
     cars_count = serializers.SerializerMethodField()
 
     class Meta:

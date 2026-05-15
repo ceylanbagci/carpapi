@@ -28,7 +28,7 @@ import time
 from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any, Iterator, Optional
-from urllib.parse import urljoin, urlparse
+from urllib.parse import parse_qsl, urlencode, urljoin, urlparse, urlunparse
 
 log = logging.getLogger(__name__)
 
@@ -615,3 +615,70 @@ def parse_vdp(
         if listing is not None:
             return listing
     return None
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Pagination
+# ─────────────────────────────────────────────────────────────────────
+#
+# Dealer.com paginates inventory via `?start=N`. The page-size param
+# `?numRecsPerPage=N` is honored on some themes (it can raise per-page
+# results to ~100) but IGNORED on others — for example,
+# `allamericanchevrolet.com` always renders 18 VDPs per page regardless.
+# We've measured 18, 24, and 30 in the wild on the NJ allowlist.
+#
+# Strategy: walk small increments (`step` defaults to 18 — the smallest
+# observed) so we never skip a page on a theme that ignores the size
+# hint. The runner stops early when a fetched page yields **zero new
+# VINs** vs the running dedup set, so we don't burn requests on dealers
+# with < 18 cars or on themes that simply repeat page 1.
+#
+# Examples:
+#   paginated_inventory_urls("…/new-inventory/index.htm")
+#     → [...?start=0, …?start=18, …?start=36, …?start=54, …]
+#
+#   paginated_inventory_urls(base, step=30, max_pages=4)
+#     → [...?start=0, …?start=30, …?start=60, …?start=90]
+
+DEFAULT_PAGE_STEP = 18    # smallest observed Dealer.com page size in our NJ allowlist
+DEFAULT_MAX_PAGES = 60    # 60 × 18 = 1080 cars (covers every dealer we've seen)
+
+
+def paginated_inventory_urls(
+    base_url: str,
+    *,
+    step: int = DEFAULT_PAGE_STEP,
+    max_pages: int = DEFAULT_MAX_PAGES,
+    request_size: Optional[int] = 100,
+) -> list[str]:
+    """Build the ordered list of page URLs for a Dealer.com inventory.
+
+    `step` is the OFFSET BETWEEN PAGES — must match (or under-step) the
+    actual rendered page size, since Dealer.com themes are inconsistent
+    about honoring `numRecsPerPage`. 18 is the safe default.
+
+    `request_size` sets `?numRecsPerPage=N` as a hint to the themes that
+    honor it; set to `None` to leave the param off entirely. Defaults to
+    100 which is a no-op on themes that ignore it.
+
+    The runner is expected to walk these in order and break as soon as
+    `_dedup_key` collisions hit 100% on a page (signaling we've fetched
+    past the end of inventory).
+    """
+    parsed = urlparse(base_url)
+    qs = dict(parse_qsl(parsed.query, keep_blank_values=True))
+    # Drop any caller-supplied pagination params; we set them ourselves.
+    qs.pop("start", None)
+    qs.pop("numRecsPerPage", None)
+    if request_size is not None:
+        qs["numRecsPerPage"] = str(request_size)
+
+    urls: list[str] = []
+    for page_idx in range(max_pages):
+        page_qs = dict(qs)
+        if page_idx > 0:
+            page_qs["start"] = str(page_idx * step)
+        urls.append(
+            urlunparse(parsed._replace(query=urlencode(page_qs, doseq=True)))
+        )
+    return urls

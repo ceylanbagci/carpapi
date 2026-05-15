@@ -16,7 +16,10 @@ All list endpoints accept the query params:
 """
 from __future__ import annotations
 
-from django.db.models import Count, IntegerField, Max, Min, OuterRef, Q, Subquery
+from django.db.models import (
+    Count, IntegerField, Max, Min, OuterRef, Q, Subquery, Value,
+)
+from django.db.models.functions import Coalesce
 from rest_framework import viewsets
 from rest_framework.decorators import api_view
 from rest_framework.pagination import PageNumberPagination
@@ -81,15 +84,21 @@ class DealerViewSet(viewsets.ReadOnlyModelViewSet):
         "postal_code",
         "enrolled_at",
         "last_scraped_at",
+        # Annotation added in get_queryset — Postgres sorts numerically
+        # via ORDER BY cars_count DESC. SPA renders this as the
+        # "Listings" pill in the /dealers table.
         "cars_count",
     ]
     lookup_field = "slug"
 
     def get_queryset(self):
-        # listings have no FK to dealers; the link is
-        # listings.source_id == dealers.slug. Annotate a per-dealer
-        # listing count via a correlated subquery so the value can be
-        # sorted and serialized as part of the row.
+        # Listings join to dealers via `Listing.source_id == Dealer.slug`
+        # (there's no Django ForeignKey because the listings table is
+        # SQLAlchemy-managed). Correlated subquery so the count is a
+        # single integer per row — DRF's OrderingFilter then sorts
+        # numerically via Postgres ORDER BY, not string-collation. The
+        # Coalesce wraps NULL (dealers with zero listings) to 0 so
+        # `-cars_count` puts empty dealers last.
         cars_sq = (
             Listing.objects.filter(source_id=OuterRef("slug"))
             .order_by()
@@ -98,7 +107,10 @@ class DealerViewSet(viewsets.ReadOnlyModelViewSet):
             .values("c")
         )
         qs = super().get_queryset().annotate(
-            cars_count=Subquery(cars_sq, output_field=IntegerField())
+            cars_count=Coalesce(
+                Subquery(cars_sq, output_field=IntegerField()),
+                Value(0),
+            )
         )
         params = self.request.query_params
         if (make := params.get("make")):

@@ -54,6 +54,13 @@ class Listing(models.Model):
     images = models.JSONField(null=True, blank=True)
     raw_document = models.JSONField(null=True, blank=True)
 
+    # 240×160 JPEG + minimal SVG silhouette written by the
+    # carpapi.images pipeline. CDN URLs live on
+    # d372ww3313y553.cloudfront.net/listings/<vin-or-id>.{jpg,svg}.
+    # NULL when the dealer hasn't been backfilled yet.
+    image_url = models.TextField(null=True, blank=True)
+    image_svg_url = models.TextField(null=True, blank=True)
+
     # Hot-loop refresh tracking
     price_refreshed_at = models.DateTimeField(null=True, blank=True)
 

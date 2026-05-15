@@ -172,19 +172,113 @@
         width: 8px; height: 8px; border-radius: 50%;
         background: #22c55e; box-shadow: 0 0 6px #22c55e;
       }
+
+      /* ── User menu (head icon → dropdown) ──────────────────── */
+      .usermenu {
+        position: relative;
+        display: inline-block;
+      }
+      .usermenu-btn {
+        width: 36px; height: 36px; border-radius: 50%;
+        background: var(--bg-soft);
+        border: 1px solid var(--border);
+        color: var(--fg);
+        font-weight: 700; font-size: 13px;
+        display: inline-flex; align-items: center; justify-content: center;
+        cursor: pointer; transition: 0.15s;
+        font-family: inherit;
+      }
+      .usermenu-btn:hover { background: rgba(255,255,255,0.06); }
+      .usermenu-btn[aria-expanded="true"] { background: rgba(255,255,255,0.08); }
+      .usermenu-pop {
+        position: absolute; right: 0; top: calc(100% + 8px);
+        min-width: 220px;
+        background: var(--bg-soft);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+        padding: 6px;
+        display: none;
+        z-index: 50;
+      }
+      .usermenu[data-open="true"] .usermenu-pop { display: block; }
+      .usermenu-row {
+        display: flex; align-items: center; gap: 10px;
+        padding: 10px 12px; border-radius: 8px;
+        font-size: 14px; color: var(--fg);
+        text-decoration: none;
+        cursor: pointer; background: transparent; border: none; width: 100%; text-align: left;
+        font-family: inherit;
+      }
+      .usermenu-row:hover { background: rgba(255,255,255,0.05); }
+      .usermenu-row.danger { color: #fca5a5; }
+      .usermenu-divider {
+        border: 0; border-top: 1px solid var(--border);
+        margin: 6px 0;
+      }
+      .usermenu-userline {
+        padding: 10px 12px;
+        font-size: 12px; color: var(--fg-muted);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .usermenu-userline strong {
+        display: block; color: var(--fg); font-size: 13px; font-weight: 600;
+        margin-bottom: 2px;
+      }
+
+      /* ── Footer columns ────────────────────────────────────── */
+      .footer-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr;
+        gap: 36px;
+        padding: 48px 0 32px;
+        border-top: 1px solid var(--border);
+        margin-top: 64px;
+      }
+      .footer-col h4 {
+        margin: 0 0 14px;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--fg-muted);
+      }
+      .footer-col ul { list-style: none; padding: 0; margin: 0; }
+      .footer-col li { margin-bottom: 8px; }
+      .footer-col a { color: var(--fg-muted); font-size: 14px; transition: 0.15s; }
+      .footer-col a:hover { color: var(--fg); }
+      .footer-brand p {
+        max-width: 280px; color: var(--fg-muted); font-size: 14px;
+        margin: 0 0 16px;
+      }
+      .footer-bottom {
+        display: flex; justify-content: space-between; flex-wrap: wrap;
+        gap: 16px; padding: 20px 0 0;
+        font-size: 13px; color: var(--fg-muted);
+      }
+      @media (max-width: 720px) {
+        .footer-grid { grid-template-columns: 1fr 1fr; gap: 28px; }
+        .footer-brand { grid-column: span 2; }
+      }
     </style>
   </head>
   <body>
     <div class="wrap">
       <header>
-        <div class="brand">
+        <a href="/" class="brand" aria-label="CarPapi home">
           <span class="logo-dot">C</span>
           <span>CarPapi</span>
-        </div>
-        <nav>
+        </a>
+        <nav id="public-nav">
+          <a href="/chat">Chat</a>
+          <a href="/dashboard">Inventory</a>
           <a href="/pricing">Pricing</a>
-          <a href="/login">Sign in</a>
-          <a href="/signup" class="primary">Get started</a>
+          <!-- Auth slot: replaced at runtime by inline JS below.
+               Default (logged-out) shows Sign in + Get started. -->
+          <span id="auth-slot">
+            <a href="/login">Sign in</a>
+            <a href="/signup" class="primary">Get started</a>
+          </span>
         </nav>
       </header>
 
@@ -270,22 +364,163 @@
       </section>
 
       <footer>
-        <div>© 2026 CarPapi · used-car search, in plain English.</div>
-        <div class="health">
-          <span class="health-dot"></span>
-          <span id="health-text">API live</span>
+        <div class="footer-grid">
+          <div class="footer-col footer-brand">
+            <div class="brand" style="margin-bottom: 12px">
+              <span class="logo-dot">C</span>
+              <span>CarPapi</span>
+            </div>
+            <p>
+              Used-car search, in plain English. Real inventory from real
+              dealers, refreshed daily.
+            </p>
+            <div class="health">
+              <span class="health-dot"></span>
+              <span id="health-text">API live</span>
+            </div>
+          </div>
+
+          <div class="footer-col">
+            <h4>Product</h4>
+            <ul>
+              <li><a href="/chat">Chat search</a></li>
+              <li><a href="/dashboard">Inventory</a></li>
+              <li><a href="/pricing">Pricing</a></li>
+              <li><a href="/signup">Get started</a></li>
+            </ul>
+          </div>
+
+          <div class="footer-col">
+            <h4>Company</h4>
+            <ul>
+              <li><a href="mailto:info@carpappi.com">Contact</a></li>
+              <li><a href="/pricing">Pricing</a></li>
+              <li><a href="mailto:marketing@carpappi.com">Press</a></li>
+              <li><a href="mailto:admin@carpappi.com">Support</a></li>
+            </ul>
+          </div>
+
+          <div class="footer-col">
+            <h4>Legal</h4>
+            <ul>
+              <li><a href="/legal/privacy">Privacy</a></li>
+              <li><a href="/legal/terms">Terms</a></li>
+              <li><a href="/legal/cookies">Cookies</a></li>
+              <li><a href="mailto:admin@carpappi.com">Abuse</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="footer-bottom">
+          <div>© 2026 CarPapi · used-car search, in plain English.</div>
+          <div>
+            <a href="mailto:info@carpappi.com">info@carpappi.com</a>
+          </div>
         </div>
       </footer>
     </div>
 
     <script>
+      // ── Auth-aware nav slot ──────────────────────────────────
+      // The SPA persists its auth blob to localStorage under the key
+      // `carpapi.auth.v2` (see web/frontend/src/api.js::AUTH_STORAGE_KEY).
+      // Shape: { access, refresh, user: { email, full_name, ... } }.
+      // We read the same key from this static page so the chrome
+      // stays consistent across the SPA boundary.
+      (function () {
+        const slot = document.getElementById("auth-slot");
+        if (!slot) return;
+        let auth = null;
+        try {
+          const raw = localStorage.getItem("carpapi.auth.v2");
+          if (raw) auth = JSON.parse(raw);
+        } catch (_) { /* corrupt blob — treat as logged-out */ }
+        const user = auth && auth.user;
+        if (!user || !user.email) return; // logged out — keep default Sign in / Get started
+
+        // Derive initials. Prefer full_name, fall back to email local-part.
+        const name = (user.full_name || "").trim();
+        const initials = name
+          ? name.split(/\s+/).map((p) => p[0] || "").join("").slice(0, 2).toUpperCase()
+          : (user.email[0] || "?").toUpperCase();
+        const displayName = name || user.email.split("@")[0];
+
+        slot.innerHTML = `
+          <div class="usermenu" id="usermenu">
+            <button
+              type="button"
+              class="usermenu-btn"
+              id="usermenu-trigger"
+              aria-haspopup="true"
+              aria-expanded="false"
+              title="${user.email}"
+            >${initials}</button>
+            <div class="usermenu-pop" role="menu">
+              <div class="usermenu-userline">
+                <strong>${displayName}</strong>
+                ${user.email}
+              </div>
+              <hr class="usermenu-divider" />
+              <a class="usermenu-row" href="/chat" role="menuitem">
+                <span aria-hidden="true">💬</span> Chat
+              </a>
+              <a class="usermenu-row" href="/dashboard" role="menuitem">
+                <span aria-hidden="true">📊</span> Dashboard
+              </a>
+              <a class="usermenu-row" href="/settings" role="menuitem">
+                <span aria-hidden="true">⚙️</span> Settings
+              </a>
+              <hr class="usermenu-divider" />
+              <button type="button" class="usermenu-row danger" id="usermenu-signout" role="menuitem">
+                <span aria-hidden="true">→</span> Sign out
+              </button>
+            </div>
+          </div>
+        `;
+
+        const menu = document.getElementById("usermenu");
+        const trigger = document.getElementById("usermenu-trigger");
+        const signoutBtn = document.getElementById("usermenu-signout");
+        const close = () => {
+          menu.dataset.open = "false";
+          trigger.setAttribute("aria-expanded", "false");
+        };
+        const toggle = () => {
+          const open = menu.dataset.open === "true";
+          menu.dataset.open = open ? "false" : "true";
+          trigger.setAttribute("aria-expanded", String(!open));
+        };
+        trigger.addEventListener("click", (e) => { e.stopPropagation(); toggle(); });
+        document.addEventListener("click", (e) => {
+          if (!menu.contains(e.target)) close();
+        });
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape") close();
+        });
+        signoutBtn.addEventListener("click", async () => {
+          // Best-effort backend logout; always wipe local state.
+          try {
+            await fetch("https://api.carpappi.com/api/auth/logout/", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                ...(auth?.access ? { Authorization: "Bearer " + auth.access } : {}),
+              },
+              body: "{}",
+            });
+          } catch (_) { /* offline — proceed */ }
+          localStorage.removeItem("carpapi.auth.v2");
+          window.location.href = "/";
+        });
+      })();
+
       // Fetch live stats from the API so this landing always shows
       // current numbers. Defaults baked into the HTML render if the
       // fetch fails (offline / cold App Runner).
       (async () => {
         try {
           const r = await fetch(
-            "https://gt3mapscrz.us-east-1.awsapprunner.com/api/stats/",
+            "https://api.carpappi.com/api/stats/",
             { cache: "no-store" },
           );
           if (!r.ok) throw new Error("stats " + r.status);

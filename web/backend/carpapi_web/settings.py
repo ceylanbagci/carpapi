@@ -75,6 +75,7 @@ INSTALLED_APPS = [
     # Our apps
     "accounts",
     "api",
+    "notifications",
 ]
 
 # Order matters. WhiteNoise must come right after SecurityMiddleware so
