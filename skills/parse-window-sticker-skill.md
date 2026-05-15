@@ -6,6 +6,14 @@ JSONB document, using [microsoft/markitdown](https://github.com/microsoft/markit
 as the PDF→Markdown bridge and a small set of regex extractors over the
 Markdown.
 
+## Preflight — point at the real DB
+
+```bash
+# The parser's output lands in public.listings.window_sticker JSONB
+# on RDS, not local. See skills/rds-first-skill.md for the policy.
+source data/secrets/rds.env
+```
+
 ## When to use this skill
 
 Trigger when working on any of:

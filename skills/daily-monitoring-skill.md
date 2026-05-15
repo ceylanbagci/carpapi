@@ -2,9 +2,19 @@
 
 Generate the daily scrape report at `monitoring/daily_reports/YYYY-MM-DD_scrape_report.md`.
 
+## Preflight — point at the real DB
+
+```bash
+# Daily report queries production counts; local Postgres has stale
+# numbers from whenever migrate_to_rds.sh last ran. See
+# skills/rds-first-skill.md for the policy.
+source data/secrets/rds.env
+```
+
 ## Read first
 - [context/monitoring-rules.md](../context/monitoring-rules.md) for the metric definitions and alert thresholds
 - [pipeline/carapi_pipeline/metrics.py](../pipeline/carapi_pipeline/metrics.py) for what's emitted
+- [skills/rds-first-skill.md](rds-first-skill.md) — RDS-first policy
 
 ## Inputs
 - Either CloudWatch metrics (when `CARAPI_CLOUDWATCH_NAMESPACE` is set in production) or local EMF JSON lines from `stdout` of pipeline runs.

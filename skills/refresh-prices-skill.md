@@ -4,6 +4,14 @@ Refresh `public.listings.price_amount` (and only that) by re-visiting each
 dealer's inventory. The hot loop of the two-track enrichment pipeline —
 runs frequently, touches no spec data.
 
+## Preflight — point at the real DB
+
+```bash
+# Price-refresh writes public.listing_price_history rows on RDS.
+# See skills/rds-first-skill.md for the policy.
+source data/secrets/rds.env
+```
+
 ## When to use this skill
 
 Trigger when working on any of:

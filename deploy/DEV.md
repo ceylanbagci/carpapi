@@ -5,6 +5,29 @@ that has the production data dump. Same-origin via the Vite proxy so
 JWT tokens + cookies behave identically to production without CORS
 games.
 
+## ⚡ Two-database rule
+
+CarPapi keeps a clean split:
+
+| You're working on… | Connect to |
+|---|---|
+| The React SPA, Django views, auth flows, REST endpoints | **Local Postgres `:5433`** — `./scripts/dev-local.sh` sets this up automatically |
+| Any operational **agent** (`.claude/agents/*`), any pipeline script (`carpapi.scrapers.*`, `carpapi.enrich.*`, `carpapi.rag.embed`, monitors, daily reports) | **RDS production** — `source data/secrets/rds.env` before running |
+
+The local snapshot at `:5433` is a frozen copy from the last
+`migrate_to_rds.sh` run. It goes stale the moment any agent writes
+to RDS. The full rationale + the list of forbidden operations is
+documented in [../skills/rds-first-skill.md](../skills/rds-first-skill.md).
+
+```bash
+# Verify which DB your shell is currently pointed at:
+echo "PG: ${CARPAPI_DB_HOST:-(unset)}:${CARPAPI_DB_PORT:-(unset)}/${CARPAPI_DB_NAME:-(unset)}"
+```
+
+- `carpapi-db.c7oasmx9kbh5...:5432/carpapi` → RDS production
+- `localhost:5433/carpapi` → local dev stack (set by `dev-local.sh`)
+- `(unset):(unset)/(unset)` → defaults to `localhost:5432` (probably wrong; either source `rds.env` or start `dev-local.sh`)
+
 ## One-command start
 
 ```bash

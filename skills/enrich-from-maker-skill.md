@@ -7,6 +7,14 @@ data, locate the window-sticker PDF, parse it, and persist everything
 in a single atomic update. **One-time per VIN — never re-run on rows
 that already have data.**
 
+## Preflight — point at the real DB
+
+```bash
+# Enrichment writes maker_specs + window_sticker on public.listings
+# in RDS, not local. See skills/rds-first-skill.md for the policy.
+source data/secrets/rds.env
+```
+
 ## When to use this skill
 
 Trigger when working on any of:

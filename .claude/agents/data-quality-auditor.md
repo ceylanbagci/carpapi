@@ -31,6 +31,23 @@ context for a developer (or another agent) to fix.
 - **Embedding dim** is **1024** (Titan Embed Text v2). Anything else
   is a regression.
 
+## Preflight — point at the real DB
+
+Always source the RDS connection file before any database read or
+write. Production state lives in RDS; the local Postgres on `:5433`
+is a stale snapshot used only by the SPA/Django UI dev stack
+(`./scripts/dev-local.sh`).
+
+```bash
+source data/secrets/rds.env
+echo "writing to: $CARPAPI_DB_HOST:$CARPAPI_DB_PORT/$CARPAPI_DB_NAME"
+```
+
+Expected: `carpapi-db.c7oasmx9kbh5.us-east-1.rds.amazonaws.com:5432/carpapi`.
+If you see `localhost:5433`, stop and source the file. See
+[../../skills/rds-first-skill.md](../../skills/rds-first-skill.md)
+for the full policy + the forbidden operations list.
+
 ## Operating procedure — weekly run
 
 Produce `monitoring/data_quality/YYYY-WW.md` with these sections.
