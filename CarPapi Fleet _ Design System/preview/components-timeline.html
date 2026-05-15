@@ -1,0 +1,25 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Timeline</title>
+<link rel="stylesheet" href="_base.css"></head>
+<body><div class="card" style="min-height:auto;padding:20px">
+  <div class="hud" style="margin-bottom:14px">DAILY SCHEDULE · 24H TIMELINE STRIP</div>
+  <div style="background:var(--bg-2);border:2px solid var(--bg-0);padding:14px 12px;box-shadow:var(--px-inset-up)">
+    <!-- ticks -->
+    <div style="display:flex;justify-content:space-between;font:var(--t-callsign);color:var(--fg-4);font-size:9px;letter-spacing:0.04em;margin-bottom:4px">
+      <span>00</span><span>03</span><span>06</span><span>09</span><span>12</span><span>15</span><span>18</span><span>21</span><span>24</span>
+    </div>
+    <!-- track -->
+    <div style="position:relative;height:14px;background:var(--bg-0);border:1px solid var(--bg-4)">
+      <!-- now marker -->
+      <div style="position:absolute;left:42%;top:-4px;bottom:-4px;width:2px;background:var(--cyan);box-shadow:0 0 8px var(--cyan-glow)"></div>
+      <!-- event ticks: 03 / 04 / 05 / 06 / 07 / 09 -->
+      <div title="03 maker-site-doctor" style="position:absolute;left:12.5%;top:0;bottom:0;width:6px;background:var(--tier-enrich)"></div>
+      <div title="04 scraper-dispatcher" style="position:absolute;left:16.5%;top:0;bottom:0;width:6px;background:var(--tier-ingest)"></div>
+      <div title="05 maker-enricher" style="position:absolute;left:20.8%;top:0;bottom:0;width:6px;background:var(--tier-enrich)"></div>
+      <div title="06 dedupe-sweeper" style="position:absolute;left:25%;top:0;bottom:0;width:6px;background:var(--tier-ingest)"></div>
+      <div title="07 price-anomaly" style="position:absolute;left:29%;top:0;bottom:0;width:6px;background:var(--tier-quality)"></div>
+      <div title="09 cost-sentinel" style="position:absolute;left:37.5%;top:0;bottom:0;width:6px;background:var(--tier-cloud)"></div>
+    </div>
+    <div class="hud" style="color:var(--fg-4);margin-top:10px">CYAN = NOW · TICKS = SCHEDULED CRON · COLOURED BY TIER</div>
+  </div>
+</div></body></html>

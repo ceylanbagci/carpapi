@@ -1,0 +1,50 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Agent card</title>
+<link rel="stylesheet" href="_base.css"></head>
+<body><div class="card" style="min-height:auto;padding:20px">
+  <div class="hud" style="margin-bottom:14px">AGENT CARD · THE SIGNATURE ELEMENT</div>
+  <div style="width:380px;background:var(--bg-3);border:2px solid var(--bg-0);box-shadow:var(--px-shadow-2),var(--px-inset-up);position:relative">
+    <!-- tier strip -->
+    <div style="height:4px;background:linear-gradient(90deg,var(--tier-ingest),rgba(54,153,255,0.2))"></div>
+    <!-- LED -->
+    <div style="position:absolute;top:14px;right:12px;width:10px;height:10px;background:var(--ok);box-shadow:0 0 10px var(--ok-glow);animation:blink-led 1s steps(2,end) infinite"></div>
+    <div style="padding:14px;display:flex;gap:12px">
+      <!-- sprite slot -->
+      <div style="width:56px;height:56px;background:rgba(54,153,255,0.16);border:2px solid var(--tier-ingest);display:grid;place-items:center;flex-shrink:0">
+        <svg width="44" height="44" viewBox="0 0 12 12" shape-rendering="crispEdges">
+          <rect x="3" y="1" width="6" height="1" fill="#3699FF"/>
+          <rect x="2" y="2" width="8" height="1" fill="#3699FF"/>
+          <rect x="2" y="3" width="8" height="1" fill="#93C5FD"/>
+          <rect x="3" y="3" width="2" height="1" fill="#0b0d14"/>
+          <rect x="7" y="3" width="2" height="1" fill="#0b0d14"/>
+          <rect x="2" y="4" width="8" height="3" fill="#3699FF"/>
+          <rect x="3" y="5" width="2" height="1" fill="#0b0d14"/>
+          <rect x="7" y="5" width="2" height="1" fill="#0b0d14"/>
+          <rect x="3" y="7" width="6" height="1" fill="#1F6FD9"/>
+          <rect x="4" y="8" width="4" height="2" fill="#1F6FD9"/>
+          <rect x="3" y="10" width="6" height="1" fill="#0b0d14"/>
+        </svg>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div class="t-callsign" style="color:var(--tier-ingest)">INGEST · DUAL</div>
+        <h3 style="color:var(--fg-1);margin:2px 0 4px">scraper-dispatcher</h3>
+        <div class="t-body-pixel" style="color:var(--fg-3);font-size:11px">Walks active dealers, batches by CMS, dispatches scrapers.</div>
+      </div>
+    </div>
+    <!-- stat strip -->
+    <div style="border-top:2px solid var(--bg-0);background:var(--bg-2);display:grid;grid-template-columns:1fr 1fr 1fr;font:var(--t-callsign);letter-spacing:var(--tracking-loose)">
+      <div style="padding:8px 10px;border-right:2px solid var(--bg-0)">
+        <div style="color:var(--fg-4);font-size:9px">LAST</div>
+        <div style="color:var(--fg-1);font:var(--t-subtitle);font-size:11px;margin-top:2px">04:12</div>
+      </div>
+      <div style="padding:8px 10px;border-right:2px solid var(--bg-0)">
+        <div style="color:var(--fg-4);font-size:9px">NEXT</div>
+        <div style="color:var(--cyan);font:var(--t-subtitle);font-size:11px;margin-top:2px">23:48</div>
+      </div>
+      <div style="padding:8px 10px">
+        <div style="color:var(--fg-4);font-size:9px">CYCLE</div>
+        <div style="color:var(--fg-1);font:var(--t-subtitle);font-size:11px;margin-top:2px">18M</div>
+      </div>
+    </div>
+  </div>
+</div></body></html>

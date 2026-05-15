@@ -1,0 +1,201 @@
+/* Agent dataset — pulled from CarPapi/.claude/agents/*.md and AGENTS.md.
+   Each entry mirrors the YAML frontmatter + a few derived runtime
+   fields (status, last/next run times) used by the dashboard mock. */
+
+window.FLEET_AGENTS = [
+  // Tier — INGEST
+  {
+    id: "scraper-dispatcher",
+    initials: "SD",
+    tier: "ingest",
+    type: "dual",
+    cadence: "daily 04:00 UTC",
+    desc: "Walks active dealers, batches by CMS, dispatches scrapers with rate limits and robots.txt compliance.",
+    triggers: ['"rescrape Performance Ford"', '"rerun the daily scrape"'],
+    status: "online",  // online | waiting | degraded | failed | offline
+    hp: 96,            // 0-100, uptime
+    xp: 14, xpMax: 24, // runs today
+    last: "04:12",
+    next: "23:48",
+    avgCycle: "18 min",
+  },
+  {
+    id: "listing-validator",
+    initials: "LV",
+    tier: "ingest",
+    type: "autonomous",
+    cadence: "per scrape batch",
+    desc: "Normalises raw payloads against schema; quarantines failures to ingest.raw_payloads with parse_error tag.",
+    triggers: ['"reprocess quarantined"'],
+    status: "online", hp: 99, xp: 312, xpMax: 400,
+    last: "04:13", next: "—", avgCycle: "9 s/batch",
+  },
+  {
+    id: "dedupe-sweeper",
+    initials: "DS",
+    tier: "ingest",
+    type: "autonomous",
+    cadence: "daily 06:00 UTC",
+    desc: "Clusters cross-source duplicates into listing_groups. Refuses to merge across different VINs.",
+    triggers: ['"this car shows up twice"'],
+    status: "waiting", hp: 92, xp: 0, xpMax: 1,
+    last: "06:02", next: "06:00 +1d", avgCycle: "4 min",
+  },
+  {
+    id: "dealer-prospector",
+    initials: "DP",
+    tier: "ingest",
+    type: "interactive",
+    cadence: "weekly",
+    desc: "Discovers new dealers in a region, filters by CMS allowlist, opens a PR adding to dealers_final.json.",
+    triggers: ['"find Toyota dealers in NJ"'],
+    status: "offline", hp: 88, xp: 0, xpMax: 1,
+    last: "Mon 14:02", next: "Mon (weekly)", avgCycle: "12 min",
+  },
+
+  // Tier — ENRICH
+  {
+    id: "maker-enricher",
+    initials: "ME",
+    tier: "enrich",
+    type: "dual",
+    cadence: "daily 05:00 UTC",
+    desc: "Cold-loop: SELECTs listings where maker_specs IS NULL, batches by make, calls the maker adapter with daily quota.",
+    triggers: ['"enrich VIN X"', '"what\u2019s the backlog?"'],
+    status: "online", hp: 94, xp: 412, xpMax: 500,
+    last: "05:18", next: "tomorrow 05:00", avgCycle: "47 min",
+  },
+  {
+    id: "maker-site-doctor",
+    initials: "MD",
+    tier: "enrich",
+    type: "autonomous",
+    cadence: "daily 03:00 UTC",
+    desc: "Daily canary against one known-good VIN per make. Freezes the adapter on layout drift, files an issue.",
+    triggers: ['"is Ford\u2019s site stable?"'],
+    status: "degraded", hp: 71, xp: 11, xpMax: 12, // 1 maker frozen
+    last: "03:04", next: "tomorrow 03:00", avgCycle: "6 min",
+  },
+
+  // Tier — QUALITY
+  {
+    id: "scrape-watchdog",
+    initials: "SW",
+    tier: "quality",
+    type: "autonomous",
+    cadence: "per scrape + hourly",
+    desc: "Reads monitor.scrape_monitor_reports. Alerts when null-rate, count, or HTTP errors breach thresholds.",
+    triggers: ['"is scraping healthy?"'],
+    status: "online", hp: 100, xp: 24, xpMax: 24,
+    last: "07:00", next: "08:00", avgCycle: "2 min",
+  },
+  {
+    id: "data-quality-auditor",
+    initials: "DQ",
+    tier: "quality",
+    type: "interactive",
+    cadence: "weekly",
+    desc: "Scans listings for nulls, FK orphans, embedding-dim drift, stale dealers. Writes weekly markdown audit.",
+    triggers: ['"audit the data"', '"are there orphans?"'],
+    status: "offline", hp: 95, xp: 0, xpMax: 1,
+    last: "Sun 11:00", next: "Sun (weekly)", avgCycle: "23 min",
+  },
+  {
+    id: "price-anomaly-detector",
+    initials: "PA",
+    tier: "quality",
+    type: "autonomous",
+    cadence: "daily 07:00 UTC",
+    desc: "Joins listings \u2194 price_history; flags rows with >50% price delta. Most are scraper bugs, some are real deals.",
+    triggers: ['"any pricing weirdness?"'],
+    status: "online", hp: 98, xp: 1, xpMax: 1,
+    last: "07:02", next: "tomorrow 07:00", avgCycle: "3 min",
+  },
+
+  // Tier — CLOUD-OPS
+  {
+    id: "carpapi-deployer",
+    initials: "CD",
+    tier: "cloud",
+    type: "interactive",
+    cadence: "on demand",
+    desc: "Bootstraps, deploys, and rolls back the AWS stack (CloudFront / App Runner / RDS / Bedrock).",
+    triggers: ['"deploy"', '"tear down"', '"roll back"'],
+    status: "waiting", hp: 100, xp: 2, xpMax: 5,
+    last: "Tue 16:44", next: "on demand", avgCycle: "8 min",
+  },
+  {
+    id: "rds-steward",
+    initials: "RS",
+    tier: "cloud",
+    type: "dual",
+    cadence: "daily",
+    desc: "Daily snapshots, slow-query log review, free-storage / connection / IOPS thresholds. Promotes pg_stat findings to evals.",
+    triggers: ['"how\u2019s the DB?"', '"I need a snapshot"'],
+    status: "online", hp: 93, xp: 1, xpMax: 1,
+    last: "02:00", next: "tomorrow 02:00", avgCycle: "1 min",
+  },
+  {
+    id: "aws-cost-sentinel",
+    initials: "CS",
+    tier: "cloud",
+    type: "autonomous",
+    cadence: "daily 09:00 UTC",
+    desc: "Cost Explorer + CloudWatch + Bedrock token usage. Trips alarms at 50% / 80% / 100% of monthly budget.",
+    triggers: ['"what did we spend?"', '"Bedrock too expensive?"'],
+    status: "degraded", hp: 80, xp: 1, xpMax: 1, // budget at 92%
+    last: "09:00", next: "tomorrow 09:00", avgCycle: "1 min",
+  },
+
+  // Tier — DELIVERY
+  {
+    id: "ci-cd-doctor",
+    initials: "CI",
+    tier: "delivery",
+    type: "interactive",
+    cadence: "reactive",
+    desc: "Watches GitHub Actions for failed workflows. Cross-refs DEPLOY_STATE.md lessons. Drives the fix PR.",
+    triggers: ['"why is CI red?"', '"fix the workflow"'],
+    status: "failed", hp: 42, xp: 3, xpMax: 5,
+    last: "11:48", next: "reactive", avgCycle: "14 min",
+  },
+  {
+    id: "chat-quality-evaluator",
+    initials: "CQ",
+    tier: "delivery",
+    type: "dual",
+    cadence: "per PR + nightly 02:00",
+    desc: "Per-PR offline evals + nightly smoke (RAG accuracy, p95 latency) against the live App Runner URL.",
+    triggers: ['"did chat regress?"', '"add a test case"'],
+    status: "online", hp: 97, xp: 6, xpMax: 7,
+    last: "02:13", next: "on next PR", avgCycle: "12 min",
+  },
+];
+
+window.FLEET_TIERS = [
+  { id: "ingest",   label: "INGEST",    count: 4, color: "var(--tier-ingest)",   role: "Raw data into Postgres" },
+  { id: "enrich",   label: "ENRICH",    count: 2, color: "var(--tier-enrich)",   role: "Maker-site spec fill" },
+  { id: "quality",  label: "QUALITY",   count: 3, color: "var(--tier-quality)",  role: "Catch drift before users do" },
+  { id: "cloud",    label: "CLOUD-OPS", count: 3, color: "var(--tier-cloud)",    role: "AWS / RDS / budget" },
+  { id: "delivery", label: "DELIVERY",  count: 2, color: "var(--tier-delivery)", role: "Ship safely" },
+];
+
+/* Pool of fake-live log events for the activity feed. Pulled from
+   real CarPapi runbook phrasing. */
+window.FLEET_LOG_POOL = [
+  { agent: "scraper-dispatcher",   tone: "ok",   text: "performance-ford · 87 urls · ok" },
+  { agent: "scraper-dispatcher",   tone: "ok",   text: "larson-toyota · 64 urls · ok" },
+  { agent: "scraper-dispatcher",   tone: "warn", text: "parkway-honda · http 429 · backing off 5m" },
+  { agent: "listing-validator",    tone: "ok",   text: "normalised 312 rows · 4 quarantined" },
+  { agent: "listing-validator",    tone: "warn", text: "schema fail: missing price on 3 rows" },
+  { agent: "dedupe-sweeper",       tone: "ok",   text: "merged 47 pairs · 2 flagged for review" },
+  { agent: "maker-enricher",       tone: "ok",   text: "VIN 1FMCU0F70NUA12345 · 9 fields filled" },
+  { agent: "maker-enricher",       tone: "info", text: "quota 412/500 · 88 remaining today" },
+  { agent: "maker-site-doctor",    tone: "warn", text: "honda canary drift · adapter frozen" },
+  { agent: "scrape-watchdog",      tone: "ok",   text: "all thresholds nominal" },
+  { agent: "price-anomaly-detector", tone: "info", text: "12 anomalies · 11 scraper bugs, 1 real" },
+  { agent: "aws-cost-sentinel",    tone: "warn", text: "budget 92/100 usd · 80% threshold tripped" },
+  { agent: "rds-steward",          tone: "ok",   text: "snapshot taken · 4.2gb · 0 errors" },
+  { agent: "ci-cd-doctor",         tone: "err",  text: "deploy.yml failed · OIDC trust mismatch" },
+  { agent: "chat-quality-evaluator", tone: "ok", text: "smoke 47/47 · p95 1.42s" },
+];

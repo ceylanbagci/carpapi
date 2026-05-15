@@ -1,0 +1,44 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Meter bars</title>
+<link rel="stylesheet" href="_base.css"></head>
+<body><div class="card" style="min-height:auto;padding:20px">
+  <div class="hud" style="margin-bottom:14px">METERS · HP / XP / MP / QUOTA</div>
+  <div style="display:flex;flex-direction:column;gap:10px;max-width:560px">
+    <!-- HP -->
+    <div>
+      <div style="display:flex;justify-content:space-between;font:var(--t-callsign);letter-spacing:var(--tracking-loose);color:var(--fg-3)">
+        <span style="color:var(--hp-fill)">HP · UPTIME</span><span class="t-callsign" style="color:var(--fg-2)">94 / 100</span>
+      </div>
+      <div style="height:12px;background:var(--meter-bg);border:2px solid var(--bg-0);margin-top:4px;padding:1px">
+        <div style="height:100%;width:94%;background:var(--hp-fill);box-shadow:inset 0 -3px 0 rgba(0,0,0,0.3),inset 0 2px 0 rgba(255,255,255,0.25)"></div>
+      </div>
+    </div>
+    <!-- XP -->
+    <div>
+      <div style="display:flex;justify-content:space-between;font:var(--t-callsign);letter-spacing:var(--tracking-loose);color:var(--fg-3)">
+        <span style="color:var(--xp-fill)">XP · RUNS TODAY</span><span class="t-callsign" style="color:var(--fg-2)">12 / 24</span>
+      </div>
+      <div style="height:12px;background:var(--meter-bg);border:2px solid var(--bg-0);margin-top:4px;padding:1px">
+        <div style="height:100%;width:50%;background:var(--xp-fill);box-shadow:inset 0 -3px 0 rgba(0,0,0,0.3),inset 0 2px 0 rgba(255,255,255,0.25)"></div>
+      </div>
+    </div>
+    <!-- MP / quota -->
+    <div>
+      <div style="display:flex;justify-content:space-between;font:var(--t-callsign);letter-spacing:var(--tracking-loose);color:var(--fg-3)">
+        <span style="color:var(--mp-fill)">MP · BEDROCK QUOTA</span><span class="t-callsign" style="color:var(--fg-2)">412 / 500</span>
+      </div>
+      <div style="height:12px;background:var(--meter-bg);border:2px solid var(--bg-0);margin-top:4px;padding:1px">
+        <div style="height:100%;width:82%;background:var(--mp-fill);box-shadow:inset 0 -3px 0 rgba(0,0,0,0.3),inset 0 2px 0 rgba(255,255,255,0.25)"></div>
+      </div>
+    </div>
+    <!-- danger -->
+    <div>
+      <div style="display:flex;justify-content:space-between;font:var(--t-callsign);letter-spacing:var(--tracking-loose);color:var(--fg-3)">
+        <span style="color:var(--danger)">!! BUDGET BURN</span><span class="t-callsign" style="color:var(--danger)">$92 / $100</span>
+      </div>
+      <div style="height:12px;background:var(--meter-bg);border:2px solid var(--bg-0);margin-top:4px;padding:1px">
+        <div style="height:100%;width:92%;background:var(--danger);box-shadow:inset 0 -3px 0 rgba(0,0,0,0.3),inset 0 2px 0 rgba(255,255,255,0.25)"></div>
+      </div>
+    </div>
+  </div>
+</div></body></html>

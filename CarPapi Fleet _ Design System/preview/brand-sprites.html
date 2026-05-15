@@ -1,0 +1,52 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Agent sprites</title>
+<link rel="stylesheet" href="_base.css"></head>
+<body><div class="card" style="min-height:auto;padding:18px">
+  <div class="hud" style="margin-bottom:12px">14 OPERATORS · 12×12 PIXEL · TL LIGHT · HUE-SHIFTED RAMPS · BREATHING</div>
+  <div id="row" style="display:grid;grid-template-columns:repeat(7,1fr);gap:10px"></div>
+  <div class="hud" style="color:var(--fg-4);margin-top:14px">5-COLOR RAMPS PER TIER · D / S / B / H / L · NO PILLOW SHADING</div>
+</div>
+<!-- React + Babel pinned -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="../ui_kits/fleet-console/sprites.jsx"></script>
+<script type="text/babel">
+const AGENTS = [
+  ["scraper-dispatcher", "SD", "ingest"],
+  ["listing-validator",  "LV", "ingest"],
+  ["dedupe-sweeper",     "DS", "ingest"],
+  ["dealer-prospector",  "DP", "ingest"],
+  ["maker-enricher",     "ME", "enrich"],
+  ["maker-site-doctor",  "MD", "enrich"],
+  ["scrape-watchdog",    "SW", "quality"],
+  ["data-quality-auditor","DQ","quality"],
+  ["price-anomaly-detector","PA","quality"],
+  ["carpapi-deployer",   "CD", "cloud"],
+  ["rds-steward",        "RS", "cloud"],
+  ["aws-cost-sentinel",  "CS", "cloud"],
+  ["ci-cd-doctor",       "CI", "delivery"],
+  ["chat-quality-evaluator","CQ","delivery"],
+];
+const wash = {
+  ingest:"rgba(54,153,255,0.16)", enrich:"rgba(183,148,246,0.16)",
+  quality:"rgba(94,234,212,0.16)", cloud:"rgba(255,168,0,0.16)",
+  delivery:"rgba(244,114,182,0.16)",
+};
+function App(){
+  return (
+    <>
+      {AGENTS.map(([id, ini, tier]) => (
+        <div key={id} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
+          <div style={{width:56,height:56,background:wash[tier],border:`2px solid var(--tier-${tier})`,display:"grid",placeItems:"center"}}>
+            <Sprite agentId={id} tier={tier} size={48} breathe={true} />
+          </div>
+          <div className="lbl" style={{color:`var(--tier-${tier})`,fontSize:10}}>{ini}</div>
+        </div>
+      ))}
+    </>
+  );
+}
+ReactDOM.createRoot(document.getElementById("row")).render(<App/>);
+</script>
+</body></html>

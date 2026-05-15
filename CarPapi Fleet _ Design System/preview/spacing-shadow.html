@@ -1,0 +1,28 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Shadow + elevation</title>
+<link rel="stylesheet" href="_base.css"></head>
+<body><div class="card" style="min-height:auto;padding:24px">
+  <div class="hud" style="margin-bottom:18px">PIXEL ELEVATION · HARD-OFFSET, NO BLUR</div>
+  <div style="display:flex;gap:24px;align-items:flex-end">
+    <div style="display:flex;flex-direction:column;gap:6px;align-items:center">
+      <div style="width:88px;height:64px;background:var(--bg-3);border:2px solid var(--bg-0);box-shadow:var(--px-shadow-1),var(--px-inset-up)"></div>
+      <div class="lbl" style="color:var(--fg-3)">PX-SHADOW-1</div>
+      <div class="lbl" style="color:var(--fg-4);font-size:9px">2PX OFFSET</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;align-items:center">
+      <div style="width:88px;height:64px;background:var(--bg-3);border:2px solid var(--bg-0);box-shadow:var(--px-shadow-2),var(--px-inset-up)"></div>
+      <div class="lbl" style="color:var(--fg-3)">PX-SHADOW-2</div>
+      <div class="lbl" style="color:var(--fg-4);font-size:9px">2+4PX STACK</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;align-items:center">
+      <div style="width:88px;height:64px;background:var(--bg-3);border:2px solid var(--bg-0);box-shadow:var(--px-shadow-3),var(--px-inset-up)"></div>
+      <div class="lbl" style="color:var(--fg-3)">PX-SHADOW-3</div>
+      <div class="lbl" style="color:var(--fg-4);font-size:9px">4+8PX MODAL</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;align-items:center">
+      <div style="width:88px;height:64px;background:var(--bg-4);box-shadow:var(--px-inset-down)"></div>
+      <div class="lbl" style="color:var(--fg-3)">INSET-DOWN</div>
+      <div class="lbl" style="color:var(--fg-4);font-size:9px">PRESSED</div>
+    </div>
+  </div>
+</div></body></html>

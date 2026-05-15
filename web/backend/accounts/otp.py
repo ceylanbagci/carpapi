@@ -5,7 +5,7 @@ point. It:
   1. Generates a 6-digit numeric code.
   2. Hashes it (SHA-256, no salt — short-lived, not a password).
   3. Persists an `AdminOTPChallenge` row.
-  4. Delivers the code via the configured channel (sms → email →
+  4. Delivers the code via the configured channel (WhatsApp → email →
      log, in that order, falling back if the higher-priority channel
      has no creds set).
   5. Returns `(challenge_token, expires_at, channel, destination_hint)`
@@ -13,29 +13,34 @@ point. It:
 
 Channel resolution:
 
-  SMS (Twilio)  if settings.TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN,
-                TWILIO_FROM_NUMBER are all set AND the user has a
-                phone on record AND that phone is in
-                settings.ADMIN_ALLOWED_PHONES.
-  Email         if settings.EMAIL_BACKEND is configured AND the user
-                has a verified email. Always tries to fall back to
-                Django's email backend (which in dev mode prints the
-                code to stdout via console.EmailBackend).
-  Log           last-resort fallback so the feature still works in
-                local-dev when neither Twilio nor email are wired.
-                The code prints to the Django logs only — useful for
-                CI tests and local development.
+  WhatsApp     if settings.WHATSAPP_ACCESS_TOKEN +
+               WHATSAPP_PHONE_NUMBER_ID + WHATSAPP_TEMPLATE_NAME are
+               set AND the user has a phone on record AND that phone
+               is in settings.ADMIN_ALLOWED_PHONES.
+               Uses the Meta Cloud API (graph.facebook.com) — no SDK
+               required, plain HTTP.
+  Email        if settings.EMAIL_BACKEND is configured AND the user
+               has an email address. Always tries to fall back to
+               Django's email backend (which in dev mode prints the
+               code to stdout via console.EmailBackend).
+  Log          last-resort fallback so the feature still works in
+               local-dev when neither WhatsApp nor email are wired.
 
-Swap to Twilio later by setting three App Runner env vars:
-  TWILIO_ACCOUNT_SID
-  TWILIO_AUTH_TOKEN
-  TWILIO_FROM_NUMBER (e.g. +18885551234)
+To activate WhatsApp, set these App Runner env vars:
+  WHATSAPP_ACCESS_TOKEN        Meta Graph API token (long-lived/system)
+  WHATSAPP_PHONE_NUMBER_ID     numeric ID from Meta Business Manager
+  WHATSAPP_TEMPLATE_NAME       name of the pre-approved Authentication
+                                template (e.g. "otp_authentication")
+  WHATSAPP_TEMPLATE_LANGUAGE   ISO code, default "en"
 """
 from __future__ import annotations
 
 import hashlib
+import json
 import logging
 import secrets
+import urllib.error
+import urllib.request
 from datetime import timedelta
 
 from django.conf import settings
@@ -67,44 +72,93 @@ def _gen_challenge_token() -> str:
 # ─────────────────────────────────────────────────────────────────────
 
 
-def _send_via_twilio(phone: str, code: str) -> tuple[bool, str]:
-    """Send SMS via Twilio.
+def _send_via_whatsapp(phone: str, code: str) -> tuple[bool, str]:
+    """Send the OTP via WhatsApp Cloud API (Meta).
 
-    Twilio takes a `From` field that can be EITHER:
-      - a phone number (`TWILIO_FROM_NUMBER`, e.g. +18885551234), or
-      - a Messaging Service SID (`TWILIO_MESSAGING_SERVICE_SID`, e.g.
-        MG...), which routes through a pool of numbers/short codes.
+    Meta requires a pre-approved "Authentication" template for any
+    business-initiated WhatsApp message outside a 24-hour session
+    window. The template is created in WhatsApp Business Manager →
+    WhatsApp Manager → Message templates → Authentication. The body
+    of an Authentication template has exactly one variable, which we
+    fill with the 6-digit code.
 
-    We prefer the Messaging Service SID when set (it's the modern Twilio
-    recommendation and handles country-specific compliance) and fall
-    back to the bare From number otherwise.
+    Env vars (all required when this channel is used):
+      WHATSAPP_ACCESS_TOKEN       — Graph API token
+      WHATSAPP_PHONE_NUMBER_ID    — numeric ID of the WABA's phone number
+      WHATSAPP_TEMPLATE_NAME      — exact approved-template name
+      WHATSAPP_TEMPLATE_LANGUAGE  — ISO language tag, default "en"
+
+    Wire format:
+      POST https://graph.facebook.com/v18.0/{PHONE_NUMBER_ID}/messages
+      Authorization: Bearer {ACCESS_TOKEN}
+      Content-Type: application/json
+      {
+        "messaging_product": "whatsapp",
+        "to": "+12019376526",
+        "type": "template",
+        "template": {
+          "name": "<template_name>",
+          "language": {"code": "en"},
+          "components": [
+            {"type": "body",
+             "parameters": [{"type": "text", "text": "<code>"}]}
+          ]
+        }
+      }
     """
-    sid = getattr(settings, "TWILIO_ACCOUNT_SID", "")
-    token = getattr(settings, "TWILIO_AUTH_TOKEN", "")
-    service_sid = getattr(settings, "TWILIO_MESSAGING_SERVICE_SID", "")
-    from_ = getattr(settings, "TWILIO_FROM_NUMBER", "")
-    if not (sid and token and (service_sid or from_)):
+    token = getattr(settings, "WHATSAPP_ACCESS_TOKEN", "")
+    phone_id = getattr(settings, "WHATSAPP_PHONE_NUMBER_ID", "")
+    template = getattr(settings, "WHATSAPP_TEMPLATE_NAME", "")
+    lang = getattr(settings, "WHATSAPP_TEMPLATE_LANGUAGE", "en") or "en"
+    if not (token and phone_id and template):
         return False, ""
+
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": phone,
+        "type": "template",
+        "template": {
+            "name": template,
+            "language": {"code": lang},
+            "components": [
+                {
+                    "type": "body",
+                    "parameters": [{"type": "text", "text": code}],
+                }
+            ],
+        },
+    }
+    url = f"https://graph.facebook.com/v18.0/{phone_id}/messages"
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
     try:
-        from twilio.rest import Client  # type: ignore
-    except ImportError:
-        log.warning("twilio package not installed; skipping SMS")
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            body = resp.read()
+            if resp.status >= 400:
+                log.warning("whatsapp send returned %s: %r", resp.status, body[:300])
+                return False, ""
+    except urllib.error.HTTPError as exc:
+        # Meta usually returns a JSON error body with code / details.
+        try:
+            err_body = exc.read().decode("utf-8", errors="replace")[:300]
+        except Exception:  # noqa: BLE001
+            err_body = "<unreadable>"
+        log.warning("whatsapp HTTPError %s: %s", exc.code, err_body)
         return False, ""
-    try:
-        client = Client(sid, token)
-        body = f"CarPapi admin code: {code}\nValid for 10 minutes. Do not share."
-        kwargs = {"to": phone, "body": body}
-        if service_sid:
-            kwargs["messaging_service_sid"] = service_sid
-        else:
-            kwargs["from_"] = from_
-        client.messages.create(**kwargs)
-        # Mask: +1•••6526 — show country code + last 4
-        hint = phone[:2] + "•" * (len(phone) - 6) + phone[-4:]
-        return True, hint
     except Exception as exc:  # noqa: BLE001
-        log.exception("twilio send failed: %s", exc)
+        log.exception("whatsapp send failed: %s", exc)
         return False, ""
+
+    # Mask: +1•••6526 — show country code + last 4 for the destination
+    hint = (phone[:2] + "•" * max(len(phone) - 6, 1) + phone[-4:]) if len(phone) >= 6 else phone
+    return True, hint
 
 
 def _send_via_email(email: str, code: str) -> tuple[bool, str]:
@@ -170,9 +224,9 @@ def create_and_send_challenge(user, request=None):
     hint = "(dev log)"
 
     if sms_eligible:
-        ok, h = _send_via_twilio(phone_str, code)
+        ok, h = _send_via_whatsapp(phone_str, code)
         if ok:
-            channel, hint = "sms", h
+            channel, hint = "whatsapp", h
 
     if channel == "log" and user.email:
         ok, h = _send_via_email(user.email, code)

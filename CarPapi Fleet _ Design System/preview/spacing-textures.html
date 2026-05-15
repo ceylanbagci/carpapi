@@ -1,0 +1,20 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Textures</title>
+<link rel="stylesheet" href="_base.css"></head>
+<body><div class="card" style="min-height:auto;padding:18px">
+  <div class="hud" style="margin-bottom:12px">TEXTURES · CRT + DITHER + VIGNETTE</div>
+  <div style="display:flex;gap:10px">
+    <div style="flex:1;height:120px;background:var(--scanlines),var(--bg-3);border:2px solid var(--bg-0);padding:10px;display:flex;flex-direction:column;justify-content:flex-end">
+      <div class="lbl" style="color:var(--fg-1)">--scanlines</div>
+      <div class="lbl" style="color:var(--fg-4);font-size:9px">1PX @ 2.5% · EVERY 3PX</div>
+    </div>
+    <div style="flex:1;height:120px;background:repeating-conic-gradient(var(--bg-3) 0% 25%, var(--bg-2) 0% 50%) 50%/8px 8px;border:2px solid var(--bg-0);padding:10px;display:flex;flex-direction:column;justify-content:flex-end">
+      <div class="lbl" style="color:var(--fg-1)">DITHER · CHECKER</div>
+      <div class="lbl" style="color:var(--fg-4);font-size:9px">BG-3 × BG-2 · 8PX</div>
+    </div>
+    <div style="flex:1;height:120px;background:var(--vignette),var(--bg-3);border:2px solid var(--bg-0);padding:10px;display:flex;flex-direction:column;justify-content:flex-end">
+      <div class="lbl" style="color:var(--fg-1)">--vignette</div>
+      <div class="lbl" style="color:var(--fg-4);font-size:9px">EDGE BURN @ 55%</div>
+    </div>
+  </div>
+</div></body></html>

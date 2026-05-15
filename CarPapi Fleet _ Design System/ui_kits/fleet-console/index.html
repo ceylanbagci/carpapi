@@ -1,0 +1,229 @@
+<!doctype html>
+<html><head>
+  <meta charset="utf-8">
+  <title>CarPapi Fleet · Mission Control</title>
+  <link rel="stylesheet" href="../../colors_and_type.css">
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+  <style>
+    /* Page-level shell */
+    html, body, #app { height: 100%; margin: 0; }
+    body {
+      background:
+        var(--vignette),
+        var(--scanlines),
+        var(--bg-1);
+      background-attachment: fixed;
+    }
+    .console {
+      display: flex;
+      min-height: 100vh;
+    }
+    .main {
+      flex: 1; min-width: 0;
+      display: flex; flex-direction: column;
+    }
+    .content {
+      flex: 1;
+      padding: 22px 24px 24px;
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 18px;
+      align-items: start;
+    }
+    .roster {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+    @media (max-width: 1200px) {
+      .content { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 720px) {
+      .roster { grid-template-columns: 1fr; }
+      aside { display: none; }
+    }
+    /* Tier section divider */
+    .tier-header {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 4px 0 0;
+    }
+    .tier-header .bar {
+      flex: 1; height: 4px;
+    }
+  </style>
+</head>
+<body>
+<div id="app"></div>
+
+<!-- React + Babel (pinned) -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script src="agents.js"></script>
+<script type="text/babel" src="sprites.jsx"></script>
+<script type="text/babel" src="components.jsx"></script>
+<script type="text/babel">
+const { useState, useEffect, useMemo } = React;
+
+function App() {
+  const [agents] = useState(window.FLEET_AGENTS);
+  const [activeTier, setActiveTier] = useState("ALL");
+  const [selected, setSelected] = useState(null);
+  const [summonOpen, setSummonOpen] = useState(false);
+  const [clock, setClock] = useState(() => {
+    const d = new Date();
+    return `${d.getUTCHours().toString().padStart(2,'0')}:${d.getUTCMinutes().toString().padStart(2,'0')}:${d.getUTCSeconds().toString().padStart(2,'0')}`;
+  });
+  const [logs, setLogs] = useState(() => {
+    // seed with a few lines
+    const seed = window.FLEET_LOG_POOL.slice(0, 6).map((e, i) => ({
+      ...e,
+      time: `04:${(12 + i).toString().padStart(2,'0')}:${(38 + i*3).toString().padStart(2,'0')}`,
+    }));
+    return seed;
+  });
+
+  // Tick clock + append log every 2-4s
+  useEffect(() => {
+    const t = setInterval(() => {
+      const d = new Date();
+      setClock(`${d.getUTCHours().toString().padStart(2,'0')}:${d.getUTCMinutes().toString().padStart(2,'0')}:${d.getUTCSeconds().toString().padStart(2,'0')}`);
+    }, 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  useEffect(() => {
+    const tick = () => {
+      const pool = window.FLEET_LOG_POOL;
+      const ev = pool[Math.floor(Math.random() * pool.length)];
+      const d = new Date();
+      const time = `${d.getUTCHours().toString().padStart(2,'0')}:${d.getUTCMinutes().toString().padStart(2,'0')}:${d.getUTCSeconds().toString().padStart(2,'0')}`;
+      setLogs(prev => [...prev.slice(-60), { ...ev, time }]);
+    };
+    let timer = null;
+    const schedule = () => {
+      timer = setTimeout(() => { tick(); schedule(); }, 1800 + Math.random() * 2200);
+    };
+    schedule();
+    return () => clearTimeout(timer);
+  }, []);
+
+  // ESC closes overlays
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape") { setSelected(null); setSummonOpen(false); }
+      if (e.key === "/" && !summonOpen && !selected) { e.preventDefault(); setSummonOpen(true); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [summonOpen, selected]);
+
+  const filtered = useMemo(() => {
+    if (activeTier === "ALL") return agents;
+    return agents.filter(a => a.tier === activeTier);
+  }, [agents, activeTier]);
+
+  const summary = useMemo(() => {
+    return {
+      online:   agents.filter(a => a.status === "online").length,
+      degraded: agents.filter(a => a.status === "degraded").length,
+      failed:   agents.filter(a => a.status === "failed").length,
+      offline:  agents.filter(a => a.status === "offline" || a.status === "waiting").length,
+    };
+  }, [agents]);
+
+  const grouped = useMemo(() => {
+    if (activeTier !== "ALL") return [{ tier: activeTier, items: filtered }];
+    const tiers = window.FLEET_TIERS.map(t => ({
+      tier: t.id,
+      items: agents.filter(a => a.tier === t.id),
+    }));
+    return tiers;
+  }, [filtered, agents, activeTier]);
+
+  // Schedule strip events
+  const SCHEDULE = [
+    { hour: 2,  tier: "delivery", id: "chat-quality-evaluator" },
+    { hour: 3,  tier: "enrich",   id: "maker-site-doctor" },
+    { hour: 4,  tier: "ingest",   id: "scraper-dispatcher" },
+    { hour: 5,  tier: "enrich",   id: "maker-enricher" },
+    { hour: 6,  tier: "ingest",   id: "dedupe-sweeper" },
+    { hour: 7,  tier: "quality",  id: "price-anomaly-detector" },
+    { hour: 9,  tier: "cloud",    id: "aws-cost-sentinel" },
+  ];
+
+  // 'now' for schedule strip
+  const now = new Date();
+  const nowFrac = (now.getUTCHours() + now.getUTCMinutes() / 60) / 24;
+
+  return (
+    <>
+      <div className="console">
+        <Sidebar
+          tiers={window.FLEET_TIERS}
+          activeTier={activeTier}
+          setActiveTier={setActiveTier}
+          summary={summary}
+        />
+        <div className="main">
+          <Header clock={clock} onSummon={() => setSummonOpen(true)} />
+          <div className="content">
+            {/* Roster column */}
+            <div className="roster">
+              {grouped.map(g => {
+                const tierMeta = window.FLEET_TIERS.find(t => t.id === g.tier);
+                return (
+                  <React.Fragment key={g.tier}>
+                    <div className="tier-header">
+                      <span className="t-callsign" style={{ color: `var(--tier-${g.tier})`, fontSize: 11 }}>
+                        ▣ {tierMeta.label}
+                      </span>
+                      <span className="t-callsign" style={{ color: "var(--fg-4)", fontSize: 9 }}>{tierMeta.role.toUpperCase()}</span>
+                      <span className="bar" style={{ background: `linear-gradient(90deg, var(--tier-${g.tier}), transparent)` }} />
+                      <span className="t-callsign" style={{ color: "var(--fg-3)", fontSize: 9 }}>{g.items.length} AGENTS</span>
+                    </div>
+                    {g.items.map(a => (
+                      <AgentCard
+                        key={a.id}
+                        agent={a}
+                        selected={selected?.id === a.id}
+                        onClick={() => setSelected(a)}
+                      />
+                    ))}
+                  </React.Fragment>
+                );
+              })}
+            </div>
+            {/* Side column: log + schedule */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 14, position: "sticky", top: 70 }}>
+              <LogFeed events={logs} />
+              <ScheduleStrip events={SCHEDULE} nowFrac={nowFrac} />
+              {/* Tip */}
+              <div style={{ background: "var(--bg-3)", border: "2px solid var(--bg-0)", padding: "10px 12px", boxShadow: "var(--px-inset-up)" }}>
+                <div className="t-callsign" style={{ color: "var(--fg-5)", marginBottom: 4 }}>TIP</div>
+                <div style={{ font: "var(--t-body-pixel)", color: "var(--fg-3)", fontSize: 11 }}>
+                  Press <span style={{ color: "var(--cyan)" }}>[ / ]</span> to summon · click any operator for the playbook.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <AgentDialog agent={selected} onClose={() => setSelected(null)} />
+      <SummonPalette
+        open={summonOpen}
+        onClose={() => setSummonOpen(false)}
+        onSubmit={(value) => { setSummonOpen(false); /* a real impl would route to the matching agent */ }}
+      />
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("app")).render(<App />);
+</script>
+</body></html>

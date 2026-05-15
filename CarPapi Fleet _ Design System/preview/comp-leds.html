@@ -1,0 +1,26 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Status LEDs</title>
+<link rel="stylesheet" href="_base.css">
+<style>
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 0 4px rgba(27,197,189,0.35), 0 0 14px var(--ok-glow); }
+    50%      { box-shadow: 0 0 0 4px rgba(27,197,189,0.15), 0 0 22px rgba(27,197,189,0.7); }
+  }
+  .led { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 10px; }
+  .led-ok    { background: var(--ok);     animation: pulse-glow var(--dur-pulse) ease-in-out infinite; }
+  .led-info  { background: var(--info);   box-shadow: 0 0 0 4px rgba(54,153,255,0.18), 0 0 12px var(--accent-glow); }
+  .led-warn  { background: var(--warn);   box-shadow: 0 0 0 4px rgba(255,168,0,0.18),  0 0 12px var(--warn-glow); }
+  .led-dngr  { background: var(--danger); box-shadow: 0 0 0 4px rgba(241,65,108,0.22), 0 0 12px var(--danger-glow); }
+  .led-idle  { background: transparent;   border: 1.5px solid var(--idle); width: 8px; height: 8px; }
+  .row2 { display:flex; align-items:center; gap:12px; padding:6px 0; }
+  .row2 .name { font-family: var(--font-mono); font-size: 12px; color: var(--fg-2); flex: 1; }
+  .row2 .meta { font-family: var(--font-mono); font-size: 10px; color: var(--fg-4); letter-spacing: 0.08em; text-transform: uppercase; }
+</style></head>
+<body><div class="card" style="min-height:auto;padding:18px 22px">
+  <div class="label" style="margin-bottom:12px">Status LEDs · signature element</div>
+  <div class="row2"><span class="led led-ok"></span><span class="name">● online / running</span><span class="meta">PULSING · 1.8S</span></div>
+  <div class="row2"><span class="led led-info"></span><span class="name">● waiting / scheduled</span><span class="meta">STATIC</span></div>
+  <div class="row2"><span class="led led-warn"></span><span class="name">◐ degraded</span><span class="meta">STATIC</span></div>
+  <div class="row2"><span class="led led-dngr"></span><span class="name">● failed / blocked</span><span class="meta">STATIC</span></div>
+  <div class="row2"><span class="led led-idle"></span><span class="name">○ offline / dormant</span><span class="meta">RING ONLY</span></div>
+</div></body></html>

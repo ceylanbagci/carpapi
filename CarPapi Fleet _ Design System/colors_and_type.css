@@ -1,0 +1,346 @@
+/*
+ * CarPapi Fleet — Design Tokens (Pixel-Art Edition)
+ * ------------------------------------------------------------
+ * Aesthetic: 16-bit JRPG party screen meets arcade command roster.
+ * Palette is borrowed from the CarPapi web app's "Demo4" theme
+ * (#1e1e2d navy, #3699FF blue) and pushed into game-coded territory:
+ * sharp pixel corners, hard-offset shadows, scanline + dither
+ * textures, NES/SNES-era display fonts.
+ *
+ * Source palette: CarPapi/web/frontend/src/styles/theme.css
+ * ------------------------------------------------------------
+ */
+
+/* ============ FONTS ============ */
+/* Display headline — chunky 8-bit caps. Sparingly. */
+@font-face {
+  font-family: "Press Start 2P";
+  src: url("./fonts/PressStart2P-Regular.woff2") format("woff2");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+/* Pixel UI body — readable bitmap, two weights. */
+@font-face {
+  font-family: "Silkscreen";
+  src: url("./fonts/Silkscreen-Regular.woff2") format("woff2");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Silkscreen";
+  src: url("./fonts/Silkscreen-Bold.woff2") format("woff2");
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+/* Terminal / log feed — tall pixel monospace. */
+@font-face {
+  font-family: "VT323";
+  src: url("./fonts/VT323-Regular.woff2") format("woff2");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+/* Legacy / fallback when pixel fonts hurt readability (long-form). */
+@font-face {
+  font-family: "Inter";
+  src: url("./fonts/Inter-Regular.woff2") format("woff2");
+  font-weight: 400 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("./fonts/JetBrainsMono-Regular.woff2") format("woff2");
+  font-weight: 400 700; font-style: normal; font-display: swap;
+}
+
+:root {
+  /* ============ TYPE STACKS ============ */
+  --font-display: "Press Start 2P", "VT323", monospace; /* HUD titles */
+  --font-pixel:   "Silkscreen", "Press Start 2P", monospace; /* UI labels */
+  --font-term:    "VT323", ui-monospace, "SF Mono", Menlo, monospace; /* log feed */
+  --font-sans:    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; /* long-form */
+  --font-mono:    "JetBrains Mono", ui-monospace, "SF Mono", monospace; /* code blocks */
+
+  /* ============ COLOR — NEUTRAL / SURFACE ============
+   * Demo4's #1e1e2d lands at --bg-3. Layered from black to gunmetal.
+   */
+  --bg-0: #0b0d14;   /* deepest — viewport vignette */
+  --bg-1: #11131c;   /* primary canvas */
+  --bg-2: #181a26;   /* panel */
+  --bg-3: #1e1e2d;   /* tile / card */
+  --bg-4: #262838;   /* raised / hover */
+  --bg-5: #2f3144;   /* slot / chip */
+
+  --line-1: rgba(255, 255, 255, 0.06);
+  --line-2: rgba(255, 255, 255, 0.12);
+  --line-3: rgba(255, 255, 255, 0.20);
+  --line-4: #ffffff; /* pixel highlight edge */
+
+  --fg-1: #ffffff;
+  --fg-2: #d4d7de;
+  --fg-3: #9aa0ad;
+  --fg-4: #6e7180;
+  --fg-5: #565674;
+
+  /* ============ COLOR — BRAND / ACCENT ============ */
+  --accent: #3699ff;
+  --accent-hi: #4fa8ff;
+  --accent-lo: #1f6fd9;
+  --accent-glow: rgba(54, 153, 255, 0.55);
+  --accent-wash: rgba(54, 153, 255, 0.14);
+
+  --cyan: #5eead4;
+  --cyan-glow: rgba(94, 234, 212, 0.55);
+  --cyan-wash: rgba(94, 234, 212, 0.14);
+
+  /* ============ COLOR — STATUS ============ */
+  --ok: #1bc5bd;
+  --ok-glow: rgba(27, 197, 189, 0.55);
+  --ok-wash: rgba(27, 197, 189, 0.16);
+
+  --warn: #ffa800;
+  --warn-glow: rgba(255, 168, 0, 0.55);
+  --warn-wash: rgba(255, 168, 0, 0.16);
+
+  --danger: #f1416c;
+  --danger-glow: rgba(241, 65, 108, 0.55);
+  --danger-wash: rgba(241, 65, 108, 0.16);
+
+  --info: #3699ff;
+  --info-wash: rgba(54, 153, 255, 0.16);
+
+  --idle: #7e8299;
+  --idle-wash: rgba(126, 130, 153, 0.18);
+
+  /* ============ TIER COLORS — HUE-SHIFTED RAMPS ============
+   * Each ramp is a 5-color cell-shading scale, hue-shifted toward
+   * cool/saturated in shadows and warm/desaturated in highlights
+   * (per pixel-art-professional color theory: avoid pure black
+   * shadows and pure white highlights).
+   *  --tier-<x>-d = deep shadow  (cool, saturated)
+   *  --tier-<x>-s = shadow
+   *  --tier-<x>   = base
+   *  --tier-<x>-h = highlight
+   *  --tier-<x>-b = bright highlight (warm, desaturated)
+   */
+  --tier-ingest-d:  #0e1a47;
+  --tier-ingest-s:  #1f5fc4;
+  --tier-ingest:    #3699ff;
+  --tier-ingest-h:  #93c4ff;
+  --tier-ingest-b:  #e2f0ff;
+
+  --tier-enrich-d:  #261758;
+  --tier-enrich-s:  #6e4ec4;
+  --tier-enrich:    #b794f6;
+  --tier-enrich-h:  #dcc4fb;
+  --tier-enrich-b:  #f5edff;
+
+  --tier-quality-d: #0e3a36;
+  --tier-quality-s: #2c8a7d;
+  --tier-quality:   #5eead4;
+  --tier-quality-h: #a8f0e0;
+  --tier-quality-b: #e8fdf6;
+
+  --tier-cloud-d:   #4a2400;
+  --tier-cloud-s:   #b07300;
+  --tier-cloud:     #ffa800;
+  --tier-cloud-h:   #ffce6e;
+  --tier-cloud-b:   #fff2d0;
+
+  --tier-delivery-d:#4a1242;
+  --tier-delivery-s:#b03a83;
+  --tier-delivery:  #f472b6;
+  --tier-delivery-h:#fbb4d6;
+  --tier-delivery-b:#fce8f3;
+
+  /* ============ XP / HP / METER COLORS ============ */
+  --hp-fill:   #1bc5bd;   /* health (uptime / freshness) */
+  --xp-fill:   #ffa800;   /* xp / runs today */
+  --mp-fill:   #3699ff;   /* mana / quota remaining */
+  --meter-bg:  #0b0d14;
+  --meter-edge:#262838;
+
+  /* ============ SPACING (4px grid — pixel-aligned) ============ */
+  --s-0:  2px;
+  --s-1:  4px;
+  --s-2:  8px;
+  --s-3:  12px;
+  --s-4:  16px;
+  --s-5:  20px;
+  --s-6:  24px;
+  --s-7:  32px;
+  --s-8:  40px;
+  --s-9:  56px;
+  --s-10: 72px;
+
+  /* ============ RADII — PIXEL = SHARP ============
+   * Pixel art has no anti-aliased curves. Default radius is 0.
+   * The only allowed "rounding" is the **stepped pixel notch**
+   * pattern below.
+   */
+  --r-0: 0;
+  --r-pill: 0;
+
+  /* ============ PIXEL SHADOW / ELEVATION ============
+   * No blur. Hard 2px / 4px offsets like Game Boy menus.
+   * Layered for chunky depth.
+   */
+  --px-shadow-1:
+    2px 2px 0 0 var(--bg-0);
+  --px-shadow-2:
+    2px 2px 0 0 var(--bg-0),
+    4px 4px 0 0 rgba(0,0,0,0.6);
+  --px-shadow-3:
+    4px 4px 0 0 var(--bg-0),
+    8px 8px 0 0 rgba(0,0,0,0.5);
+  /* Inset "engraved" — top dark, bottom light (or inverted for buttons) */
+  --px-inset-down:
+    inset 2px 2px 0 0 rgba(0,0,0,0.6),
+    inset -2px -2px 0 0 rgba(255,255,255,0.08);
+  --px-inset-up:
+    inset 2px 2px 0 0 rgba(255,255,255,0.10),
+    inset -2px -2px 0 0 rgba(0,0,0,0.6);
+  /* Coloured glow halos for "active" / "alerting" tiles */
+  --glow-blue:  0 0 0 2px var(--accent),  0 0 18px var(--accent-glow);
+  --glow-cyan:  0 0 0 2px var(--cyan),    0 0 18px var(--cyan-glow);
+  --glow-ok:    0 0 0 2px var(--ok),      0 0 16px var(--ok-glow);
+  --glow-warn:  0 0 0 2px var(--warn),    0 0 16px var(--warn-glow);
+  --glow-dngr:  0 0 0 2px var(--danger),  0 0 16px var(--danger-glow);
+
+  /* ============ TEXTURES ============ */
+  /* CRT scanlines */
+  --scanlines:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255,255,255,0.025) 0px,
+      rgba(255,255,255,0.025) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+  /* 50% checker dither — paint over backgrounds for that NES feel */
+  --dither-50: linear-gradient(45deg,
+      currentColor 25%, transparent 25%, transparent 75%, currentColor 75%),
+    linear-gradient(45deg,
+      currentColor 25%, transparent 25%, transparent 75%, currentColor 75%);
+  /* Vignette overlay */
+  --vignette:
+    radial-gradient(120% 80% at 50% 40%, transparent 50%, rgba(0,0,0,0.55) 100%);
+
+  /* Bayer 2x2 ordered dither — 50% mix between two adjacent layers */
+  --bayer-2-50: conic-gradient(from 0deg at 50% 50%,
+      var(--bg-3) 0% 25%, var(--bg-2) 0% 50%,
+      var(--bg-3) 0% 75%, var(--bg-2) 0% 100%)
+      0 0 / 4px 4px;
+  /* Bayer 4x4 25% — denser, subtler */
+  --bayer-4-25:
+    radial-gradient(circle at 1px 1px, rgba(255,255,255,0.06) 1px, transparent 1px)
+      0 0 / 4px 4px;
+
+  /* ============ MOTION ============ */
+  --ease-step: steps(2, end);          /* SNES-feel staircase */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-1: 100ms;
+  --dur-2: 200ms;
+  --dur-3: 320ms;
+  --dur-blink: 1000ms;
+  --dur-pulse: 1800ms;
+
+  /* ============ SEMANTIC TYPE TOKENS ============ */
+  /* Display — game titles, HUD numerals */
+  --t-title:    400 28px/1.2 var(--font-display);  /* PRESS START 2P */
+  --t-subtitle: 400 14px/1.4 var(--font-display);
+  --t-hud:      400 11px/1.4 var(--font-display);  /* tiny HUD labels */
+
+  /* Pixel UI — headings, callsigns, navigation */
+  --t-h1:       700 20px/1.2 var(--font-pixel);     /* SILKSCREEN BOLD */
+  --t-h2:       700 16px/1.3 var(--font-pixel);
+  --t-h3:       700 13px/1.3 var(--font-pixel);
+  --t-callsign: 700 11px/1   var(--font-pixel);
+
+  /* Body */
+  --t-body:     400 16px/1.4 var(--font-term);      /* VT323 — terminal */
+  --t-body-pixel: 400 13px/1.4 var(--font-pixel);   /* Silkscreen */
+  --t-small:    400 14px/1.3 var(--font-term);
+
+  /* HUD numerals — big stat */
+  --t-stat:     400 36px/1 var(--font-display);
+  --t-stat-sm:  400 20px/1 var(--font-display);
+
+  /* Long-form prose (README excerpts, agent descriptions) */
+  --t-prose:    400 14px/1.55 var(--font-sans);
+  --t-mono:     500 12px/1.4  var(--font-mono);
+
+  /* Letter-spacing — pixel fonts don't need extra tracking */
+  --tracking-pixel: 0.02em;
+  --tracking-loose: 0.08em;
+}
+
+/* ===============================================================
+ * Element defaults
+ * ============================================================= */
+
+html, body {
+  background: var(--bg-1);
+  color: var(--fg-2);
+  font: var(--t-body);
+  -webkit-font-smoothing: none;       /* keep bitmap fonts crisp */
+  font-smooth: never;
+  image-rendering: pixelated;
+}
+
+h1 { font: var(--t-h1); color: var(--fg-1); margin: 0; letter-spacing: var(--tracking-pixel); }
+h2 { font: var(--t-h2); color: var(--fg-1); margin: 0; letter-spacing: var(--tracking-pixel); }
+h3 { font: var(--t-h3); color: var(--fg-1); margin: 0; letter-spacing: var(--tracking-pixel); }
+p  { margin: 0 0 var(--s-3); font: var(--t-body); color: var(--fg-2); }
+code, kbd, samp { font: var(--t-mono); color: var(--cyan); }
+
+/* Utilities */
+.t-title    { font: var(--t-title); color: var(--fg-1); }
+.t-subtitle { font: var(--t-subtitle); color: var(--fg-2); }
+.t-hud      { font: var(--t-hud); color: var(--fg-3); letter-spacing: var(--tracking-loose); }
+.t-callsign { font: var(--t-callsign); color: var(--fg-3); letter-spacing: var(--tracking-loose); text-transform: uppercase; }
+.t-body-pixel { font: var(--t-body-pixel); color: var(--fg-2); }
+.t-stat     { font: var(--t-stat); color: var(--fg-1); }
+.t-stat-sm  { font: var(--t-stat-sm); color: var(--fg-1); }
+.t-prose    { font: var(--t-prose); color: var(--fg-2); }
+.t-term     { font: var(--t-body); color: var(--ok); }   /* terminal feed */
+
+/* Pixel tile — the base panel surface */
+.px-tile {
+  background: var(--bg-3);
+  border: 2px solid var(--bg-0);
+  box-shadow: var(--px-shadow-2), var(--px-inset-up);
+}
+
+/* Pixel button surface */
+.px-btn {
+  background: var(--bg-4);
+  border: 2px solid var(--bg-0);
+  box-shadow: var(--px-inset-up), var(--px-shadow-1);
+  font: var(--t-callsign);
+  letter-spacing: var(--tracking-loose);
+  color: var(--fg-1);
+  padding: 8px 14px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.px-btn:hover { background: var(--bg-5); }
+.px-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: var(--px-inset-down);
+}
+.px-btn.primary { background: var(--accent); color: #fff; }
+.px-btn.primary:hover { background: var(--accent-hi); }
+.px-btn.danger  { background: var(--danger); color: #fff; }
+
+@keyframes blink-led {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0.25; }
+}
+@keyframes pulse-glow {
+  0%, 100% { filter: drop-shadow(0 0 6px currentColor); }
+  50%      { filter: drop-shadow(0 0 14px currentColor); }
+}
+/* Sprite breathing — stepped vertical bob, no smooth interp.
+   Pixel art must NEVER interpolate; we use steps() to snap. */
+@keyframes sprite-breathe {
+  0%, 100%  { transform: translateY(0); }
+  50%       { transform: translateY(-1px); }
+}
+.sprite-breathe {
+  animation: sprite-breathe var(--dur-breathe, 1200ms) steps(2, end) infinite;
+}
