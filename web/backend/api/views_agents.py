@@ -303,7 +303,28 @@ def agents_overview(request):
 
     Bounded to ~5s tail latency by the boto config plus the
     ThreadPoolExecutor's wait — no single call can hang the request.
+
+    A top-level try/except returns the exception as JSON in non-debug
+    builds so the SPA can show the operator what went wrong — Django's
+    default handler500 returns an opaque HTML page that's useless when
+    the request comes from `fetch()`.
     """
+    try:
+        return _agents_overview_inner(request)
+    except Exception as exc:  # noqa: BLE001
+        import traceback
+        tb = traceback.format_exc()
+        log.error("agents_overview raised: %s\n%s", exc, tb)
+        return Response(
+            {
+                "error": f"{type(exc).__name__}: {exc}",
+                "trace": tb.splitlines()[-8:],
+            },
+            status=500,
+        )
+
+
+def _agents_overview_inner(request):
     slugs_param = request.query_params.get("slug")
     wanted = set(slugs_param.split(",")) if slugs_param else None
 
