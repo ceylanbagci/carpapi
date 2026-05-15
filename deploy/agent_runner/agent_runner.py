@@ -157,7 +157,78 @@ def lambda_handler(event: Optional[dict] = None, context: Any = None) -> dict:
         # the entire result.
         k: result[k] for k in ("ok", "elapsed_s") if k in result
     }}))
+    # Publish state to S3 so the fleet dashboard (App Runner Django,
+    # which can't reach lambda.amazonaws.com from its VPC) has
+    # somewhere to read live data. Best-effort — a failed write logs
+    # but doesn't fail the agent.
+    _publish_fleet_state(name, result, started_at_unix=started)
     return result
+
+
+# ── Fleet-state writer (S3) ──────────────────────────────────────────
+#
+# Each agent writes its latest invocation result to
+# s3://<bucket>/fleet/<slug>.json. The Django /api/agents/ endpoint
+# does a bulk list + per-slug read of these objects to render the
+# dashboard. The bucket already exists (carpapi-frontend-…); the
+# agent runner's IAM policy already has s3:PutObject on it.
+#
+# Object schema (small + stable):
+#   {
+#     "slug": "...",
+#     "ts": "<iso8601 UTC>",
+#     "ts_ms": <int>,
+#     "elapsed_s": <float>,
+#     "ok": true|false,
+#     "result": { ...handler return value... },
+#     "lambda_request_id": "<aws_request_id>",
+#     "function_arn": "...",
+#     "schema_version": 1
+#   }
+
+import datetime as _dt
+import os as _os
+_FLEET_BUCKET = _os.environ.get("CARPAPI_FLEET_BUCKET",
+                                "carpapi-frontend-183617081338")
+_FLEET_PREFIX = _os.environ.get("CARPAPI_FLEET_PREFIX", "fleet").strip("/")
+
+
+def _publish_fleet_state(agent_name: str, result: dict, *, started_at_unix: float) -> None:
+    try:
+        import boto3  # local import: keeps cold start fast
+        from botocore.exceptions import ClientError
+        now = _dt.datetime.now(_dt.timezone.utc)
+        body = {
+            "slug": agent_name,
+            "ts": now.isoformat(timespec="seconds"),
+            "ts_ms": int(now.timestamp() * 1000),
+            "started_ts_ms": int(started_at_unix * 1000),
+            "ok": bool(result.get("ok", True)),
+            "elapsed_s": result.get("elapsed_s"),
+            "result": result,
+            "schema_version": 1,
+        }
+        # Try to attach Lambda context if available.
+        lam_ctx = result.get("_lambda_context")
+        if isinstance(lam_ctx, dict):
+            body["lambda_request_id"] = lam_ctx.get("aws_request_id")
+            body["function_arn"] = lam_ctx.get("invoked_function_arn")
+        client = boto3.client("s3")
+        key = f"{_FLEET_PREFIX}/{agent_name}.json"
+        client.put_object(
+            Bucket=_FLEET_BUCKET, Key=key,
+            Body=json.dumps(body, default=str).encode("utf-8"),
+            ContentType="application/json",
+            CacheControl="public, max-age=30",
+        )
+        log.info(json.dumps({"agent": agent_name, "event": "state_published",
+                             "key": key}))
+    except Exception as exc:  # noqa: BLE001
+        # Never let a state-write failure crash an otherwise-successful
+        # agent invocation. The dashboard will show stale data for one
+        # cycle; the next successful run heals it.
+        log.warning(json.dumps({"agent": agent_name, "event": "state_publish_failed",
+                                "err": f"{type(exc).__name__}: {exc}"}))
 
 
 # ── Local / Fargate entrypoint ───────────────────────────────────────
