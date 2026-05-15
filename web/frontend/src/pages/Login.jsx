@@ -17,7 +17,7 @@ import {
   useSearchParams,
 } from "react-router-dom";
 import { motion } from "framer-motion";
-import { googleLoginUrl, postJson, setAuth } from "../api.js";
+import { googleLoginUrl, login as apiLogin } from "../api.js";
 import { useAuth } from "../auth.jsx";
 
 const inputBaseStyle = {
@@ -64,31 +64,29 @@ export default function Login() {
     setBusy(true);
     setError(null);
     try {
-      // POST /api/auth/login/ — single-factor email + password.
-      // Returns { access, refresh, user } for everyone, no OTP step.
-      //
-      // (The /api/auth/login-step-up/ endpoint that emitted an OTP
-      // challenge for is_staff users is still wired on the backend
-      // for future re-enable, but the SPA bypasses it until we have
-      // a working delivery channel — SES or WhatsApp Cloud API.)
-      const res = await postJson("/auth/login/", {
-        email: email.trim(),
-        password,
-      });
-      const auth = { access: res.access, refresh: res.refresh, user: res.user };
-      setAuth(auth);
+      // api.login() wipes any stale localStorage auth before calling
+      // /api/auth/login/, so a previous-session JWT can't trip
+      // SimpleJWT into a "Given token not valid for any token type"
+      // 401 before the login view runs.
+      const auth = await apiLogin({ email: email.trim(), password });
       signIn(auth);
       navigate(next, { replace: true });
     } catch (err) {
-      const detail =
-        (err.payload &&
-          (err.payload.detail ||
-            err.payload.non_field_errors?.[0] ||
-            err.payload.email?.[0] ||
-            err.payload.password?.[0])) ||
+      const reason =
+        err.payload?.detail ||
+        err.payload?.non_field_errors?.[0] ||
+        err.payload?.email?.[0] ||
+        err.payload?.password?.[0] ||
         err.message ||
         "Login failed. Check your credentials.";
-      setError(detail);
+      // SimpleJWT's generic "Given token not valid for any token
+      // type" message means we sent a stale Bearer — by the time we
+      // see it, api.js has already wiped localStorage. Reword for
+      // the user; the underlying state is already fixed.
+      const friendly = /Given token not valid/.test(reason)
+        ? "Session expired — please sign in again."
+        : reason;
+      setError(friendly);
     } finally {
       setBusy(false);
     }

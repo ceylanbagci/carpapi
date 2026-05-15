@@ -148,8 +148,16 @@ export async function postJson(path, body) {
 // Auth API
 // ──────────────────────────────────────────────────────────────────── //
 
-/** Email + password login. Returns the full auth blob. */
+/** Email + password login. Returns the full auth blob.
+ *
+ * Clears any locally-saved auth FIRST so a stale JWT doesn't ride
+ * along on the login request itself — SimpleJWT rejects requests
+ * with bad Bearer tokens before the view runs, which would cause
+ * a freshly-attempted sign-in to fail with "Given token not valid
+ * for any token type".
+ */
 export async function login({ email, password }) {
+  setAuth(null);
   const res = await httpJson("POST", "/auth/login/", { email, password });
   // dj-rest-auth response shape: { access, refresh, user }
   const auth = { access: res.access, refresh: res.refresh, user: res.user };
@@ -157,7 +165,12 @@ export async function login({ email, password }) {
   return auth;
 }
 
-/** Email/password registration. Returns the full auth blob. */
+/** Email/password registration. Returns the full auth blob.
+ *
+ * Same defensive clear as login() — a stale JWT in localStorage
+ * would cause the registration request to 401 before reaching
+ * the view.
+ */
 export async function register({
   email,
   password,
@@ -165,6 +178,7 @@ export async function register({
   phone,
   marketing_opt_in,
 }) {
+  setAuth(null);
   const res = await httpJson("POST", "/auth/registration/", {
     email,
     password1: password,
