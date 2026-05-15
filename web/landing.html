@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CarPapi — Find Your Next Ride</title>
+    <style>
+      :root {
+        --bg: #07080b;
+        --bg-2: #0e1117;
+        --panel: #11141b;
+        --border: #20242d;
+        --text: #e8eaed;
+        --muted: #8b94a3;
+        --accent: #ff5b3a;
+        --accent-2: #3b82f6;
+        --ford: #003478;
+        --toyota: #eb0a1e;
+        --chevy: #d1a73a;
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+      a { color: inherit; text-decoration: none; }
+      #root { width: 100%; min-height: 100vh; }
+
+      /* Background gradient & grain */
+      .bg-grad {
+        position: fixed;
+        inset: 0;
+        background:
+          radial-gradient(ellipse 80% 50% at 50% -10%, rgba(255, 91, 58, 0.18), transparent 60%),
+          radial-gradient(ellipse 60% 40% at 90% 30%, rgba(59, 130, 246, 0.12), transparent 60%),
+          radial-gradient(ellipse 50% 40% at 10% 70%, rgba(209, 167, 58, 0.08), transparent 60%),
+          var(--bg);
+        z-index: -2;
+      }
+      .bg-grid {
+        position: fixed;
+        inset: 0;
+        background-image:
+          linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
+        background-size: 56px 56px;
+        mask-image: radial-gradient(ellipse at center, black 40%, transparent 75%);
+        z-index: -1;
+      }
+
+      /* Layout */
+      .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+      /* Nav */
+      nav.top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 22px 0;
+      }
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+        font-size: 18px;
+        letter-spacing: -0.01em;
+      }
+      .logo-mark {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, var(--accent), #ffb347);
+        display: grid;
+        place-items: center;
+        color: #0b0c10;
+        font-weight: 900;
+        font-size: 13px;
+      }
+      .nav-links { display: flex; gap: 28px; color: var(--muted); font-size: 14px; }
+      .nav-links a:hover { color: var(--text); }
+      .nav-cta {
+        padding: 9px 16px;
+        border-radius: 999px;
+        background: var(--text);
+        color: #0b0c10;
+        font-weight: 600;
+        font-size: 13px;
+      }
+
+      /* Hero */
+      .hero { padding: 80px 0 60px; text-align: center; position: relative; }
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 14px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.03);
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 28px;
+      }
+      .eyebrow .dot {
+        width: 6px; height: 6px; border-radius: 50%;
+        background: #4ade80;
+        box-shadow: 0 0 10px #4ade80;
+      }
+      h1.hero-title {
+        font-size: clamp(40px, 7vw, 86px);
+        line-height: 1.02;
+        letter-spacing: -0.035em;
+        font-weight: 700;
+        margin: 0 0 20px;
+      }
+      .hero-title .word { display: inline-block; margin: 0 0.18em; }
+      .gradient-text {
+        background: linear-gradient(120deg, #fff 0%, var(--accent) 50%, #ffb347 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .hero-sub {
+        max-width: 640px;
+        margin: 0 auto 36px;
+        color: var(--muted);
+        font-size: clamp(15px, 1.6vw, 18px);
+        line-height: 1.55;
+      }
+      .hero-cta {
+        display: inline-flex;
+        gap: 12px;
+        align-items: center;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 13px 22px;
+        border-radius: 999px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        border: 1px solid transparent;
+        transition: transform 0.15s ease, background 0.2s ease;
+      }
+      .btn-primary {
+        background: var(--accent);
+        color: #0b0c10;
+      }
+      .btn-primary:hover { background: #ff7559; }
+      .btn-ghost {
+        background: transparent;
+        color: var(--text);
+        border-color: var(--border);
+      }
+      .btn-ghost:hover { background: rgba(255,255,255,0.04); }
+
+      /* Brand row */
+      .brands {
+        margin-top: 80px;
+        display: flex;
+        justify-content: center;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+      .brand-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 18px 10px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.02);
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        user-select: none;
+      }
+      .brand-pill .swatch {
+        width: 22px; height: 22px; border-radius: 50%;
+        display: grid; place-items: center;
+        font-size: 11px; font-weight: 800; color: #fff;
+      }
+      .brand-pill[data-active="true"] {
+        border-color: rgba(255,255,255,0.25);
+        background: rgba(255,255,255,0.06);
+      }
+
+      /* Section heading */
+      .section { padding: 80px 0; }
+      .section-head {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        margin-bottom: 36px;
+        gap: 24px;
+        flex-wrap: wrap;
+      }
+      .section-head h2 {
+        margin: 0;
+        font-size: clamp(28px, 4vw, 44px);
+        letter-spacing: -0.02em;
+        font-weight: 700;
+      }
+      .section-head p {
+        color: var(--muted);
+        margin: 8px 0 0;
+        font-size: 15px;
+        max-width: 460px;
+      }
+
+      /* Models grid */
+      .models {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 18px;
+      }
+      .card {
+        position: relative;
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+        padding: 22px 20px 20px;
+        overflow: hidden;
+        cursor: pointer;
+        will-change: transform;
+      }
+      .card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        transition: opacity 0.4s ease;
+        background: radial-gradient(400px circle at var(--mx,50%) var(--my,50%), rgba(255,91,58,0.12), transparent 60%);
+        pointer-events: none;
+      }
+      .card:hover::before { opacity: 1; }
+      .card .badge {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        font-weight: 600;
+      }
+      .card .silhouette {
+        height: 120px;
+        margin: 6px 0 18px;
+        display: grid;
+        place-items: center;
+      }
+      .card h3 {
+        margin: 0 0 4px;
+        font-size: 22px;
+        letter-spacing: -0.01em;
+        font-weight: 700;
+      }
+      .card .brand-line {
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 14px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
+      .trims {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .trim {
+        font-size: 11px;
+        padding: 4px 9px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.05);
+        color: var(--text);
+        border: 1px solid rgba(255,255,255,0.05);
+      }
+
+      /* CTA strip */
+      .cta-strip {
+        margin: 60px 0 100px;
+        padding: 56px 36px;
+        border-radius: 24px;
+        border: 1px solid var(--border);
+        background:
+          radial-gradient(circle at 20% 0%, rgba(255,91,58,0.18), transparent 50%),
+          radial-gradient(circle at 100% 100%, rgba(59,130,246,0.18), transparent 50%),
+          var(--panel);
+        text-align: center;
+      }
+      .cta-strip h2 {
+        font-size: clamp(28px, 4vw, 40px);
+        margin: 0 0 12px;
+        letter-spacing: -0.02em;
+      }
+      .cta-strip p {
+        color: var(--muted);
+        margin: 0 0 28px;
+        font-size: 16px;
+      }
+
+      footer {
+        padding: 30px 0 50px;
+        color: var(--muted);
+        font-size: 13px;
+        text-align: center;
+        border-top: 1px solid var(--border);
+      }
+
+      @media (max-width: 640px) {
+        nav.top .nav-links { display: none; }
+        .hero { padding: 50px 0 40px; }
+        .section { padding: 60px 0; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bg-grad"></div>
+    <div class="bg-grid"></div>
+    <div id="root"></div>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "https://esm.sh/react@18.3.1",
+          "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+          "framer-motion": "https://esm.sh/framer-motion@12.38.0?external=react,react-dom"
+        }
+      }
+    </script>
+
+    <script type="module">
+      import React, { useState, useRef } from "react";
+      import { createRoot } from "react-dom/client";
+      import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
+
+      const e = React.createElement;
+
+      // ---------- Data ----------
+      const BRANDS = [
+        { id: "ford",   name: "Ford",      color: "#003478", short: "F" },
+        { id: "toyota", name: "Toyota",    color: "#eb0a1e", short: "T" },
+        { id: "chevy",  name: "Chevrolet", color: "#d1a73a", short: "C" },
+      ];
+
+      const MODELS = {
+        ford: [
+          { name: "Mustang",    tag: "Pony Car",      trims: ["EcoBoost", "GT", "Dark Horse", "Shelby GT500"] },
+          { name: "F-150",      tag: "Full-Size Truck", trims: ["XL", "XLT", "Lariat", "Raptor", "Lightning"] },
+          { name: "Bronco",     tag: "Off-Road SUV",  trims: ["Big Bend", "Black Diamond", "Wildtrak", "Raptor"] },
+          { name: "Explorer",   tag: "3-Row SUV",     trims: ["Active", "ST", "Platinum", "King Ranch"] },
+        ],
+        toyota: [
+          { name: "Camry",      tag: "Midsize Sedan", trims: ["LE", "SE", "XLE", "XSE", "TRD"] },
+          { name: "Tacoma",     tag: "Midsize Truck", trims: ["SR5", "TRD Sport", "TRD Off-Road", "TRD Pro"] },
+          { name: "RAV4",       tag: "Compact SUV",   trims: ["LE", "XLE", "Adventure", "TRD Off-Road", "Prime"] },
+          { name: "Supra",      tag: "Sports Coupe",  trims: ["2.0", "3.0", "3.0 Premium", "A91-MT"] },
+        ],
+        chevy: [
+          { name: "Corvette",   tag: "American Sports", trims: ["Stingray", "Z06", "E-Ray", "ZR1"] },
+          { name: "Camaro",     tag: "Muscle Coupe",  trims: ["LT", "SS", "ZL1", "1LE"] },
+          { name: "Silverado",  tag: "Full-Size Truck", trims: ["WT", "LT", "RST", "Trail Boss", "ZR2"] },
+          { name: "Tahoe",      tag: "Full-Size SUV", trims: ["LS", "LT", "RST", "Z71", "High Country"] },
+        ],
+      };
+
+      // ---------- SVG silhouettes (simple) ----------
+      function CarSilhouette({ kind, color }) {
+        // kind: coupe | truck | suv | sedan
+        const stroke = color;
+        const common = { fill: "none", stroke, strokeWidth: 2.2, strokeLinecap: "round", strokeLinejoin: "round" };
+        const w = 220, h = 90;
+
+        if (kind === "truck") {
+          return e("svg", { width: w, height: h, viewBox: "0 0 220 90" },
+            e("path", { ...common, d: "M10 65 L10 55 L70 55 L82 38 L130 38 L138 55 L210 55 L210 65" }),
+            e("rect", { ...common, x: 82, y: 40, width: 50, height: 16, rx: 2 }),
+            e("circle", { ...common, cx: 50, cy: 70, r: 9, fill: "#0a0c11" }),
+            e("circle", { ...common, cx: 175, cy: 70, r: 9, fill: "#0a0c11" }),
+            e("path", { ...common, d: "M150 55 L210 55 L210 60 L150 60 Z" }),
+          );
+        }
+        if (kind === "suv") {
+          return e("svg", { width: w, height: h, viewBox: "0 0 220 90" },
+            e("path", { ...common, d: "M14 65 L14 50 L40 36 L160 36 L195 52 L206 52 L206 65" }),
+            e("path", { ...common, d: "M48 36 L48 52 L195 52" }),
+            e("path", { ...common, d: "M105 36 L105 52" }),
+            e("circle", { ...common, cx: 56, cy: 70, r: 9, fill: "#0a0c11" }),
+            e("circle", { ...common, cx: 170, cy: 70, r: 9, fill: "#0a0c11" }),
+          );
+        }
+        if (kind === "coupe") {
+          return e("svg", { width: w, height: h, viewBox: "0 0 220 90" },
+            e("path", { ...common, d: "M8 68 C 30 50, 60 36, 110 34 C 160 33, 190 48, 212 64 L 212 70 L 8 70 Z" }),
+            e("path", { ...common, d: "M55 50 L80 38 L150 38 L175 52" }),
+            e("circle", { ...common, cx: 56, cy: 72, r: 9, fill: "#0a0c11" }),
+            e("circle", { ...common, cx: 170, cy: 72, r: 9, fill: "#0a0c11" }),
+          );
+        }
+        // sedan default
+        return e("svg", { width: w, height: h, viewBox: "0 0 220 90" },
+          e("path", { ...common, d: "M10 66 L20 54 L55 42 L160 42 L195 54 L210 66" }),
+          e("path", { ...common, d: "M55 42 L75 32 L150 32 L160 42" }),
+          e("circle", { ...common, cx: 56, cy: 72, r: 9, fill: "#0a0c11" }),
+          e("circle", { ...common, cx: 170, cy: 72, r: 9, fill: "#0a0c11" }),
+        );
+      }
+
+      const KIND_BY_TAG = (tag) => {
+        const t = tag.toLowerCase();
+        if (t.includes("truck")) return "truck";
+        if (t.includes("suv")) return "suv";
+        if (t.includes("coupe") || t.includes("pony") || t.includes("sports") || t.includes("muscle")) return "coupe";
+        return "sedan";
+      };
+
+      // ---------- Components ----------
+      function Nav() {
+        return e("nav", { className: "top container" },
+          e("div", { className: "logo" },
+            e("div", { className: "logo-mark" }, "C"),
+            e("span", null, "CarPapi"),
+          ),
+          e("div", { className: "nav-links" },
+            e("a", { href: "#brands" }, "Brands"),
+            e("a", { href: "#models" }, "Models"),
+            e("a", { href: "./index.html" }, "Search"),
+          ),
+          e(motion.a, {
+            href: "./index.html",
+            className: "nav-cta",
+            whileHover: { scale: 1.04 },
+            whileTap: { scale: 0.97 },
+          }, "Try the demo"),
+        );
+      }
+
+      function Hero() {
+        const title = ["Find", "your", "next", "ride."];
+        return e("section", { className: "hero container" },
+          e(motion.div, {
+            className: "eyebrow",
+            initial: { opacity: 0, y: -10 },
+            animate: { opacity: 1, y: 0 },
+            transition: { duration: 0.6, ease: "easeOut" },
+          },
+            e("span", { className: "dot" }),
+            "Now scraping live dealer inventory",
+          ),
+          e("h1", { className: "hero-title" },
+            ...title.map((w, i) => e(motion.span, {
+              key: i,
+              className: "word" + (i === 2 ? " gradient-text" : ""),
+              initial: { opacity: 0, y: 30, filter: "blur(8px)" },
+              animate: { opacity: 1, y: 0, filter: "blur(0px)" },
+              transition: { duration: 0.7, delay: 0.15 + i * 0.08, ease: [0.16, 1, 0.3, 1] },
+            }, w))
+          ),
+          e(motion.p, {
+            className: "hero-sub",
+            initial: { opacity: 0, y: 14 },
+            animate: { opacity: 1, y: 0 },
+            transition: { duration: 0.7, delay: 0.55 },
+          }, "Search Ford, Toyota, Chevrolet and more in plain English. From a Mustang GT to a Tacoma TRD Pro — CarPapi indexes the trims and configs that actually matter."),
+          e(motion.div, {
+            className: "hero-cta",
+            initial: { opacity: 0, y: 14 },
+            animate: { opacity: 1, y: 0 },
+            transition: { duration: 0.7, delay: 0.7 },
+          },
+            e(motion.a, {
+              href: "./index.html",
+              className: "btn btn-primary",
+              whileHover: { scale: 1.04 },
+              whileTap: { scale: 0.97 },
+            }, "Search inventory →"),
+            e(motion.a, {
+              href: "#models",
+              className: "btn btn-ghost",
+              whileHover: { scale: 1.04 },
+              whileTap: { scale: 0.97 },
+            }, "Browse models"),
+          ),
+        );
+      }
+
+      function Brands({ active, onPick }) {
+        return e("div", { className: "brands", id: "brands" },
+          ...BRANDS.map((b, i) => e(motion.button, {
+            key: b.id,
+            className: "brand-pill",
+            "data-active": active === b.id,
+            onClick: () => onPick(b.id),
+            initial: { opacity: 0, y: 20 },
+            whileInView: { opacity: 1, y: 0 },
+            viewport: { once: true, margin: "-50px" },
+            transition: { duration: 0.5, delay: 0.05 * i, ease: "easeOut" },
+            whileHover: { y: -4, scale: 1.03 },
+            whileTap: { scale: 0.96 },
+          },
+            e("span", { className: "swatch", style: { background: b.color } }, b.short),
+            b.name,
+          )),
+        );
+      }
+
+      function ModelCard({ model, brandColor }) {
+        const mx = useMotionValue(50);
+        const my = useMotionValue(50);
+        const ref = useRef(null);
+
+        const onMove = (ev) => {
+          const r = ref.current?.getBoundingClientRect();
+          if (!r) return;
+          mx.set(((ev.clientX - r.left) / r.width) * 100);
+          my.set(((ev.clientY - r.top) / r.height) * 100);
+          ref.current.style.setProperty("--mx", mx.get() + "%");
+          ref.current.style.setProperty("--my", my.get() + "%");
+        };
+
+        const kind = KIND_BY_TAG(model.tag);
+
+        return e(motion.div, {
+          ref: ref,
+          className: "card",
+          onMouseMove: onMove,
+          variants: {
+            hidden: { opacity: 0, y: 30 },
+            shown:  { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.16, 1, 0.3, 1] } },
+          },
+          whileHover: { y: -6, transition: { duration: 0.25 } },
+        },
+          e("div", { className: "badge" }, model.tag),
+          e(motion.div, {
+            className: "silhouette",
+            initial: { x: -30, opacity: 0 },
+            whileInView: { x: 0, opacity: 1 },
+            viewport: { once: true, margin: "-80px" },
+            transition: { duration: 0.7, ease: "easeOut" },
+            whileHover: { x: 8, transition: { type: "spring", stiffness: 200, damping: 15 } },
+          },
+            e(CarSilhouette, { kind, color: brandColor }),
+          ),
+          e("div", { className: "brand-line" }, kind),
+          e("h3", null, model.name),
+          e("div", { className: "trims" },
+            ...model.trims.map((t, i) => e(motion.span, {
+              key: t,
+              className: "trim",
+              initial: { opacity: 0, scale: 0.8 },
+              whileInView: { opacity: 1, scale: 1 },
+              viewport: { once: true },
+              transition: { duration: 0.3, delay: 0.05 * i },
+            }, t)),
+          ),
+        );
+      }
+
+      function ModelsSection({ active }) {
+        const list = MODELS[active];
+        const brand = BRANDS.find((b) => b.id === active);
+        return e("section", { className: "section container", id: "models" },
+          e("div", { className: "section-head" },
+            e("div", null,
+              e(motion.h2, {
+                key: brand.id + "-h",
+                initial: { opacity: 0, y: 14 },
+                animate: { opacity: 1, y: 0 },
+                transition: { duration: 0.5 },
+              }, "Famous ", e("span", { className: "gradient-text" }, brand.name), " models"),
+              e(motion.p, {
+                key: brand.id + "-p",
+                initial: { opacity: 0 },
+                animate: { opacity: 1 },
+                transition: { duration: 0.6, delay: 0.1 },
+              }, "Click a brand above to see its iconic models — every card lists the trims drivers actually search for."),
+            ),
+          ),
+          e(AnimatePresence, { mode: "wait" },
+            e(motion.div, {
+              key: brand.id,
+              className: "models",
+              variants: { shown: { transition: { staggerChildren: 0.08 } }, hidden: {} },
+              initial: "hidden",
+              animate: "shown",
+              exit: { opacity: 0, y: -10, transition: { duration: 0.25 } },
+            },
+              ...list.map((m) => e(ModelCard, { key: m.name, model: m, brandColor: brand.color })),
+            ),
+          ),
+        );
+      }
+
+      function CTA() {
+        return e(motion.section, {
+          className: "container",
+          initial: { opacity: 0, y: 30 },
+          whileInView: { opacity: 1, y: 0 },
+          viewport: { once: true, margin: "-100px" },
+          transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] },
+        },
+          e("div", { className: "cta-strip" },
+            e("h2", null, "Ready to find ", e("span", { className: "gradient-text" }, "the one"), "?"),
+            e("p", null, 'Try a query like "Toyota Tacoma TRD Pro under $45k near NJ" — CarPapi handles the rest.'),
+            e(motion.a, {
+              href: "./index.html",
+              className: "btn btn-primary",
+              whileHover: { scale: 1.05 },
+              whileTap: { scale: 0.96 },
+            }, "Open the search demo →"),
+          ),
+        );
+      }
+
+      function App() {
+        const [active, setActive] = useState("ford");
+        return e(React.Fragment, null,
+          e(Nav, null),
+          e(Hero, null),
+          e(Brands, { active, onPick: setActive }),
+          e(ModelsSection, { active }),
+          e(CTA, null),
+          e("footer", null, "© CarPapi · Built for car nerds · ", new Date().getFullYear()),
+        );
+      }
+
+      createRoot(document.getElementById("root")).render(e(App, null));
+    </script>
+  </body>
+</html>

@@ -304,6 +304,18 @@ def merge_make_blocks(all_dealers: list[dict], replacements: dict[str, list[dict
     return merged, summary
 
 
+NISSAN_NJ_DUMP_PATH = ROOT / "output" / "nissan_nj_dealers.json"
+
+
+def dump_nissan_nj() -> None:
+    """Collect NJ Nissan dealers via nissanusa.com dealer-locator GraphQL for each NJ ZIP."""
+    zip_codes = load_zip_codes()
+    dealers = collect_nissan(zip_codes)
+    NISSAN_NJ_DUMP_PATH.parent.mkdir(parents=True, exist_ok=True)
+    NISSAN_NJ_DUMP_PATH.write_text(json.dumps(dealers, indent=2) + "\n")
+    print(f"Wrote {len(dealers)} Nissan dealers (NJ) to {NISSAN_NJ_DUMP_PATH}")
+
+
 def main() -> None:
     zip_codes = load_zip_codes()
     all_dealers = load_all_dealers()
@@ -327,4 +339,9 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+
+    if len(sys.argv) > 1 and sys.argv[1] == "--dump-nissan-nj":
+        dump_nissan_nj()
+    else:
+        main()
