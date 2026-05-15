@@ -13,6 +13,14 @@ against each manufacturer's dealer-locator endpoint. Unlike
 fingerprinting and opens a PR), you work from the canonical US zip
 table in Postgres and use first-party maker APIs.
 
+## Database target
+
+You write to **production AWS RDS** (`carpapi-db.c7oasmx9kbh5.us-east-1.rds.amazonaws.com`),
+never to a local Postgres. The orchestrator + `seed_dealers.py` pick up
+the prod connection from the standard `CARPAPI_DB_*` env vars set in
+`.env`. If you discover a code path that hard-codes `localhost`, fix it
+in-place — production is the only target.
+
 ## What you run on (memorize this)
 
 - **Source of zip codes**: `ref.zip_codes` in RDS (~41,500 rows, every

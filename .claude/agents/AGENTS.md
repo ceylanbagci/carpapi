@@ -40,6 +40,29 @@ variants (where applicable).
        + ci-cd-doctor + rds-steward + data-quality-auditor on demand
 ```
 
+## Database target — ALWAYS production RDS
+
+Every agent that reads or writes data hits the **production AWS RDS
+Postgres instance**, never a local Docker Postgres. The contract is:
+
+| Connection variable | Value (set in `.env`, sourced by every script) |
+|---|---|
+| `CARPAPI_DB_HOST` | `carpapi-db.c7oasmx9kbh5.us-east-1.rds.amazonaws.com` |
+| `CARPAPI_DB_PORT` | `5432` |
+| `CARPAPI_DB_NAME` | `carpapi` |
+| `CARPAPI_DB_USER` | `carpapi` (master) |
+| `CARPAPI_DB_PASSWORD` | (in `.env`, gitignored) |
+| `DATABASE_URL` | `postgresql+psycopg://carpapi:***@carpapi-db.c7oasmx9kbh5.us-east-1.rds.amazonaws.com:5432/carpapi?sslmode=require` |
+
+This applies to both:
+- **scraper output → `web/backend/seed_dealers.py` → `public.dealers`** (the dealer-zip-scraper + dealer-prospector path), and
+- **listing-validator / dedupe-sweeper / maker-enricher / price-anomaly-detector** (pipeline via `carpapi/db/engine.py` reading `DATABASE_URL`).
+
+If you ever need to run against a different DB (CI fixtures, a staging
+replica), the only correct way is to override the env vars at invocation
+time — **do NOT** add a code path that bypasses the env contract.
+`rds-steward` is the agent that owns snapshots / migrations on this instance.
+
 ## Type glossary
 
 - **interactive** — invoked by a developer from Claude Code. Lives
