@@ -308,6 +308,18 @@ def merge_make_blocks(all_dealers, replacements, slug):
     return merged, summary
 
 
+NISSAN_NJ_DUMP_PATH = ROOT / "output" / "nissan_nj_dealers.json"
+
+
+def dump_nissan_nj() -> None:
+    """Collect NJ Nissan dealers via nissanusa.com dealer-locator GraphQL for each NJ ZIP."""
+    zip_codes = load_zips_for_state("NJ")
+    dealers = collect_nissan(zip_codes, "NJ", "new-jersey")
+    NISSAN_NJ_DUMP_PATH.parent.mkdir(parents=True, exist_ok=True)
+    NISSAN_NJ_DUMP_PATH.write_text(json.dumps(dealers, indent=2) + "\n")
+    print(f"Wrote {len(dealers)} Nissan dealers (NJ) to {NISSAN_NJ_DUMP_PATH}")
+
+
 def parse_args():
     p = argparse.ArgumentParser(description="Scrape Japanese-brand dealer locators for one state.")
     p.add_argument("--state", default="NJ", help="USPS 2-letter state code. Default NJ.")
@@ -357,7 +369,6 @@ def main():
         block = COLLECTORS[make](zip_codes, state_code, slug)
         replacements[MAKE_IDS[make]] = block
         print(f"  · {make}: {len(block)} dealers")
-
     all_dealers = load_all_dealers()
     merged, summary = merge_make_blocks(all_dealers, replacements, slug)
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -369,4 +380,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+
+    if len(sys.argv) > 1 and sys.argv[1] == "--dump-nissan-nj":
+        dump_nissan_nj()
+    else:
+        main()

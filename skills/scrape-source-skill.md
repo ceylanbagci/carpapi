@@ -2,6 +2,15 @@
 
 Use when adding ingestion for a new data source (licensed API, partner feed, or sanctioned public source).
 
+## Preflight — point at the real DB
+
+```bash
+# Writes go to RDS (the canonical source of truth), not the local
+# :5433 snapshot. See skills/rds-first-skill.md for the policy.
+source data/secrets/rds.env
+echo "writing to: $CARPAPI_DB_HOST:$CARPAPI_DB_PORT/$CARPAPI_DB_NAME"
+```
+
 ## Pre-conditions
 - Source is on the allow-list per [context/scraper-rules.md](../context/scraper-rules.md). If not, stop — get sign-off first.
 - A `source_id` slug is decided (lowercase snake_case, stable, e.g. `marketcheck_v3`).

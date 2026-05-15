@@ -25,6 +25,39 @@ web/
 The schema is **owned by `carpapi/db/schema.sql`** — Django models here use
 `managed = False`, so `manage.py migrate` won't touch the live tables.
 
+## Quick start (single command, both servers)
+
+From the **repository root** (not from `web/`):
+
+```bash
+# one-time
+cp web/backend/.env.local.example web/backend/.env.local   # edit DB host
+make install                                                # venv + npm
+
+# every day
+make dev      # boots Django :8000 + Vite :5173 together, Ctrl+C stops both
+```
+
+Other targets (run `make help` for the full list):
+
+```
+make backend     # backend only (port 8000)
+make frontend    # frontend only (port 5173)
+make stop        # kill anything on :8000 / :5173
+make logs        # tail .logs/{backend,frontend}.log
+make verify      # curl both servers and report status
+make clean       # nuke .logs, venv, node_modules (full reset)
+```
+
+The actual orchestrator lives in [`scripts/dev.sh`](../scripts/dev.sh) —
+it auto-creates the venv, auto-installs npm deps, sources
+`web/backend/.env.local` if present, prefixes both servers' output
+(`[back]` cyan, `[front]` magenta) and cleans up children on Ctrl+C.
+
+Configure your DB connection in `web/backend/.env.local` (gitignored).
+Without it, the defaults in `carpapi_web/settings.py` apply
+(`localhost:5433` · `carpapi` / `carpapi` / `carpapi`).
+
 ## 0. Make logos (one-time, populates `media/logos/`)
 
 The `media/` directory is git-ignored. After cloning, run the fetcher

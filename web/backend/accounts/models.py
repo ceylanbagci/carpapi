@@ -156,6 +156,7 @@ class AdminOTPChallenge(models.Model):
         choices=[
             ("email", "Email"),
             ("sms", "SMS"),
+            ("whatsapp", "WhatsApp"),
             ("log", "Log (dev only)"),
         ],
         default="email",

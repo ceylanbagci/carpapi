@@ -2,6 +2,14 @@
 
 Use when mapping a source-specific raw document into the canonical CarListing schema.
 
+## Preflight — point at the real DB
+
+```bash
+# Normalizer output lands in public.listings on RDS, not local.
+# See skills/rds-first-skill.md for the policy.
+source data/secrets/rds.env
+```
+
 ## Inputs
 - One raw document (dict from JSON or parsed HTML).
 - The source_id (drives source-specific quirks).

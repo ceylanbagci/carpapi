@@ -330,7 +330,48 @@ function CarCard({ car }) {
       whileHover={{ y: -3 }}
     >
       <div className="d4-car-card-thumb" aria-hidden="true">
-        <i className="bi bi-car-front-fill"></i>
+        {car.image_url ? (
+          <img
+            src={car.image_url}
+            alt={`${car.year || ""} ${car.make || ""} ${car.model || ""}`.trim()}
+            loading="lazy"
+            decoding="async"
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              display: "block",
+              borderRadius: "inherit",
+            }}
+            onError={(e) => {
+              // If the JPEG is gone for some reason, try the SVG
+              // silhouette; failing that, hide the <img> and let the
+              // bi-car-front-fill fallback render via CSS.
+              const fallback = car.image_svg_url;
+              if (fallback && e.currentTarget.dataset.fallbackTried !== "1") {
+                e.currentTarget.dataset.fallbackTried = "1";
+                e.currentTarget.src = fallback;
+              } else {
+                e.currentTarget.style.display = "none";
+              }
+            }}
+          />
+        ) : car.image_svg_url ? (
+          <img
+            src={car.image_svg_url}
+            alt={`${car.year || ""} ${car.make || ""} ${car.model || ""}`.trim()}
+            loading="lazy"
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "contain",
+              display: "block",
+            }}
+            onError={(e) => (e.currentTarget.style.display = "none")}
+          />
+        ) : (
+          <i className="bi bi-car-front-fill"></i>
+        )}
       </div>
       <div className="d4-car-card-body">
         <div className="d4-car-card-headline">

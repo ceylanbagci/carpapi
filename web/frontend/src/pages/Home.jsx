@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { getJson } from "../api.js";
+import { Link, useNavigate } from "react-router-dom";
+import { AuthRequiredError, getJson } from "../api.js";
 
 const TILES = [
   { key: "listings", label: "Listings", icon: "bi-list-ul", to: "/listings", tone: "primary" },
@@ -12,14 +12,29 @@ const TILES = [
 ];
 
 export default function Home() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     getJson("/stats/")
       .then(setStats)
-      .catch((e) => setError(e.message));
-  }, []);
+      .catch((e) => {
+        // A stale JWT in localStorage causes SimpleJWT to reject the
+        // request even though /api/stats/ is normally public. By the
+        // time we get here api.js has already wiped the saved auth —
+        // just send the user back to /login.
+        if (e instanceof AuthRequiredError) {
+          navigate("/login?next=/dashboard", { replace: true });
+          return;
+        }
+        // Show a friendlier message instead of SimpleJWT's raw detail.
+        const friendly = /Given token not valid/.test(e.message || "")
+          ? "Session expired — sign in again."
+          : e.message;
+        setError(friendly);
+      });
+  }, [navigate]);
 
   return (
     <div className="container-fluid p-0">

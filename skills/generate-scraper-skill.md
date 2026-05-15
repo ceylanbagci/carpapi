@@ -2,6 +2,14 @@
 
 Use when bootstrapping a new extractor module from a sample HTML page or API payload.
 
+## Preflight — point at the real DB
+
+```bash
+# Once the extractor is wired, its first end-to-end run writes
+# raw payloads + listings to RDS. See skills/rds-first-skill.md.
+source data/secrets/rds.env
+```
+
 ## Pre-conditions
 - Source is on the allow-list per [context/scraper-rules.md](../context/scraper-rules.md).
 - One sample raw payload (HTML or JSON) representative of the source's listing detail page.

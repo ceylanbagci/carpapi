@@ -1,4 +1,6 @@
 .env
+.env.local
+.logs/
 
 # Large regenerable data — produced by importing GeoNames + running
 # scrapers. Anyone can rebuild these with the import + scrape scripts.

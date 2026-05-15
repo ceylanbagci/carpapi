@@ -2,10 +2,19 @@
 
 Use when investigating duplicate listings, debugging missed dedups, or extending the dedup engine.
 
+## Preflight — point at the real DB
+
+```bash
+# Dedup investigation reads + writes the canonical listings; query
+# RDS, not the local :5433 snapshot. See skills/rds-first-skill.md.
+source data/secrets/rds.env
+```
+
 ## Read first
 - [context/deduplication-rules.md](../context/deduplication-rules.md)
 - [pipeline/carapi_pipeline/dedupe.py](../pipeline/carapi_pipeline/dedupe.py)
 - [runbooks/dedupe-policy.md](../runbooks/dedupe-policy.md)
+- [skills/rds-first-skill.md](rds-first-skill.md) — RDS-first policy
 
 ## Diagnostic workflow
 When two rows that should be the same physical car ended up as separate listings:

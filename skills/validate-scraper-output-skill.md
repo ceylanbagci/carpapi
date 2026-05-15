@@ -2,6 +2,14 @@
 
 Use to gate a scraper run before it's merged into the canonical `listings` table.
 
+## Preflight — point at the real DB
+
+```bash
+# Baseline comparisons read public.listings counts from RDS; the
+# canonical merge writes to RDS. See skills/rds-first-skill.md.
+source data/secrets/rds.env
+```
+
 ## Inputs
 - A batch of post-normalization documents (canonical CarListing dicts).
 - The `source_id` they came from.

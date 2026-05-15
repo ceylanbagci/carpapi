@@ -274,6 +274,22 @@ TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "")
 # automatically. Set either one — the OTP sender uses the SID first.
 TWILIO_MESSAGING_SERVICE_SID = os.environ.get("TWILIO_MESSAGING_SERVICE_SID", "")
 TWILIO_FROM_NUMBER = os.environ.get("TWILIO_FROM_NUMBER", "")
+
+# WhatsApp Cloud API (Meta) — preferred OTP delivery channel.
+# Requires a pre-approved "Authentication" message template in
+# WhatsApp Business Manager. See accounts/otp.py for the wire format.
+WHATSAPP_ACCESS_TOKEN = os.environ.get("WHATSAPP_ACCESS_TOKEN", "")
+WHATSAPP_PHONE_NUMBER_ID = os.environ.get("WHATSAPP_PHONE_NUMBER_ID", "")
+WHATSAPP_TEMPLATE_NAME = os.environ.get(
+    "WHATSAPP_TEMPLATE_NAME", "otp_authentication"
+)
+WHATSAPP_TEMPLATE_LANGUAGE = os.environ.get("WHATSAPP_TEMPLATE_LANGUAGE", "en")
+# Shared secret echoed back to Meta during webhook verification.
+# Pick any opaque string; paste the same value into Meta's App
+# Dashboard → WhatsApp → Configuration → "Verify token".
+WHATSAPP_WEBHOOK_VERIFY_TOKEN = os.environ.get(
+    "WHATSAPP_WEBHOOK_VERIFY_TOKEN", ""
+)
 # Optional comma-separated allow-list. When non-empty, OTP via SMS
 # only attempts delivery to numbers on this list (the user's stored
 # `phone` must match). Useful for single-admin MVPs.
