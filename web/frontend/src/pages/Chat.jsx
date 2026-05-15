@@ -9,8 +9,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { SAMPLE_PROMPTS } from "../data/mockChat.js";
 import { AuthRequiredError, chat as chatApi } from "../api.js";
-import { useAuth } from "../auth.jsx";
 import CarThumb from "../components/CarThumb.jsx";
+import UserMenu from "../components/UserMenu.jsx";
 
 // One message in the thread.
 // id: stable key for React
@@ -46,7 +46,8 @@ function initialTheme() {
 
 export default function Chat() {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  // user + signOut are read by <UserMenu/> internally; Chat itself only
+  // needs `navigate` (for the AuthRequiredError redirect below).
   const [messages, setMessages] = useState(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -164,15 +165,21 @@ export default function Chat() {
 
   return (
     <div className="d4-chat" data-theme={theme}>
+      {/* Chat shell header — same layout language as PublicTopBar but
+          adapted to the dark/light theme toggle Chat owns. Logo is an
+          <a href="/"> (full reload to CloudFront landing.html — the
+          React index Route renders a null Landing component, so a
+          <Link to="/"> would show a blank page).
+          UserMenu replaces the prior Dashboard / signed-in pill /
+          Sign-out trio. It exposes the same actions (Chat, Dashboard
+          if staff, Settings, Sign out) plus shows the current user's
+          initials so the session is always visible top-right. */}
       <header className="d4-chat-header">
-        <Link to="/" className="d4-chat-brand" title="Back to landing">
+        <a href="/" className="d4-chat-brand" title="Back to home">
           <span className="logo-dot">C</span>
           <span>CarPapi</span>
-        </Link>
+        </a>
         <div className="d4-chat-header-actions">
-          <Link to="/dashboard" className="d4-chat-link">
-            Dashboard
-          </Link>
           {messages.length > 0 && (
             <button
               type="button"
@@ -180,30 +187,10 @@ export default function Chat() {
               onClick={clearThread}
               title="Start a new conversation"
             >
+              <i className="bi bi-plus-circle me-1"></i>
               New chat
             </button>
           )}
-          {user && (
-            <span
-              className="d4-chat-link"
-              title={user.email}
-              style={{ cursor: "default", opacity: 0.75 }}
-            >
-              <i className="bi bi-person-circle me-1"></i>
-              {(user.full_name || user.email).split(/\s|@/)[0]}
-            </span>
-          )}
-          <button
-            type="button"
-            className="d4-chat-link"
-            onClick={async () => {
-              await signOut();
-              navigate("/login", { replace: true });
-            }}
-            title="Sign out"
-          >
-            Sign out
-          </button>
           <button
             type="button"
             className="d4-chat-theme-toggle"
@@ -214,6 +201,7 @@ export default function Chat() {
           >
             <i className={`bi ${isDark ? "bi-sun" : "bi-moon-stars"}`}></i>
           </button>
+          <UserMenu tone={isDark ? "dark" : "light"} />
         </div>
       </header>
 

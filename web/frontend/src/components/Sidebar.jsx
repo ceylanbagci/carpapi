@@ -42,14 +42,17 @@ const NAV = [
 export default function Sidebar({ open }) {
   return (
     <aside className={`d4-sidebar ${open ? "open" : ""}`}>
-      <Link
-        to="/"
+      {/* <a> (not <Link>) so the click goes to CloudFront's landing.html.
+          Client-side navigation to "/" hits the SPA's null Landing
+          component and shows a blank page. */}
+      <a
+        href="/"
         className="d4-sidebar-brand"
         title="Back to landing page"
       >
         <span className="logo-dot">C</span>
         <span>CarPapi</span>
-      </Link>
+      </a>
       <nav>
         {NAV.map((sec) => (
           <div key={sec.section}>

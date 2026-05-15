@@ -65,8 +65,14 @@ export function PublicTopBar() {
         flexWrap: "wrap",
       }}
     >
-      <Link
-        to="/"
+      {/* Plain <a> (not <Link>) so the click triggers a full reload —
+          the marketing landing lives at `/landing.html` and is served
+          by CloudFront's default-root-object rewrite. The React
+          `<Route index>` for `/` renders `Landing` which is a null
+          placeholder, so client-side `<Link to="/">` would show a
+          blank page. Full reload bypasses the SPA and hits CloudFront. */}
+      <a
+        href="/"
         style={{
           display: "inline-flex",
           alignItems: "center",
@@ -94,7 +100,7 @@ export function PublicTopBar() {
           C
         </span>
         CarPapi
-      </Link>
+      </a>
 
       <nav style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
         <NavLink to="/chat">Chat</NavLink>

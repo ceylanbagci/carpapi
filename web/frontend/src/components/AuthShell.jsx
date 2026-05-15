@@ -15,10 +15,12 @@ export default function AuthShell({
   return (
     <div className="d4-auth">
       <aside className="d4-auth-brand">
-        <Link to="/" className="d4-auth-brand-logo">
+        {/* <a> (not Link) so clicking goes to CloudFront's landing.html.
+            See PublicChrome for the why. */}
+        <a href="/" className="d4-auth-brand-logo">
           <span className="logo-dot">C</span>
           <span>CarPapi</span>
-        </Link>
+        </a>
         <div className="d4-auth-brand-body">
           <div className="d4-auth-brand-eyebrow">Live dealer inventory</div>
           <h2 className="d4-auth-brand-title">
