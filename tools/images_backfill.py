@@ -53,7 +53,14 @@ def _dsn() -> str:
     )
 
 
-def _pick_rows(conn, *, limit: int, listing_id: Optional[str], vin: Optional[str]):
+def _pick_rows(
+    conn,
+    *,
+    limit: int,
+    listing_id: Optional[str],
+    vin: Optional[str],
+    reprocess_existing: bool = False,
+):
     with conn.cursor() as cur:
         if listing_id:
             cur.execute(
@@ -77,11 +84,18 @@ def _pick_rows(conn, *, limit: int, listing_id: Optional[str], vin: Optional[str
             # Pick rows with a *real* VDP URL — not the dealer's
             # inventory landing page. The Filters.where_clause uses
             # the same pair of conditions.
+            #
+            # Default mode targets unpopulated rows (`image_url IS NULL`).
+            # `--reprocess-existing` flips that to NOT NULL — used to
+            # overwrite thumbnails that came from a buggy extractor.
+            image_filter = (
+                "image_url IS NOT NULL" if reprocess_existing else "image_url IS NULL"
+            )
             cur.execute(
-                """
+                f"""
                 SELECT id::text, vin, COALESCE(car_url, listing_url), make, model, year
                 FROM public.listings
-                WHERE image_url IS NULL
+                WHERE {image_filter}
                   AND COALESCE(car_url, listing_url) IS NOT NULL
                   AND COALESCE(car_url, listing_url) ~ '\\.html?(\\?|$)'
                   AND COALESCE(car_url, listing_url) !~ '/(new|used|certified)?-?(inventory|vehicles|stock)/?(index\\.html?)?(\\?|$)'
@@ -131,6 +145,7 @@ def run(args: argparse.Namespace) -> int:
             limit=args.limit,
             listing_id=args.listing_id,
             vin=args.vin,
+            reprocess_existing=args.reprocess_existing,
         )
         if not rows:
             log.info("no candidate listings to process")
@@ -157,7 +172,17 @@ def run(args: argparse.Namespace) -> int:
                 source_url=img_url,
                 generate_svg=not args.no_svg,
             )
-            if not result.ok:
+            if result.likely_placeholder:
+                # Source page yielded a dealer logo / placeholder asset.
+                # NULL out any stale URL so the chat card falls back to
+                # the bi-car-front-fill icon instead of showing a logo.
+                _write(conn, listing_id, None, None)
+                log.info(
+                    "  skipped (placeholder): svg=%db jpg=%db",
+                    result.bytes_svg, result.bytes_jpg,
+                )
+                miss += 1
+            elif not result.ok:
                 log.info("  process failed: %s", result.error)
                 fail += 1
             else:
@@ -185,6 +210,11 @@ def main() -> int:
     p.add_argument("--vin", help="process exactly one listing by VIN")
     p.add_argument("--no-svg", action="store_true",
                    help="skip the SVG silhouette pass")
+    p.add_argument(
+        "--reprocess-existing", action="store_true",
+        help="overwrite rows that already have image_url set "
+             "(used after an extractor fix)",
+    )
     p.add_argument("--log-level", default="INFO")
     args = p.parse_args()
     return run(args)

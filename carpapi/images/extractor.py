@@ -19,7 +19,7 @@ import json
 import logging
 import re
 from typing import Iterable, Optional
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin, urlparse, parse_qsl, urlencode, urlunparse
 
 import requests
 from bs4 import BeautifulSoup
@@ -57,16 +57,32 @@ def fetch_listing_html(listing_url: str) -> str:
 
 
 def first_image_url(html: str, base_url: str) -> Optional[str]:
-    """Pull the strongest signal first-image URL out of a dealer page."""
+    """Pull the strongest signal first-image URL out of a dealer page.
+
+    Resolvers can each yield a URL; we strip CDN downsize hints
+    (`?impolicy=downsize&h=48`, etc.) before validating. If a resolver
+    returns a URL that *still* looks tiny after upscaling, we fall
+    through to the next resolver — better to have an og:image at
+    1200px than a JSON-LD thumbnail at 48px.
+    """
     if not html:
         return None
     soup = BeautifulSoup(html, "lxml")
     for resolver in (_from_jsonld, _from_open_graph, _from_first_img):
         url = resolver(soup)
-        if url:
-            absolute = urljoin(base_url, url)
-            if _looks_like_image_url(absolute):
-                return absolute
+        if not url:
+            continue
+        absolute = urljoin(base_url, url)
+        absolute = _upscale_cdn_url(absolute)
+        if not _looks_like_image_url(absolute):
+            continue
+        if _looks_tiny(absolute):
+            # Logo-sized thumbnail leaked through (Dealer.com sometimes
+            # references a 48-px logo in JSON-LD). Skip and try the next
+            # resolver — og:image is usually full-size.
+            log.debug("skipping tiny URL %s", absolute)
+            continue
+        return absolute
     return None
 
 
@@ -187,7 +203,13 @@ def _to_int(s) -> int:
         return 0
 
 
-_PLACEHOLDER_HINTS = ("placeholder", "no-image", "noimage", "spinner", "loading", "data:image/svg")
+_PLACEHOLDER_HINTS = (
+    "placeholder", "no-image", "noimage", "spinner", "loading",
+    "data:image/svg",
+    # Logo / brand assets — Dealer.com sometimes references their own
+    # nav-bar logo in JSON-LD when the listing has no vehicle photos.
+    "/logo/", "/logos/", "dealer-logo", "site-logo", "brand-logo",
+)
 
 
 def _looks_like_placeholder(url: str) -> bool:
@@ -210,4 +232,60 @@ def _looks_like_image_url(url: str) -> bool:
     # extension — accept them too as long as the path looks vehicle-y.
     if _IMG_NAME_RE.search(parsed.path):
         return True
+    return False
+
+
+# Dealer CDN URLs often include sizing hints — Dealer.com uses
+# `impolicy=downsize&h=48` to serve a logo-sized thumbnail. We strip
+# the downsize-policy and any small `h=`/`w=` values so the upstream
+# pipeline downloads the full asset and resizes it locally.
+_DROP_POLICY_VALUES = {"downsize", "Downsize", "DOWNSIZE", "letterbox", "Letterbox"}
+_DIM_KEYS = {"h", "w", "height", "width"}
+_TINY_THRESHOLD = 200  # pixels — below this counts as a thumbnail
+
+
+def _upscale_cdn_url(url: str) -> str:
+    """Strip ?impolicy=downsize and small h=/w= hints so the CDN returns
+    the full-size asset. Leaves the URL otherwise untouched."""
+    try:
+        parsed = urlparse(url)
+    except ValueError:
+        return url
+    if not parsed.query:
+        return url
+    pairs = parse_qsl(parsed.query, keep_blank_values=True)
+    kept: list[tuple[str, str]] = []
+    for k, v in pairs:
+        kl = k.lower()
+        if kl == "impolicy" and v in _DROP_POLICY_VALUES:
+            continue
+        if kl in _DIM_KEYS:
+            n = _to_int(v)
+            if 0 < n < _TINY_THRESHOLD:
+                # Drop the tiny dimension hint entirely.
+                continue
+        kept.append((k, v))
+    new_query = urlencode(kept, doseq=True)
+    return urlunparse(parsed._replace(query=new_query))
+
+
+def _looks_tiny(url: str) -> bool:
+    """True if the URL still has a small h=/w= hint after upscaling.
+    Used as a guard against logo-sized JSON-LD images we couldn't
+    rewrite (e.g. CDN-baked thumbnail paths like /logo/48x48/foo.png)."""
+    try:
+        parsed = urlparse(url)
+    except ValueError:
+        return False
+    # Path-based "48x48" / "_48w" hints.
+    if re.search(r"/(\d{1,3})x(\d{1,3})/", parsed.path):
+        m = re.search(r"/(\d{1,3})x(\d{1,3})/", parsed.path)
+        if m and (int(m.group(1)) < _TINY_THRESHOLD or int(m.group(2)) < _TINY_THRESHOLD):
+            return True
+    # Query-string sizing hints we didn't strip (e.g. impolicy=custom).
+    for k, v in parse_qsl(parsed.query, keep_blank_values=True):
+        if k.lower() in _DIM_KEYS:
+            n = _to_int(v)
+            if 0 < n < _TINY_THRESHOLD:
+                return True
     return False

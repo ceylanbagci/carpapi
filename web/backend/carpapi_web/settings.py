@@ -29,16 +29,23 @@ ALLOWED_HOSTS = [
     h.strip()
     for h in os.environ.get(
         "DJANGO_ALLOWED_HOSTS",
-        "localhost,127.0.0.1,0.0.0.0,*",
+        # Default list covers local dev + the App Runner internal
+        # hostname + the custom domain (carpappi.com). App Runner sets
+        # the Host header to the public hostname, so api.carpappi.com
+        # must be included once the custom domain is active.
+        "localhost,127.0.0.1,0.0.0.0,api.carpappi.com,"
+        "gt3mapscrz.us-east-1.awsapprunner.com,*",
     ).split(",")
     if h.strip()
 ]
 
 # Used by allauth for absolute URLs in confirmation emails and OAuth
 # redirect callbacks. Override per deploy via DJANGO_SITE_DOMAIN.
+# Default is now the custom domain so confirmation links point at
+# api.carpappi.com — fall back to the App Runner hostname via env.
 SITE_ID = 1
 DJANGO_SITE_DOMAIN = os.environ.get(
-    "DJANGO_SITE_DOMAIN", "gt3mapscrz.us-east-1.awsapprunner.com"
+    "DJANGO_SITE_DOMAIN", "api.carpappi.com"
 )
 
 
@@ -310,6 +317,7 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
     # Production frontend on CloudFront (S3-backed React SPA).
     r"^https://[a-z0-9]+\.cloudfront\.net$",
     # Production custom domain (carpappi.com — note the two p's).
+    # Covers apex + www both serving the SPA.
     r"^https://(www\.)?carpappi\.com$",
 ]
 
@@ -330,6 +338,10 @@ CORS_ALLOW_HEADERS = list(_default_cors_headers) + ["x-carpapi-auth"]
 CSRF_TRUSTED_ORIGINS = [
     "https://*.awsapprunner.com",
     "https://*.cloudfront.net",
+    # Custom domain — apex + www (frontend) and api subdomain (backend).
+    "https://carpappi.com",
+    "https://www.carpappi.com",
+    "https://api.carpappi.com",
 ]
 
 # ──────────────────────────────────────────────────────────────────── #

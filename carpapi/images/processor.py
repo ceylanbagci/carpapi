@@ -63,10 +63,16 @@ class ProcessResult:
     bytes_jpg: int = 0
     bytes_svg: int = 0
     error: Optional[str] = None
+    # When the source image traces to a near-empty SVG (< ~300B of
+    # path data) we treat the photo as a dealer logo / placeholder and
+    # signal up so the CLI can skip the DB write. The S3 JPEG is
+    # left in place — a later good scrape (keyed by the same VIN)
+    # will overwrite it.
+    likely_placeholder: bool = False
 
     @property
     def ok(self) -> bool:
-        return bool(self.image_url)
+        return bool(self.image_url) and not self.likely_placeholder
 
 
 # ─────────────────────────────────────────────────────────────────────
@@ -118,6 +124,20 @@ def process_for_listing(
     if generate_svg:
         svg_bytes = _to_silhouette_svg(thumb_bytes)
         if svg_bytes:
+            # Below ~300 bytes the SVG is essentially `<svg><path d=""/>`
+            # — potrace traced no significant contour, which means the
+            # source was a near-uniform image: dealer logo on a solid
+            # background, a "photo coming soon" placeholder, etc.
+            # Flag the result so the caller can skip the DB write.
+            if len(svg_bytes) < 300:
+                log.info(
+                    "likely placeholder for %s (svg=%db, jpg=%db)",
+                    listing_key, len(svg_bytes), result.bytes_jpg,
+                )
+                result.likely_placeholder = True
+                result.error = "likely_placeholder"
+                result.bytes_svg = len(svg_bytes)
+                return result
             svg_key = f"{S3_PREFIX}/{listing_key}.svg"
             try:
                 s3.put_object(

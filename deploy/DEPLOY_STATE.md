@@ -151,7 +151,12 @@ cd web/frontend
 npm run build
 aws s3 sync dist/ s3://carpapi-frontend-183617081338/ --delete \
   --cache-control "public, max-age=31536000, immutable" \
-  --exclude "index.html" --exclude "landing.html"
+  --exclude "index.html" --exclude "landing.html" \
+  --exclude "listings/*"
+# ^ `listings/*` are runtime-uploaded car thumbnails (carpapi.images
+#   pipeline writes them via boto3). They live in the same bucket but
+#   are NOT part of the SPA build, so the SPA sync must exclude them or
+#   `--delete` will wipe every thumbnail.
 aws s3 cp dist/index.html s3://carpapi-frontend-183617081338/ \
   --cache-control "public, max-age=0, must-revalidate" --content-type "text/html"
 aws s3 cp dist/landing.html s3://carpapi-frontend-183617081338/ \
