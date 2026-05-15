@@ -36,6 +36,10 @@ class ListingSerializer(serializers.ModelSerializer):
 
 
 class DealerSerializer(serializers.ModelSerializer):
+    # Annotated by DealerViewSet.get_queryset (Subquery on Listing.source_id).
+    # Coalesce to 0 here so the wire shape is always an int, never null.
+    cars_count = serializers.SerializerMethodField()
+
     class Meta:
         model = Dealer
         fields = [
@@ -52,4 +56,8 @@ class DealerSerializer(serializers.ModelSerializer):
             "status",
             "last_scraped_at",
             "enrolled_at",
+            "cars_count",
         ]
+
+    def get_cars_count(self, obj):
+        return getattr(obj, "cars_count", 0) or 0

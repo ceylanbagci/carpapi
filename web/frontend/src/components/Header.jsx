@@ -8,6 +8,7 @@ const TITLES = {
   "/listings": "Listings",
   "/makes": "Makes",
   "/models": "Models",
+  "/agents": "Fleet Console",
 };
 
 export default function Header({ onToggleSidebar }) {

@@ -16,6 +16,7 @@ import ResetPassword from "./pages/ResetPassword.jsx";
 import Settings from "./pages/Settings.jsx";
 import Pricing from "./pages/Pricing.jsx";
 import AdminVerify from "./pages/AdminVerify.jsx";
+import Agents from "./pages/Agents.jsx";
 import {
   AuthProvider,
   ProtectedRoute,
@@ -40,6 +41,10 @@ export default function App() {
 
         {/* Public pricing page — standalone */}
         <Route path="pricing" element={<Pricing />} />
+
+        {/* Fleet Console — public, full-bleed standalone page rendering
+            the pixel-art roster of all 14 .claude/agents/*.md agents. */}
+        <Route path="agents" element={<Agents />} />
 
         {/* Chat — any signed-in user */}
         <Route

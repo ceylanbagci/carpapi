@@ -16,7 +16,7 @@ All list endpoints accept the query params:
 """
 from __future__ import annotations
 
-from django.db.models import Count, Max, Min, Q
+from django.db.models import Count, IntegerField, Max, Min, OuterRef, Q, Subquery
 from rest_framework import viewsets
 from rest_framework.decorators import api_view
 from rest_framework.pagination import PageNumberPagination
@@ -81,11 +81,25 @@ class DealerViewSet(viewsets.ReadOnlyModelViewSet):
         "postal_code",
         "enrolled_at",
         "last_scraped_at",
+        "cars_count",
     ]
     lookup_field = "slug"
 
     def get_queryset(self):
-        qs = super().get_queryset()
+        # listings have no FK to dealers; the link is
+        # listings.source_id == dealers.slug. Annotate a per-dealer
+        # listing count via a correlated subquery so the value can be
+        # sorted and serialized as part of the row.
+        cars_sq = (
+            Listing.objects.filter(source_id=OuterRef("slug"))
+            .order_by()
+            .values("source_id")
+            .annotate(c=Count("*"))
+            .values("c")
+        )
+        qs = super().get_queryset().annotate(
+            cars_count=Subquery(cars_sq, output_field=IntegerField())
+        )
         params = self.request.query_params
         if (make := params.get("make")):
             qs = qs.filter(makes_carried__contains=[make])

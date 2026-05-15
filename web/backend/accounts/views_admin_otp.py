@@ -32,6 +32,7 @@ import logging
 
 from dj_rest_auth.serializers import LoginSerializer
 from dj_rest_auth.views import LoginView as DJRALoginView
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -77,6 +78,13 @@ def login_step_up(request):
 
     if not getattr(user, "is_staff", False):
         # Non-staff: same response shape as /api/auth/login/.
+        return Response(_jwt_response_for(user))
+
+    # Per-env kill switch (dev / CI): when ADMIN_OTP_ENABLED is false,
+    # skip the OTP detour and issue JWTs directly. Production leaves
+    # this true so staff still get step-up.
+    if not getattr(settings, "ADMIN_OTP_ENABLED", True):
+        log.info("admin step-up skipped (ADMIN_OTP_ENABLED=false) for user_id=%s", user.id)
         return Response(_jwt_response_for(user))
 
     # Staff: short-circuit JWT issuance — emit a challenge instead.
