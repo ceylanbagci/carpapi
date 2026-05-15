@@ -64,34 +64,17 @@ export default function Login() {
     setBusy(true);
     setError(null);
     try {
-      // POST /api/auth/login-step-up/ — same shape as /api/auth/login/
-      // for regular users (returns { access, refresh, user }) but
-      // returns { challenge: "admin_otp", challenge_token, ... } for
-      // is_staff users. We handle both response shapes here.
-      const res = await postJson("/auth/login-step-up/", {
+      // POST /api/auth/login/ — single-factor email + password.
+      // Returns { access, refresh, user } for everyone, no OTP step.
+      //
+      // (The /api/auth/login-step-up/ endpoint that emitted an OTP
+      // challenge for is_staff users is still wired on the backend
+      // for future re-enable, but the SPA bypasses it until we have
+      // a working delivery channel — SES or WhatsApp Cloud API.)
+      const res = await postJson("/auth/login/", {
         email: email.trim(),
         password,
       });
-
-      if (res.challenge === "admin_otp") {
-        // Staff user → second-factor required. Hand off the challenge
-        // details to /admin/verify via router state; that page POSTs
-        // /admin-otp/verify/ with the entered code and finishes the
-        // sign-in.
-        navigate("/admin/verify", {
-          replace: true,
-          state: {
-            challenge_token: res.challenge_token,
-            destination_hint: res.destination_hint,
-            channel: res.channel,
-            expires_at: res.expires_at,
-            next,
-          },
-        });
-        return;
-      }
-
-      // Regular user → JWT issued directly.
       const auth = { access: res.access, refresh: res.refresh, user: res.user };
       setAuth(auth);
       signIn(auth);
