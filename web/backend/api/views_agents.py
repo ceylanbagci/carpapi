@@ -33,6 +33,8 @@ from botocore.exceptions import ClientError
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+import time
+import uuid
 
 log = logging.getLogger("carpapi.api.agents")
 
@@ -263,3 +265,109 @@ def _agents_overview_inner(request):
         "summary": summary,
         "as_of_utc": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
     })
+
+
+# ── Run-queue endpoint ───────────────────────────────────────────────
+#
+# POST /api/agents/<slug>/run/ — request an ad-hoc invocation of an
+# agent's Lambda.
+#
+# Why a queue file instead of a direct lambda.invoke():
+#   App Runner's egress is VPC-only and the VPC has no Interface
+#   endpoint for AWS Lambda (only S3 + Bedrock today). A boto3
+#   lambda.invoke() would Connect-timeout. S3 *does* have a Gateway
+#   endpoint, so Django writes a marker file:
+#
+#     s3://<bucket>/fleet/queue/<slug>.json
+#
+#   A separate run-queue-dispatcher Lambda is S3-triggered on that
+#   prefix and calls lambda:InvokeFunction(carpapi-<slug>) itself,
+#   then deletes the marker. Source for that handler lives at
+#   deploy/agent_runner/handlers/run_queue_dispatcher.py.
+#
+# This endpoint returns 202 even when the dispatcher Lambda isn't
+# provisioned yet — the marker still lands in S3, the SPA shows
+# "queued", and the dispatcher backfills the moment it's deployed.
+
+QUEUE_PREFIX = f"{FLEET_PREFIX}/queue"
+LAMBDA_NAME_FMT = "carpapi-{slug}"
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def agent_run(request, slug):
+    """Request a manual run for a single agent.
+
+    Body (optional): {"reason": "...", "payload": {...}}.
+      `reason` is logged on the marker so future dispatchers / audits
+      can see who asked for the run. `payload` is forwarded as the
+      Lambda event when the dispatcher invokes (small JSON only).
+
+    Responses:
+      202 {"queued": true, "queue_key": "fleet/queue/<slug>.json",
+           "requested_at_ms": int, "expected_invoke_within_s": int}
+      404 {"error": "unknown agent slug"}
+      503 {"error": "<S3 PutObject failure detail>",
+           "remedy": "App Runner instance role probably lacks
+                      s3:PutObject on fleet/queue/*. Add the
+                      WriteFleetQueue statement from
+                      deploy/apprunner_fleet_read_policy.json."}
+    """
+    entry = ROSTER_BY_SLUG.get(slug)
+    if not entry:
+        return Response(
+            {"error": f"unknown agent slug: {slug}",
+             "known_slugs": list(ROSTER_BY_SLUG.keys())},
+            status=404,
+        )
+
+    body = request.data if hasattr(request, "data") else {}
+    reason = (body or {}).get("reason", "manual-run-from-dashboard")
+    payload = (body or {}).get("payload", {})
+    requested_at_ms = int(time.time() * 1000)
+    marker = {
+        "slug": slug,
+        "lambda_name": LAMBDA_NAME_FMT.format(slug=slug),
+        "requested_at_ms": requested_at_ms,
+        "requested_by": request.META.get("HTTP_X_REQUESTED_BY", "anonymous"),
+        "reason": reason,
+        # Per-request UUID so the dispatcher can dedupe replays if S3
+        # delivers the same event twice (it can — at-least-once).
+        "idempotency_key": uuid.uuid4().hex,
+        # Forwarded as the Lambda event by the dispatcher.
+        "payload": payload,
+    }
+    key = f"{QUEUE_PREFIX}/{slug}.json"
+
+    try:
+        _s3().put_object(
+            Bucket=FLEET_BUCKET,
+            Key=key,
+            Body=json.dumps(marker, indent=2).encode("utf-8"),
+            ContentType="application/json",
+            CacheControl="no-cache",
+        )
+    except ClientError as exc:
+        log.error("queue marker put failed for %s: %s", slug, exc)
+        return Response(
+            {"error": f"{type(exc).__name__}: {exc.response.get('Error', {}).get('Message', str(exc))}",
+             "remedy": "App Runner instance role probably lacks "
+                       "s3:PutObject on fleet/queue/*. Apply the "
+                       "WriteFleetQueue statement from "
+                       "deploy/apprunner_fleet_read_policy.json."},
+            status=503,
+        )
+
+    return Response(
+        {"queued": True,
+         "queue_key": key,
+         "lambda_name": marker["lambda_name"],
+         "requested_at_ms": requested_at_ms,
+         "idempotency_key": marker["idempotency_key"],
+         # The dispatcher Lambda is S3-triggered on the queue prefix;
+         # delivery latency is typically <1 s. We surface a generous
+         # ceiling so the SPA's "running" badge times out cleanly even
+         # if the dispatcher is briefly cold.
+         "expected_invoke_within_s": 10},
+        status=202,
+    )

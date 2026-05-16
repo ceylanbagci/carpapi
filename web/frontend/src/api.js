@@ -250,6 +250,18 @@ export async function getAgents() {
   return getJson("/agents/");
 }
 
+/** POST /api/agents/<slug>/run/ — queue a manual run for an agent.
+ *
+ *  Returns the marker payload from the backend (queue_key,
+ *  lambda_name, requested_at_ms, expected_invoke_within_s).
+ *  Throws on non-2xx — caller surfaces error.body.error to the user.
+ */
+export async function runAgent(slug, { reason, payload } = {}) {
+  return postJson(`/agents/${encodeURIComponent(slug)}/run/`, {
+    reason, payload,
+  });
+}
+
 /** URL the Sign-In-With-Google button links to. App Runner handles
  *  the OAuth dance via allauth, then bounces back to `next`. */
 export function googleLoginUrl(next) {

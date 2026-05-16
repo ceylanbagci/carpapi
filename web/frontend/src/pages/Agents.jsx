@@ -19,7 +19,7 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { getAgents } from "../api.js";
+import { getAgents, runAgent } from "../api.js";
 import { PublicTopBar, PublicFooter } from "../components/PublicChrome.jsx";
 import { useTheme } from "../theme.jsx";
 
@@ -128,6 +128,55 @@ export default function Agents() {
       const n = new Set(s);
       n.delete(slug);
       return n;
+    });
+  };
+
+  // Toast surfaces async run results without a blocking dialog.
+  // {msg, tone: ok|err|info}. Auto-dismisses after ~4s.
+  const [toast, setToast] = useState(null);
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 4500);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  // Hit POST /api/agents/<slug>/run/, optimistically flag the row as
+  // running, and surface success/failure as a toast. If the backend
+  // rejects (NOT DEPLOYED → 404, or PutObject denied → 503), the
+  // optimistic flag is cleared so the button reverts to Run.
+  const dispatchRun = async (agent) => {
+    const deployed = agent.status !== "not_deployed";
+    if (!deployed) {
+      setToast({
+        tone: "err",
+        msg: `${agent.slug}: no Lambda deployed. Click Spec to read the contract.`,
+      });
+      return;
+    }
+    markRunning(agent.slug);
+    try {
+      const r = await runAgent(agent.slug, { reason: "dashboard-manual-run" });
+      const t = new Date(r.requested_at_ms || Date.now())
+        .toISOString().slice(11, 19);
+      setToast({
+        tone: "ok",
+        msg: `${agent.slug} queued at ${t} UTC · dispatcher invokes within ${r.expected_invoke_within_s || 10}s.`,
+      });
+    } catch (err) {
+      markStopped(agent.slug);
+      const msg = err?.payload?.error || err?.message || "Unknown error";
+      const remedy = err?.payload?.remedy ? `\n${err.payload.remedy}` : "";
+      setToast({
+        tone: "err",
+        msg: `Run for ${agent.slug} failed: ${msg}${remedy}`,
+      });
+    }
+  };
+  const dispatchStop = (agent) => {
+    markStopped(agent.slug);
+    setToast({
+      tone: "info",
+      msg: `${agent.slug}: cleared local pending badge. An in-flight Lambda can't be aborted out-of-band.`,
     });
   };
 
@@ -243,8 +292,8 @@ export default function Agents() {
               onSelect={setSelectedSlug}
               onOpenLogs={setSelectedSlug}
               runningSlugs={runningSlugs}
-              onRun={markRunning}
-              onStop={markStopped}
+              onRun={dispatchRun}
+              onStop={dispatchStop}
             />
             <ActivityFeed agents={agents} />
           </>
@@ -254,6 +303,8 @@ export default function Agents() {
       {selected && (
         <AgentDrawer agent={selected} onClose={() => setSelectedSlug(null)} />
       )}
+
+      {toast && <RunToast toast={toast} onDismiss={() => setToast(null)} />}
 
       <PublicFooter />
 
@@ -429,7 +480,7 @@ function RowActions({ agent, isRunning, onRun, onStop, onOpenLogs }) {
         <button
           type="button"
           title={`Cancel pending run of ${agent.slug}`}
-          onClick={(e) => { stop(e); onStop(agent.slug); stopAgentManually(agent); }}
+          onClick={(e) => { stop(e); onStop(agent); }}
           style={stopBtn}
         >
           ■ Stop
@@ -438,9 +489,9 @@ function RowActions({ agent, isRunning, onRun, onStop, onOpenLogs }) {
         <button
           type="button"
           title={deployed
-            ? `Trigger one manual run of ${agent.slug} via the run-queue`
-            : `${agent.slug} has no Lambda deployed yet — click for details`}
-          onClick={(e) => { stop(e); onRun(agent.slug); runAgentManually(agent, { deployed }); }}
+            ? `POST /api/agents/${agent.slug}/run/ — dispatcher invokes the Lambda`
+            : `${agent.slug} has no Lambda deployed yet`}
+          onClick={(e) => { stop(e); onRun(agent); }}
           style={btn}
         >
           ▶ Run
@@ -477,55 +528,6 @@ function RowActions({ agent, isRunning, onRun, onStop, onOpenLogs }) {
         Spec
       </a>
     </div>
-  );
-}
-
-// Honest "stop a run" surface. There's no real Lambda abort — we just
-// clear the local pending badge.
-function stopAgentManually(agent) {
-  alert(
-    `Pending run for "${agent.slug}" cleared locally.\n\n` +
-    `Note: this only removes the "running" badge from the dashboard. ` +
-    `If a real Lambda invocation was already in flight, it continues ` +
-    `to completion — there is no out-of-band abort API for ad-hoc ` +
-    `Lambda invocations. (EventBridge-scheduled runs are unaffected.)`
-  );
-}
-
-function runAgentManually(agent, { deployed } = {}) {
-  // Two failure modes today, both honest:
-  //  1. Agent is not deployed → no Lambda exists, no schedule, no
-  //     run-queue. The fix is real DevOps work (build the Lambda
-  //     package, IAM role, EventBridge schedule, etc.) — see
-  //     deploy/deploy_lambdas.md if it exists, or the agent spec at
-  //     .claude/agents/<slug>.md for the contract the Lambda needs
-  //     to satisfy.
-  //  2. Agent IS deployed → invoking it from the SPA still needs the
-  //     run-queue bridge because App Runner's Django container is
-  //     VPC-bound and can't call lambda:InvokeFunction directly. The
-  //     fix: POST /api/agents/<slug>/run/ writes a marker file to
-  //     s3://<bucket>/fleet/queue/<slug>.json; a dispatcher Lambda
-  //     watches that prefix and fans markers into real invocations.
-  if (!deployed) {
-    alert(
-      `"${agent.slug}" has no Lambda deployed yet.\n\n` +
-      `Status: NOT DEPLOYED — the agent_runner Lambda for this slug ` +
-      `hasn't been provisioned in AWS. Until it is, the dispatcher ` +
-      `has nothing to invoke and no event/log to read back.\n\n` +
-      `Next: deploy the Lambda + EventBridge schedule per ` +
-      `.claude/agents/${agent.slug}.md. Open the Spec button to ` +
-      `read the contract.`
-    );
-    return;
-  }
-  alert(
-    `Manual run for "${agent.slug}" needs the run-queue endpoint ` +
-    `(POST /api/agents/<slug>/run/), which isn't wired up yet.\n\n` +
-    `App Runner is VPC-bound and can't call lambda:InvokeFunction ` +
-    `directly. The plan: Django writes a marker to ` +
-    `s3://<bucket>/fleet/queue/<slug>.json → a dispatcher Lambda ` +
-    `picks it up and invokes the agent.\n\n` +
-    `Use Logs (drawer / CloudWatch) and Spec for now.`
   );
 }
 
@@ -1367,6 +1369,49 @@ function RawEventJson({ event }) {
 // Single <style> injected at the page root that defines every
 // `--fleet-*` variable for both themes. The light → dark switch is
 // driven by `data-fleet-theme="dark"` on the .fleet-agents-page wrapper.
+// ── Run/Stop toast ──────────────────────────────────────────────────
+// Non-blocking corner toast for async run-queue feedback. Pure CSS,
+// theme-aware via the page's --fleet-* variables.
+function RunToast({ toast, onDismiss }) {
+  const palette = {
+    ok:   { bg: "rgba(16,185,129,0.10)",  fg: "#047857", border: "rgba(16,185,129,0.30)" },
+    err:  { bg: "rgba(220,38,38,0.10)",   fg: "#b91c1c", border: "rgba(220,38,38,0.30)" },
+    info: { bg: "rgba(54,153,255,0.10)",  fg: "#1e40af", border: "rgba(54,153,255,0.30)" },
+  }[toast.tone] || { bg: "var(--fleet-card-bg)", fg: "var(--fleet-text)", border: "var(--fleet-card-border)" };
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 12 }}
+      style={{
+        position: "fixed", right: 24, bottom: 24,
+        maxWidth: 420,
+        padding: "12px 16px 12px 14px", borderRadius: 12,
+        background: palette.bg, color: palette.fg,
+        border: `1px solid ${palette.border}`,
+        fontSize: 13, lineHeight: 1.45,
+        boxShadow: "0 12px 40px rgba(0,0,0,0.18)",
+        display: "flex", alignItems: "flex-start", gap: 10,
+        zIndex: 200, whiteSpace: "pre-line",
+      }}
+      role="status"
+    >
+      <i className={`bi ${toast.tone === "ok" ? "bi-check2-circle" : toast.tone === "err" ? "bi-exclamation-octagon" : "bi-info-circle"}`} style={{ fontSize: 16, marginTop: 1 }} />
+      <span style={{ flex: 1 }}>{toast.msg}</span>
+      <button
+        type="button"
+        onClick={onDismiss}
+        aria-label="Dismiss"
+        style={{
+          background: "transparent", border: "none", color: "inherit",
+          cursor: "pointer", padding: 0, fontSize: 16, lineHeight: 1,
+          opacity: 0.7,
+        }}
+      >×</button>
+    </motion.div>
+  );
+}
+
 function FleetThemeStyles() {
   return (
     <style>{`

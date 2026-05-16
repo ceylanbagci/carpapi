@@ -15,6 +15,12 @@
       "Effect": "Allow",
       "Action": "s3:GetObject",
       "Resource": "arn:aws:s3:::carpapi-frontend-183617081338/fleet/*"
+    },
+    {
+      "Sid": "WriteFleetQueueMarkers",
+      "Effect": "Allow",
+      "Action": "s3:PutObject",
+      "Resource": "arn:aws:s3:::carpapi-frontend-183617081338/fleet/queue/*"
     }
   ]
 }

@@ -24,5 +24,9 @@ urlpatterns = [
     # with live Lambda + EventBridge + CloudWatch data. Implementation
     # in api/views_agents.py.
     path("agents/", views_agents.agents_overview, name="agents-overview"),
+    # POST a manual-run request for one agent. Writes an S3 marker
+    # that a run-queue-dispatcher Lambda picks up and turns into a
+    # real lambda:InvokeFunction call. See views_agents.agent_run.
+    path("agents/<slug:slug>/run/", views_agents.agent_run, name="agent-run"),
     path("", include(router.urls)),
 ]
