@@ -14,18 +14,18 @@ const fmtRange = (row) => {
 };
 
 // Each Cars row is a distinct (year, make, model, trim) tuple. Clicking
-// drills into the matching slice of /listings. Year and trim narrow the
-// match further when present; make+model is the minimum.
+// drills into the EXACT slice of /listings — same year, same trim, same
+// count as the row shows. The backend honors `trim=__null__` as a
+// sentinel for "trim IS NULL" so rows where trim renders as "—" still
+// filter exactly. See _apply_listing_filters in web/backend/api/views.py.
 function listingsHref(r) {
   const parts = [
     `make=${encodeURIComponent(r.make)}`,
     `model=${encodeURIComponent(r.model)}`,
   ];
-  if (r.year)  parts.push(`year_min=${r.year}`, `year_max=${r.year}`);
-  // Backend /listings filter doesn't have a 'trim' key today (see
-  // _apply_listing_filters in views.py); we surface trim only in the
-  // row display, not in the filter URL. If trim filtering is added,
-  // append `trim=${encodeURIComponent(r.trim)}` here.
+  if (r.year) parts.push(`year_min=${r.year}`, `year_max=${r.year}`);
+  if (r.trim) parts.push(`trim=${encodeURIComponent(r.trim)}`);
+  else        parts.push("trim=__null__");
   return `/listings?${parts.join("&")}`;
 }
 
