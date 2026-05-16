@@ -152,7 +152,7 @@ npm run build
 aws s3 sync dist/ s3://carpapi-frontend-183617081338/ --delete \
   --cache-control "public, max-age=31536000, immutable" \
   --exclude "index.html" --exclude "landing.html" \
-  --exclude "listings/*" --exclude "logos/*"
+  --exclude "listings/*" --exclude "logos/*" --exclude "fleet/*"
 # ^ `listings/*` are runtime-uploaded car thumbnails (carpapi.images
 #   pipeline writes them via boto3). They live in the same bucket but
 #   are NOT part of the SPA build, so the SPA sync must exclude them or
