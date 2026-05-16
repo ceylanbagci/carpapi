@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { getJson } from "../api.js";
 
 /**
@@ -19,7 +19,12 @@ export default function DataTable({
   filters = [],
   searchable = true,
   initialOrdering = "",
+  // Optional. When provided, every row becomes clickable and navigates
+  // to the returned URL. Receives the row object; returns a string href
+  // or null/undefined to disable navigation for that row.
+  rowHref = null,
 }) {
+  const navigate = useNavigate();
   // Seed filter values + search from URL query params so cross-page
   // links like /listings?source_id=axis_chrysler land already filtered.
   // Recognized URL params: `search`, anything matching a configured
@@ -198,15 +203,54 @@ export default function DataTable({
             )}
             {!loading &&
               !error &&
-              rows.map((row, i) => (
-                <tr key={row.id || row.slug || i}>
-                  {columns.map((c) => (
-                    <td key={c.key}>
-                      {c.render ? c.render(row) : row[c.key] ?? "—"}
-                    </td>
-                  ))}
-                </tr>
-              ))}
+              rows.map((row, i) => {
+                const href = rowHref ? rowHref(row) : null;
+                const clickable = !!href;
+                return (
+                  <tr
+                    key={row.id || row.slug || i}
+                    onClick={
+                      clickable
+                        ? (e) => {
+                            // Don't hijack clicks on inner anchors / buttons /
+                            // form inputs — let those handle their own action.
+                            const tag = (e.target.tagName || "").toLowerCase();
+                            if (["a", "button", "input", "select", "textarea"].includes(tag)) return;
+                            if (e.target.closest("a,button,input,select,textarea")) return;
+                            // Cmd / Ctrl / middle-click → new tab
+                            if (e.metaKey || e.ctrlKey || e.button === 1) {
+                              window.open(href, "_blank", "noopener");
+                            } else {
+                              navigate(href);
+                            }
+                          }
+                        : undefined
+                    }
+                    style={
+                      clickable
+                        ? { cursor: "pointer", transition: "background 0.12s" }
+                        : undefined
+                    }
+                    onMouseEnter={
+                      clickable
+                        ? (e) => (e.currentTarget.style.background = "#f5f7fa")
+                        : undefined
+                    }
+                    onMouseLeave={
+                      clickable
+                        ? (e) => (e.currentTarget.style.background = "")
+                        : undefined
+                    }
+                    title={clickable ? "Click to open" : undefined}
+                  >
+                    {columns.map((c) => (
+                      <td key={c.key}>
+                        {c.render ? c.render(row) : row[c.key] ?? "—"}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })}
           </tbody>
         </table>
       </div>
