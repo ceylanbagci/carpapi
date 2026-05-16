@@ -284,6 +284,102 @@ function TierFilter({ active, onChange }) {
   );
 }
 
+// ── Per-row action buttons ──────────────────────────────────────────
+// All three live in the same column so the row's onClick (which opens
+// the side drawer) is preserved. Each action stops propagation so a
+// button click doesn't also fire onSelect.
+const REGION = "us-east-1";
+const GH_AGENTS_BASE =
+  "https://github.com/ceylanbagci/carpapi/blob/main/.claude/agents";
+
+function cloudwatchLogsUrl(slug) {
+  // App Runner can't reach Lambda APIs from the Django view, but
+  // CloudWatch Logs is reachable through the AWS console (browser
+  // session, not server). The Lambda log group convention is
+  // /aws/lambda/carpapi-<slug>. If the Lambda doesn't exist yet,
+  // CloudWatch shows "Log group does not exist" rather than crashing.
+  const group = encodeURIComponent(`/aws/lambda/carpapi-${slug}`)
+    .replace(/%/g, "$25");
+  return (
+    `https://console.aws.amazon.com/cloudwatch/home?region=${REGION}` +
+    `#logsV2:log-groups/log-group/${group}`
+  );
+}
+
+function RowActions({ agent, onRun }) {
+  const deployed = agent.status !== "not_deployed";
+  const stop = (e) => e.stopPropagation();
+  const btn = {
+    fontSize: 11,
+    fontWeight: 600,
+    padding: "5px 9px",
+    borderRadius: 6,
+    border: "1px solid rgba(0,0,0,0.12)",
+    background: "#fff",
+    color: "#111",
+    cursor: "pointer",
+    textDecoration: "none",
+    whiteSpace: "nowrap",
+  };
+  const btnDisabled = {
+    ...btn, color: "#aaa", cursor: "not-allowed", background: "#fafafa",
+  };
+  return (
+    <div
+      style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}
+      onClick={stop}
+    >
+      <button
+        type="button"
+        title={deployed
+          ? `Trigger one manual run of ${agent.slug} via the run-queue`
+          : `${agent.slug} is not deployed yet — nothing to run.`}
+        onClick={(e) => { stop(e); if (deployed) onRun(agent); }}
+        disabled={!deployed}
+        style={deployed ? btn : btnDisabled}
+      >
+        ▶ Run
+      </button>
+      <a
+        href={cloudwatchLogsUrl(agent.slug)}
+        target="_blank"
+        rel="noreferrer"
+        title={`Open CloudWatch logs for /aws/lambda/carpapi-${agent.slug}`}
+        onClick={stop}
+        style={btn}
+      >
+        Logs
+      </a>
+      <a
+        href={`${GH_AGENTS_BASE}/${agent.slug}.md`}
+        target="_blank"
+        rel="noreferrer"
+        title={`Open the agent spec for ${agent.slug}`}
+        onClick={stop}
+        style={btn}
+      >
+        Spec
+      </a>
+    </div>
+  );
+}
+
+function runAgentManually(agent) {
+  // Real Lambda invocation needs a backend bridge — App Runner is
+  // VPC-bound and can't call lambda:InvokeFunction directly. The
+  // intended path: POST /api/agents/<slug>/run/ → Django writes a
+  // marker to s3://<bucket>/fleet/queue/<slug>.json → a dispatcher
+  // Lambda fans the marker into a real invocation. That endpoint
+  // doesn't exist yet, so we surface the limitation honestly rather
+  // than pretending. The user can use the Logs / Spec buttons today.
+  alert(
+    `Manual run for "${agent.slug}" needs the run-queue Lambda + ` +
+    `POST /api/agents/<slug>/run/ backend, which isn't wired up yet.\n\n` +
+    `Open Logs or Spec for now; full button hookup is queued as a ` +
+    `follow-up (App Runner can't call Lambda APIs directly from VPC).`
+  );
+}
+
 // ── Roster table — one row per agent ─────────────────────────────────
 function RosterTable({ agents, onSelect }) {
   return (
@@ -303,7 +399,7 @@ function RosterTable({ agents, onSelect }) {
             <Th align="right">Avg ms</Th>
             <Th>Cadence</Th>
             <Th>Last event</Th>
-            <Th />
+            <Th align="right">Actions</Th>
           </tr>
         </thead>
         <tbody>
@@ -382,8 +478,8 @@ function RosterTable({ agents, onSelect }) {
                       </>
                     : "—"}
                 </Td>
-                <Td>
-                  <i className="bi bi-chevron-right" style={{ color: "#aaa" }} />
+                <Td align="right">
+                  <RowActions agent={a} onRun={runAgentManually} />
                 </Td>
               </tr>
             );
