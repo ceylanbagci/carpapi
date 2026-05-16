@@ -946,21 +946,261 @@ function ActivityTimeline({ agent, deployed, lastEv }) {
       <div style={cardHeader}>
         <span><i className="bi bi-activity me-1" />Activity</span>
         <span style={cardHeaderHint}>
-          {deployed ? "last 7 days" : "provisioning checklist"}
+          {deployed
+            ? `${buildActivityItems(agent, lastEv).length} event${
+                buildActivityItems(agent, lastEv).length === 1 ? "" : "s"} · last 7 days`
+            : "provisioning checklist"}
         </span>
       </div>
-      <div style={{ padding: "10px 0 4px" }}>
-        {deployed && lastEv && <TimelineEvent ev={lastEv} agentSlug={agent.slug} />}
-        {deployed && !lastEv && (
-          <div style={emptyRow}>
-            <i className="bi bi-hourglass-split" style={{ color: "var(--fleet-text-faint)" }} />
-            <span>Lambda is deployed but hasn't fired in the last 7 days.</span>
-          </div>
+      <div style={{ padding: "6px 0 4px" }}>
+        {deployed && (
+          <ActivityList items={buildActivityItems(agent, lastEv)} agentSlug={agent.slug} />
         )}
         {!deployed && <ProvisioningChecklist agent={agent} />}
       </div>
     </div>
   );
+}
+
+// ── Activity synthesis ───────────────────────────────────────────────
+// Build a chronological list of events from whatever the dashboard
+// knows about the agent. The agent state file only persists the latest
+// run, so we top up the list with deterministic lifecycle entries:
+//   - next scheduled fire (future, parsed from `cron(M H * * ? *)`)
+//   - last run (success or failure) — anchors the timeline
+//   - digest lines (if the run wrote a multi-line digest, each
+//     non-header line becomes its own sub-bullet under the run)
+//   - lambda last_modified (deploy / config push)
+//   - schedule state change (ENABLED/DISABLED)
+//   - agent's first state-file write (state.first_seen_ms if present)
+//
+// Items are returned newest-first. Future items get tone="scheduled".
+function buildActivityItems(agent, lastEv) {
+  const items = [];
+
+  // 1) Next scheduled fire — only when an EventBridge rule exists.
+  const next = nextCronFire(agent.schedule?.expression);
+  if (next != null) {
+    items.push({
+      kind: "scheduled",
+      ts_ms: next,
+      icon: "bi-clock-history",
+      tone: "scheduled",
+      title: "Next scheduled run",
+      subline: agent.schedule?.expression ? fmtCron(agent.schedule.expression) : null,
+    });
+  }
+
+  // 2) Last run from the state file. Drives the digest sub-bullets.
+  if (lastEv && lastEv.ts_ms) {
+    const ok = lastEv.event !== "handler_raised" && (lastEv.ok !== false);
+    items.push({
+      kind: "run",
+      ts_ms: lastEv.ts_ms,
+      icon: ok ? "bi-check2-circle" : "bi-exclamation-octagon",
+      tone: ok ? "ok" : "err",
+      title: ok
+        ? `Run completed in ${lastEv.elapsed_s ?? "?"}s`
+        : `Run raised ${lastEv.err || "an exception"}`,
+      subline: lastEv.digest
+        ? lastEv.digest.split("\n")[0]
+        : ok ? `state written → s3://…/${agent.slug}.json`
+             : (lastEv.trace_tail?.slice(-1)[0]) || "",
+      digest: lastEv.digest,
+    });
+
+    // 2b) Split the digest body into bullet rows so the activity feed
+    // reads as a sequence rather than a single dense block. Skip the
+    // first line (already shown as subline) and lines that are pure
+    // separators / banner headers.
+    if (lastEv.digest) {
+      const bodyLines = lastEv.digest
+        .split("\n")
+        .slice(1)
+        .map((l) => l.trim())
+        .filter((l) => l && !/^=+/.test(l) && !/^Anomalies:\s*$/i.test(l));
+      // Walk newer→older by giving each line a synthetic timestamp
+      // one second earlier than the last run, in order, so React keys
+      // stay stable and the visual ordering is preserved.
+      bodyLines.forEach((line, i) => {
+        const [labelRaw, ...rest] = line.split(":");
+        const label = labelRaw?.trim();
+        const value = rest.join(":").trim();
+        // Only flag a row as err/warn when the *value* signals an
+        // issue. "Anomalies: none" is not an anomaly; the previous
+        // regex matched on the label and painted the row red.
+        const sev = (() => {
+          if (!value || /^none$/i.test(value)) return "muted";
+          if (/\[red\]|\berror\b|\bfailed?\b|raised /i.test(value)) return "err";
+          if (/\[yellow\]|\bwarn(ing)?\b|degraded/i.test(value)) return "warn";
+          return "muted";
+        })();
+        items.push({
+          kind: "digest",
+          ts_ms: lastEv.ts_ms - (i + 1),
+          icon: sev === "err"  ? "bi-exclamation-circle"
+              : sev === "warn" ? "bi-exclamation-triangle"
+              : "bi-dot",
+          tone: sev,
+          title: label || line,
+          subline: value || null,
+        });
+      });
+    }
+  }
+
+  // 3) Lambda deploy / last config push.
+  if (agent.lambda?.last_modified) {
+    const ms = parseTs(agent.lambda.last_modified);
+    if (ms) {
+      items.push({
+        kind: "lambda",
+        ts_ms: ms,
+        icon: "bi-cloud-upload",
+        tone: "info",
+        title: "Lambda function updated",
+        subline: `${agent.lambda.package_type} · ${agent.lambda.memory_mb} MB · ${agent.lambda.timeout_s}s timeout`,
+      });
+    }
+  }
+
+  // 4) Schedule status. We don't have a created-at on the schedule
+  // (EventBridge doesn't expose one cheaply), so we treat ENABLED as a
+  // standing notice rather than a dated row — anchor it to lambda's
+  // last_modified ts if available, otherwise drop it.
+  if (agent.schedule?.state === "ENABLED" && agent.lambda?.last_modified) {
+    const anchor = parseTs(agent.lambda.last_modified) || Date.now();
+    items.push({
+      kind: "schedule",
+      ts_ms: anchor - 1,  // sort just under "lambda updated"
+      icon: "bi-calendar2-check",
+      tone: "info",
+      title: "EventBridge schedule active",
+      subline: `${agent.schedule.name} · ${agent.schedule.timezone || "UTC"}`,
+    });
+  }
+
+  // If nothing landed (deployed but no run, no schedule), give a
+  // friendly empty hint via a single "waiting" row.
+  if (!items.length) {
+    items.push({
+      kind: "empty",
+      ts_ms: Date.now(),
+      icon: "bi-hourglass-split",
+      tone: "muted",
+      title: "Lambda is deployed but hasn't fired in the last 7 days.",
+      subline: null,
+    });
+  }
+
+  // Sort newest first; future-scheduled events keep their positive
+  // offset so they sit at the top.
+  items.sort((a, b) => b.ts_ms - a.ts_ms);
+  return items;
+}
+
+// Parse the simple "cron(M H * * ? *)" UTC daily form into the next
+// fire time as ms. Returns null for cron expressions we can't simulate
+// (weekly, rate(), etc.) — caller will just skip the "Next" row.
+function nextCronFire(expr) {
+  if (!expr) return null;
+  const m = /^cron\((\d+)\s+(\d+)\s+\*\s+\*\s+\?\s+\*\)$/.exec(expr);
+  if (!m) return null;
+  const [_, mm, hh] = m;
+  const now = new Date();
+  const next = new Date(Date.UTC(
+    now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(),
+    parseInt(hh, 10), parseInt(mm, 10), 0, 0,
+  ));
+  if (next.getTime() <= now.getTime()) next.setUTCDate(next.getUTCDate() + 1);
+  return next.getTime();
+}
+
+function parseTs(s) {
+  if (!s) return null;
+  const ms = Date.parse(s);
+  return Number.isFinite(ms) ? ms : null;
+}
+
+// ── ActivityList — renders the synthesized rows as a timeline ───────
+const TONE_STYLES = {
+  ok:        { fg: "#10b981", bg: "rgba(16,185,129,0.10)" },
+  err:       { fg: "#ef4444", bg: "rgba(239,68,68,0.10)" },
+  warn:      { fg: "#eab308", bg: "rgba(234,179,8,0.12)" },
+  scheduled: { fg: "#3699ff", bg: "rgba(54,153,255,0.10)" },
+  info:      { fg: "#6366f1", bg: "rgba(99,102,241,0.10)" },
+  muted:     { fg: "#94a3b8", bg: "rgba(148,163,184,0.10)" },
+};
+
+function ActivityList({ items, agentSlug }) {
+  return (
+    <div>
+      {items.map((it, i) => (
+        <ActivityRow key={`${it.kind}-${it.ts_ms}-${i}`} item={it} agentSlug={agentSlug} />
+      ))}
+    </div>
+  );
+}
+
+function ActivityRow({ item, agentSlug }) {
+  const tone = TONE_STYLES[item.tone] || TONE_STYLES.muted;
+  const isFuture = item.kind === "scheduled";
+  const isRunWithDigest = item.kind === "run" && item.digest;
+  return (
+    <div style={{
+      position: "relative",
+      padding: isRunWithDigest ? "8px 16px 12px 50px" : "6px 16px 6px 50px",
+      borderTop: "1px solid var(--fleet-row-border)",
+    }}>
+      <span style={{
+        position: "absolute", left: 16, top: isRunWithDigest ? 8 : 6,
+        width: 24, height: 24, borderRadius: 99,
+        background: tone.bg, color: tone.fg,
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        fontSize: 13,
+      }}>
+        <i className={`bi ${item.icon}`} />
+      </span>
+      <div style={{
+        display: "flex", justifyContent: "space-between", gap: 12, alignItems: "baseline",
+      }}>
+        <div style={{
+          fontSize: item.kind === "digest" ? 12 : 13,
+          fontWeight: item.kind === "digest" ? 500 : 700,
+          color: "var(--fleet-text)",
+        }}>{item.title}</div>
+        <div style={{
+          fontSize: 11, color: "var(--fleet-text-faint)",
+          fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap",
+        }} title={new Date(item.ts_ms).toISOString()}>
+          {isFuture ? `in ${fmtFuture(item.ts_ms)}` : fmtRelative(item.ts_ms)}
+        </div>
+      </div>
+      {item.subline && (
+        <div style={{
+          fontSize: 12, color: "var(--fleet-text-muted)", marginTop: 2,
+          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+        }}>{item.subline}</div>
+      )}
+      {isRunWithDigest && (
+        <pre style={{
+          marginTop: 8, fontSize: 11, lineHeight: 1.55,
+          background: "var(--fleet-terminal-bg)", color: "var(--fleet-terminal-fg)",
+          padding: "10px 12px", borderRadius: 8,
+          overflowX: "auto", margin: "8px 0 0",
+          fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+        }}>{item.digest}</pre>
+      )}
+    </div>
+  );
+}
+
+function fmtFuture(ts_ms) {
+  const sec = Math.max(0, Math.floor((ts_ms - Date.now()) / 1000));
+  if (sec < 60)    return `${sec}s`;
+  if (sec < 3600)  return `${Math.floor(sec / 60)}m`;
+  if (sec < 86400) return `${Math.floor(sec / 3600)}h ${Math.floor((sec % 3600) / 60)}m`;
+  return `${Math.floor(sec / 86400)}d`;
 }
 
 const card3 = {
@@ -984,60 +1224,6 @@ const emptyRow = {
   display: "flex", gap: 10, alignItems: "center",
   padding: "14px 16px", fontSize: 13, color: "var(--fleet-text-muted)",
 };
-
-function TimelineEvent({ ev, agentSlug }) {
-  const ok    = ev.event !== "handler_raised" && (ev.ok !== false);
-  const icon  = ok ? "bi-check2-circle" : "bi-exclamation-octagon";
-  const tone  = ok ? "#10b981" : "#ef4444";
-  const bgTone = ok ? "rgba(16,185,129,0.10)" : "rgba(239,68,68,0.10)";
-  const title = ok
-    ? `Run completed in ${ev.elapsed_s ?? "?"}s`
-    : `Run raised ${ev.err || "an exception"}`;
-  const subline = ev.digest
-    ? ev.digest.split("\n")[0]
-    : ok
-      ? `state written → s3://…/${agentSlug}.json`
-      : (ev.trace_tail && ev.trace_tail[ev.trace_tail.length - 1]) || "";
-  return (
-    <div style={{ position: "relative", padding: "8px 16px 14px 50px" }}>
-      <span style={{
-        position: "absolute", left: 16, top: 8,
-        width: 28, height: 28, borderRadius: 99,
-        background: bgTone, color: tone,
-        display: "inline-flex", alignItems: "center", justifyContent: "center",
-        fontSize: 15,
-      }}>
-        <i className={`bi ${icon}`} />
-      </span>
-      <div style={{
-        display: "flex", justifyContent: "space-between", gap: 12, alignItems: "baseline",
-      }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--fleet-text)" }}>{title}</div>
-        <div style={{
-          fontSize: 11, color: "var(--fleet-text-faint)",
-          fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap",
-        }} title={ev.as_of_utc || ""}>{fmtRelative(ev.ts_ms)}</div>
-      </div>
-      {subline && (
-        <div style={{
-          fontSize: 12, color: "var(--fleet-text-muted)", marginTop: 3,
-          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-        }}>{subline}</div>
-      )}
-      {/* Sentinel-specific micro-summary — terminal stays dark in both
-          themes (it's literally console output). */}
-      {ev.digest && (
-        <pre style={{
-          marginTop: 8, fontSize: 11, lineHeight: 1.55,
-          background: "var(--fleet-terminal-bg)", color: "var(--fleet-terminal-fg)",
-          padding: "10px 12px", borderRadius: 8,
-          overflowX: "auto", margin: "8px 0 0",
-          fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
-        }}>{ev.digest}</pre>
-      )}
-    </div>
-  );
-}
 
 function ProvisioningChecklist({ agent }) {
   // What it takes to flip this agent from NOT DEPLOYED to ONLINE.
