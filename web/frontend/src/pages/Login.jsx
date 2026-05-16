@@ -94,8 +94,52 @@ export default function Login() {
   };
 
   return (
-    <div className="d4-chat" data-theme="light">
-      <PublicTopBar />
+    <div className="d4-chat login-page" data-theme="light">
+      {/* Page-scoped tweaks: lock to viewport, center the card, trim
+          padding, give the footer a tiny one-line presence. Scoped
+          under .login-page so /chat, /settings, /register, etc. are
+          untouched. */}
+      <style>{`
+        .login-page {
+          height: 100vh;
+          height: 100dvh;
+          overflow: hidden;
+        }
+        .login-page .d4-chat-scroller {
+          flex: 1 1 auto;
+          overflow: hidden;
+          display: grid;
+          place-items: center;
+          padding-bottom: 0;
+        }
+        .login-page .d4-chat-empty {
+          padding: 1.25rem 1.25rem 0.75rem;
+        }
+        .login-page .login-footer {
+          flex: 0 0 auto;
+          padding: 0.6rem 1.25rem;
+          border-top: 1px solid var(--chat-border, #eee);
+          background: var(--chat-bg, #fff);
+          color: var(--chat-muted, #666);
+          font-size: 0.8rem;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        .login-page .login-footer a {
+          color: inherit;
+          text-decoration: none;
+          font-weight: 600;
+        }
+        .login-page .login-footer a:hover { text-decoration: underline; }
+      `}</style>
+
+      <header className="d4-chat-header">
+        <Link to="/" className="d4-chat-brand" title="Back to landing">
+          <span className="logo-dot">C</span>
+          <span>CarPapi</span>
+        </Link>
+      </header>
 
       <main className="d4-chat-scroller">
         <motion.div
@@ -216,27 +260,15 @@ export default function Login() {
               {busy ? "Signing in…" : "Sign in"}
             </button>
           </form>
-
-          <p
-            style={{
-              marginTop: 18,
-              fontSize: 14,
-              color: "#666",
-              textAlign: "center",
-            }}
-          >
-            New to CarPapi?{" "}
-            <Link
-              to={`/register?next=${encodeURIComponent(next)}`}
-              style={{ color: "#111", fontWeight: 600 }}
-            >
-              Create an account
-            </Link>
-          </p>
         </motion.div>
       </main>
 
-      <PublicFooter />
+      <footer className="login-footer">
+        <span>© {new Date().getFullYear()} CarPapi</span>
+        <Link to={`/register?next=${encodeURIComponent(next)}`}>
+          Create account
+        </Link>
+      </footer>
     </div>
   );
 }

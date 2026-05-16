@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import DataTable from "../components/DataTable.jsx";
 
 const makesCell = (row) => {
@@ -9,10 +10,27 @@ const makesCell = (row) => {
 
 const carsCell = (row) => {
   const n = row.cars_count ?? 0;
+  if (!n) {
+    return (
+      <span style={{ fontVariantNumeric: "tabular-nums", color: "var(--d4-text-muted, #888)" }}>
+        0
+      </span>
+    );
+  }
+  // Listings table filters by source_id (= dealer slug). Clicking the
+  // number drops the user into the listings view scoped to this dealer.
   return (
-    <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>
+    <Link
+      to={`/listings?source_id=${encodeURIComponent(row.slug)}`}
+      title={`Show ${n.toLocaleString()} listings at ${row.name}`}
+      style={{
+        fontVariantNumeric: "tabular-nums",
+        fontWeight: 600,
+        textDecoration: "none",
+      }}
+    >
       {n.toLocaleString()}
-    </span>
+    </Link>
   );
 };
 
