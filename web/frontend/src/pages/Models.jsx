@@ -1,6 +1,7 @@
-import { Link } from "react-router-dom";
 import DataTable from "../components/DataTable.jsx";
 
+// The whole row is clickable — see DataTable's rowHref prop. Clicking
+// anywhere on a Models row lands on /listings?make=X&model=Y.
 function listingsHref(r) {
   return (
     `/listings?make=${encodeURIComponent(r.make)}` +
@@ -9,44 +10,14 @@ function listingsHref(r) {
 }
 
 const columns = [
-  {
-    key: "make",
-    label: "Make",
-    render: (r) => (
-      <Link
-        to={`/listings?make=${encodeURIComponent(r.make)}`}
-        title={`Show all ${r.make} listings`}
-        style={{ color: "#111", textDecoration: "none", fontWeight: 600 }}
-      >
-        {r.make}
-      </Link>
-    ),
-  },
-  {
-    key: "model",
-    label: "Model",
-    render: (r) => (
-      <Link
-        to={listingsHref(r)}
-        title={`Show ${r.count ?? 0} ${r.make} ${r.model} listings`}
-        style={{ color: "#111", textDecoration: "none", fontWeight: 600 }}
-      >
-        {r.model}
-      </Link>
-    ),
-  },
+  { key: "make", label: "Make" },
+  { key: "model", label: "Model" },
   {
     key: "count",
     label: "Listings",
     render: (r) =>
       r.count > 0 ? (
-        <Link
-          to={listingsHref(r)}
-          title={`Show ${r.count} ${r.make} ${r.model} listings`}
-          style={{ textDecoration: "none" }}
-        >
-          <span className="d4-pill">{r.count}</span>
-        </Link>
+        <span className="d4-pill">{r.count}</span>
       ) : (
         <span className="d4-pill" style={{ opacity: 0.5 }}>0</span>
       ),
@@ -68,6 +39,7 @@ export default function Models() {
       columns={columns}
       filters={filters}
       initialOrdering="-count"
+      rowHref={(r) => (r.count > 0 ? listingsHref(r) : null)}
     />
   );
 }
