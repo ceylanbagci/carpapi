@@ -1,19 +1,47 @@
 import { Link } from "react-router-dom";
 import DataTable from "../components/DataTable.jsx";
 
+function listingsHref(r) {
+  return (
+    `/listings?make=${encodeURIComponent(r.make)}` +
+    `&model=${encodeURIComponent(r.model)}`
+  );
+}
+
 const columns = [
-  { key: "make", label: "Make" },
-  { key: "model", label: "Model" },
+  {
+    key: "make",
+    label: "Make",
+    render: (r) => (
+      <Link
+        to={`/listings?make=${encodeURIComponent(r.make)}`}
+        title={`Show all ${r.make} listings`}
+        style={{ color: "#111", textDecoration: "none", fontWeight: 600 }}
+      >
+        {r.make}
+      </Link>
+    ),
+  },
+  {
+    key: "model",
+    label: "Model",
+    render: (r) => (
+      <Link
+        to={listingsHref(r)}
+        title={`Show ${r.count ?? 0} ${r.make} ${r.model} listings`}
+        style={{ color: "#111", textDecoration: "none", fontWeight: 600 }}
+      >
+        {r.model}
+      </Link>
+    ),
+  },
   {
     key: "count",
     label: "Listings",
     render: (r) =>
       r.count > 0 ? (
         <Link
-          to={
-            `/listings?make=${encodeURIComponent(r.make)}` +
-            `&model=${encodeURIComponent(r.model)}`
-          }
+          to={listingsHref(r)}
           title={`Show ${r.count} ${r.make} ${r.model} listings`}
           style={{ textDecoration: "none" }}
         >
