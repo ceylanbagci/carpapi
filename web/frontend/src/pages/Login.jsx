@@ -95,26 +95,11 @@ export default function Login() {
 
   return (
     <div className="d4-chat login-page" data-theme="light">
-      {/* Page-scoped tweaks: lock to viewport, center the card, trim
-          padding, give the footer a tiny one-line presence. Scoped
-          under .login-page so /chat, /settings, /register, etc. are
-          untouched. */}
+      {/* Page-scoped: just style the minimal footer. The page itself
+          uses the default d4-chat-scroller scrolling behavior — no
+          viewport lock, so taller content / smaller screens scroll
+          normally. */}
       <style>{`
-        .login-page {
-          height: 100vh;
-          height: 100dvh;
-          overflow: hidden;
-        }
-        .login-page .d4-chat-scroller {
-          flex: 1 1 auto;
-          overflow: hidden;
-          display: grid;
-          place-items: center;
-          padding-bottom: 0;
-        }
-        .login-page .d4-chat-empty {
-          padding: 1.25rem 1.25rem 0.75rem;
-        }
         .login-page .login-footer {
           flex: 0 0 auto;
           padding: 0.6rem 1.25rem;
