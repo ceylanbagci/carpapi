@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { getJson } from "../api.js";
 
 /**
@@ -19,10 +20,33 @@ export default function DataTable({
   searchable = true,
   initialOrdering = "",
 }) {
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [filterValues, setFilterValues] = useState({});
-  const [ordering, setOrdering] = useState(initialOrdering);
+  // Seed filter values + search from URL query params so cross-page
+  // links like /listings?source_id=axis_chrysler land already filtered.
+  // Recognized URL params: `search`, anything matching a configured
+  // filter key, plus `ordering`/`page` for direct deep-links.
+  const [urlParams] = useSearchParams();
+  const [page, setPage] = useState(() => {
+    const p = parseInt(urlParams.get("page") || "1", 10);
+    return Number.isFinite(p) && p > 0 ? p : 1;
+  });
+  const [search, setSearch] = useState(() => urlParams.get("search") || "");
+  const [filterValues, setFilterValues] = useState(() => {
+    const seed = {};
+    for (const f of filters) {
+      const v = urlParams.get(f.key);
+      if (v) seed[f.key] = v;
+    }
+    // Also pass through any URL param that maps to a backend filter
+    // but isn't listed in the configured filters (e.g. source_id on
+    // /listings — backend supports it, no UI input for it).
+    for (const [k, v] of urlParams.entries()) {
+      if (k in seed) continue;
+      if (["page", "search", "ordering"].includes(k)) continue;
+      if (v) seed[k] = v;
+    }
+    return seed;
+  });
+  const [ordering, setOrdering] = useState(() => urlParams.get("ordering") || initialOrdering);
   const [data, setData] = useState({ count: 0, results: [] });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);

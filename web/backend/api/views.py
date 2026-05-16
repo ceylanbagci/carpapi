@@ -44,6 +44,10 @@ def _apply_listing_filters(qs, params):
         qs = qs.filter(make__iexact=m)
     if (m := params.get("model")):
         qs = qs.filter(model__iexact=m)
+    if (s := params.get("source_id")):
+        # Drives the "click the Listings count on /dealers" link.
+        # listings.source_id is the dealer slug.
+        qs = qs.filter(source_id__iexact=s)
     if (v := _coerce(params.get("price_min"), float)) is not None:
         qs = qs.filter(price_amount__gte=v)
     if (v := _coerce(params.get("price_max"), float)) is not None:
