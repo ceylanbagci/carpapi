@@ -161,7 +161,11 @@ export default function Agents() {
           <>
             <KpiStrip summary={summary} successRate={successRate} />
             <TierFilter active={tierFilter} onChange={setTierFilter} />
-            <RosterTable agents={filtered} onSelect={setSelectedSlug} />
+            <RosterTable
+              agents={filtered}
+              onSelect={setSelectedSlug}
+              onOpenLogs={setSelectedSlug}
+            />
             <ActivityFeed agents={agents} />
           </>
         )}
@@ -306,7 +310,7 @@ function cloudwatchLogsUrl(slug) {
   );
 }
 
-function RowActions({ agent, onRun }) {
+function RowActions({ agent, onRun, onOpenLogs }) {
   const deployed = agent.status !== "not_deployed";
   const stop = (e) => e.stopPropagation();
   const btn = {
@@ -340,16 +344,26 @@ function RowActions({ agent, onRun }) {
       >
         ▶ Run
       </button>
-      <a
-        href={cloudwatchLogsUrl(agent.slug)}
-        target="_blank"
-        rel="noreferrer"
-        title={`Open CloudWatch logs for /aws/lambda/carpapi-${agent.slug}`}
-        onClick={stop}
+      {/* Logs opens the in-app side drawer (same view as clicking the
+          row) — shows Lambda config + schedule + 24h metrics + the
+          most recent event JSON published by the agent runner.
+          A modifier-click (cmd/ctrl) falls back to the external
+          CloudWatch console for power users. */}
+      <button
+        type="button"
+        title={`Show ${agent.slug} logs in side panel (cmd/ctrl-click for CloudWatch console)`}
+        onClick={(e) => {
+          stop(e);
+          if (e.metaKey || e.ctrlKey) {
+            window.open(cloudwatchLogsUrl(agent.slug), "_blank", "noopener");
+          } else {
+            onOpenLogs(agent.slug);
+          }
+        }}
         style={btn}
       >
         Logs
-      </a>
+      </button>
       <a
         href={`${GH_AGENTS_BASE}/${agent.slug}.md`}
         target="_blank"
@@ -381,7 +395,7 @@ function runAgentManually(agent) {
 }
 
 // ── Roster table — one row per agent ─────────────────────────────────
-function RosterTable({ agents, onSelect }) {
+function RosterTable({ agents, onSelect, onOpenLogs }) {
   return (
     <div style={{ ...card, padding: 0, marginBottom: 18, overflow: "hidden" }}>
       <table style={{
@@ -479,7 +493,7 @@ function RosterTable({ agents, onSelect }) {
                     : "—"}
                 </Td>
                 <Td align="right">
-                  <RowActions agent={a} onRun={runAgentManually} />
+                  <RowActions agent={a} onRun={runAgentManually} onOpenLogs={onOpenLogs} />
                 </Td>
               </tr>
             );
