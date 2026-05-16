@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import DataTable from "../components/DataTable.jsx";
 
 const logoCell = (r) =>
@@ -43,12 +44,34 @@ const columns = [
   {
     key: "listing_count",
     label: "Listings",
-    render: (r) => <span className="d4-pill">{r.listing_count}</span>,
+    render: (r) =>
+      r.listing_count > 0 ? (
+        <Link
+          to={`/listings?make=${encodeURIComponent(r.make)}`}
+          title={`Show ${r.listing_count} ${r.make} listings`}
+          style={{ textDecoration: "none" }}
+        >
+          <span className="d4-pill">{r.listing_count}</span>
+        </Link>
+      ) : (
+        <span className="d4-pill" style={{ opacity: 0.5 }}>0</span>
+      ),
   },
   {
     key: "dealer_count",
     label: "Dealers",
-    render: (r) => <span className="d4-pill active">{r.dealer_count}</span>,
+    render: (r) =>
+      r.dealer_count > 0 ? (
+        <Link
+          to={`/dealers?make=${encodeURIComponent(r.make)}`}
+          title={`Show ${r.dealer_count} dealers carrying ${r.make}`}
+          style={{ textDecoration: "none" }}
+        >
+          <span className="d4-pill active">{r.dealer_count}</span>
+        </Link>
+      ) : (
+        <span className="d4-pill active" style={{ opacity: 0.5 }}>0</span>
+      ),
   },
 ];
 
