@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import DataTable from "../components/DataTable.jsx";
 
 const columns = [
@@ -6,7 +7,21 @@ const columns = [
   {
     key: "count",
     label: "Listings",
-    render: (r) => <span className="d4-pill">{r.count}</span>,
+    render: (r) =>
+      r.count > 0 ? (
+        <Link
+          to={
+            `/listings?make=${encodeURIComponent(r.make)}` +
+            `&model=${encodeURIComponent(r.model)}`
+          }
+          title={`Show ${r.count} ${r.make} ${r.model} listings`}
+          style={{ textDecoration: "none" }}
+        >
+          <span className="d4-pill">{r.count}</span>
+        </Link>
+      ) : (
+        <span className="d4-pill" style={{ opacity: 0.5 }}>0</span>
+      ),
   },
 ];
 
