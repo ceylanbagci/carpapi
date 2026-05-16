@@ -108,10 +108,16 @@ export default function Agents() {
     : 100;
 
   return (
-    <div className="d4-chat" data-theme="light" style={{ background: "#f7f8fa" }}>
+    <div
+      className="d4-chat"
+      data-theme="light"
+      // Let the page scroll naturally. .d4-chat defaults to flex-column;
+      // make sure it doesn't trap content inside a fixed-height viewport.
+      style={{ background: "#f7f8fa", minHeight: "100vh", height: "auto", overflow: "visible" }}
+    >
       <PublicTopBar />
 
-      <main style={{ maxWidth: 1280, margin: "0 auto", padding: "24px 24px 48px" }}>
+      <main style={{ maxWidth: 1280, margin: "0 auto", padding: "24px 24px 48px", width: "100%" }}>
         <header style={{
           display: "flex", justifyContent: "space-between", alignItems: "flex-end",
           gap: 12, flexWrap: "wrap", marginBottom: 22,
@@ -325,22 +331,21 @@ function RowActions({ agent, onRun, onOpenLogs }) {
     textDecoration: "none",
     whiteSpace: "nowrap",
   };
-  const btnDisabled = {
-    ...btn, color: "#aaa", cursor: "not-allowed", background: "#fafafa",
-  };
   return (
     <div
       style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}
       onClick={stop}
     >
+      {/* Run is always clickable — when an agent isn't deployed yet,
+          the click surfaces the "needs Lambda + run-queue" message
+          honestly rather than silently disabling. */}
       <button
         type="button"
         title={deployed
           ? `Trigger one manual run of ${agent.slug} via the run-queue`
-          : `${agent.slug} is not deployed yet — nothing to run.`}
-        onClick={(e) => { stop(e); if (deployed) onRun(agent); }}
-        disabled={!deployed}
-        style={deployed ? btn : btnDisabled}
+          : `${agent.slug} has no Lambda deployed yet — click for details`}
+        onClick={(e) => { stop(e); onRun(agent, { deployed }); }}
+        style={btn}
       >
         ▶ Run
       </button>
@@ -378,26 +383,52 @@ function RowActions({ agent, onRun, onOpenLogs }) {
   );
 }
 
-function runAgentManually(agent) {
-  // Real Lambda invocation needs a backend bridge — App Runner is
-  // VPC-bound and can't call lambda:InvokeFunction directly. The
-  // intended path: POST /api/agents/<slug>/run/ → Django writes a
-  // marker to s3://<bucket>/fleet/queue/<slug>.json → a dispatcher
-  // Lambda fans the marker into a real invocation. That endpoint
-  // doesn't exist yet, so we surface the limitation honestly rather
-  // than pretending. The user can use the Logs / Spec buttons today.
+function runAgentManually(agent, { deployed } = {}) {
+  // Two failure modes today, both honest:
+  //  1. Agent is not deployed → no Lambda exists, no schedule, no
+  //     run-queue. The fix is real DevOps work (build the Lambda
+  //     package, IAM role, EventBridge schedule, etc.) — see
+  //     deploy/deploy_lambdas.md if it exists, or the agent spec at
+  //     .claude/agents/<slug>.md for the contract the Lambda needs
+  //     to satisfy.
+  //  2. Agent IS deployed → invoking it from the SPA still needs the
+  //     run-queue bridge because App Runner's Django container is
+  //     VPC-bound and can't call lambda:InvokeFunction directly. The
+  //     fix: POST /api/agents/<slug>/run/ writes a marker file to
+  //     s3://<bucket>/fleet/queue/<slug>.json; a dispatcher Lambda
+  //     watches that prefix and fans markers into real invocations.
+  if (!deployed) {
+    alert(
+      `"${agent.slug}" has no Lambda deployed yet.\n\n` +
+      `Status: NOT DEPLOYED — the agent_runner Lambda for this slug ` +
+      `hasn't been provisioned in AWS. Until it is, the dispatcher ` +
+      `has nothing to invoke and no event/log to read back.\n\n` +
+      `Next: deploy the Lambda + EventBridge schedule per ` +
+      `.claude/agents/${agent.slug}.md. Open the Spec button to ` +
+      `read the contract.`
+    );
+    return;
+  }
   alert(
-    `Manual run for "${agent.slug}" needs the run-queue Lambda + ` +
-    `POST /api/agents/<slug>/run/ backend, which isn't wired up yet.\n\n` +
-    `Open Logs or Spec for now; full button hookup is queued as a ` +
-    `follow-up (App Runner can't call Lambda APIs directly from VPC).`
+    `Manual run for "${agent.slug}" needs the run-queue endpoint ` +
+    `(POST /api/agents/<slug>/run/), which isn't wired up yet.\n\n` +
+    `App Runner is VPC-bound and can't call lambda:InvokeFunction ` +
+    `directly. The plan: Django writes a marker to ` +
+    `s3://<bucket>/fleet/queue/<slug>.json → a dispatcher Lambda ` +
+    `picks it up and invokes the agent.\n\n` +
+    `Use Logs (drawer / CloudWatch) and Spec for now.`
   );
 }
 
 // ── Roster table — one row per agent ─────────────────────────────────
 function RosterTable({ agents, onSelect, onOpenLogs }) {
   return (
-    <div style={{ ...card, padding: 0, marginBottom: 18, overflow: "hidden" }}>
+    <div
+      style={{ ...card, padding: 0, marginBottom: 18, overflowX: "auto" }}
+      // overflowX:auto so a narrow viewport can scroll the 10-column
+      // roster horizontally instead of clipping. Vertical scroll comes
+      // from the page itself, not this container.
+    >
       <table style={{
         width: "100%", borderCollapse: "collapse",
         fontSize: 14, fontVariantNumeric: "tabular-nums",
