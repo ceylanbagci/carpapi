@@ -1,3 +1,13 @@
+/**
+ * /cars — distinct (year · make · model · trim) groups with listing counts.
+ *
+ * The Listings count is a clickable Link to /listings filtered by the
+ * full group key (year + make + model + trim). The Listings page reads
+ * the same URL search params and renders exactly those rows. trim=null
+ * groups serialize as `trim=` (empty value) — the backend treats that
+ * as `trim IS NULL`.
+ */
+import { Link } from "react-router-dom";
 import DataTable from "../components/DataTable.jsx";
 
 const fmtRange = (row) => {
@@ -13,6 +23,52 @@ const fmtRange = (row) => {
   return `${f(row.min_price)} – ${f(row.max_price)}`;
 };
 
+/** Builds /listings?year=...&make=...&model=...&trim=... preserving the
+ * trim=null convention as an empty `trim=` param so the drill-down
+ * matches exactly the same set of rows that produced the count. */
+function listingsLink(row) {
+  const p = new URLSearchParams();
+  if (row.year != null) p.set("year", String(row.year));
+  if (row.make) p.set("make", row.make);
+  if (row.model) p.set("model", row.model);
+  // Always include the trim key — empty string carries meaning here
+  // (matches trim IS NULL on the backend).
+  p.set("trim", row.trim || "");
+  return `/listings?${p.toString()}`;
+}
+
+const countCell = (row) => {
+  const n = row.count ?? 0;
+  const label = `Show ${n.toLocaleString()} listing${n === 1 ? "" : "s"} of `
+              + `${row.year || "?"} ${row.make || "?"} ${row.model || "?"}`
+              + (row.trim ? ` ${row.trim}` : "");
+  if (!n) {
+    return (
+      <span
+        className="d4-pill"
+        style={{ fontVariantNumeric: "tabular-nums", color: "#888" }}
+      >
+        0
+      </span>
+    );
+  }
+  return (
+    <Link
+      to={listingsLink(row)}
+      title={label}
+      className="d4-pill"
+      style={{
+        fontVariantNumeric: "tabular-nums",
+        fontWeight: 600,
+        textDecoration: "none",
+        cursor: "pointer",
+      }}
+    >
+      {n.toLocaleString()}
+    </Link>
+  );
+};
+
 const columns = [
   { key: "year", label: "Year" },
   { key: "make", label: "Make" },
@@ -21,7 +77,7 @@ const columns = [
   {
     key: "count",
     label: "Listings",
-    render: (r) => <span className="d4-pill">{r.count}</span>,
+    render: countCell,
   },
   {
     key: "min_price",

@@ -59,6 +59,21 @@ def _apply_listing_filters(qs, params):
         qs = qs.filter(year__gte=v)
     if (v := _coerce(params.get("year_max"), int)) is not None:
         qs = qs.filter(year__lte=v)
+    # Exact `year` + `trim` filters power the "click the Listings count
+    # on /cars" drill-down. /cars groups by (year, make, model, trim);
+    # clicking the count must return EXACTLY those listings, so the
+    # match has to be on the same four fields, not a range.
+    if (v := _coerce(params.get("year"), int)) is not None:
+        qs = qs.filter(year=v)
+    if "trim" in params:
+        # `trim=` (empty string) is treated as "trim IS NULL" because
+        # some grouped rows on /cars have a null trim — clicking those
+        # should NOT match listings with a non-null trim.
+        t = (params.get("trim") or "").strip()
+        if t:
+            qs = qs.filter(trim__iexact=t)
+        else:
+            qs = qs.filter(trim__isnull=True)
     return qs
 
 

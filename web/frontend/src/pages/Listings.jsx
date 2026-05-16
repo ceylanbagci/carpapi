@@ -12,8 +12,30 @@
  * · dealer · scrape date · clickable open-in-new-tab to the dealer page.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { getJson } from "../api.js";
 import CarThumb from "../components/CarThumb.jsx";
+
+// Keys the page recognizes from the URL query string. The drill-down
+// from /cars sends year + make + model + trim; the drill-down from
+// /dealers sends source_id; everything else is filter-bar input.
+const URL_FILTER_KEYS = [
+  "make", "model", "year", "year_min", "year_max",
+  "price_min", "price_max", "trim", "source_id",
+];
+
+// Pretty labels for the active-filter chips at the top of the grid.
+const FILTER_CHIP_LABEL = {
+  make:      "Make",
+  model:     "Model",
+  year:      "Year",
+  year_min:  "Year ≥",
+  year_max:  "Year ≤",
+  price_min: "Price ≥",
+  price_max: "Price ≤",
+  trim:      "Trim",
+  source_id: "Dealer",
+};
 
 const fmtPrice = (row) => {
   if (row.price_amount == null) return "—";
@@ -49,10 +71,33 @@ const inputStyle = {
 };
 
 export default function Listings() {
+  // The URL is the source of truth for drill-down filters (year, make,
+  // model, trim, source_id). The filter bar is a *view* into the same
+  // state — typing into a filter box updates the URL via setSearchParams
+  // which then flows back through this useState. That way a drill-down
+  // from /cars or /dealers shows up as removable chips and the URL is
+  // shareable.
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const initialFromUrl = () => {
+    const out = {};
+    for (const k of URL_FILTER_KEYS) {
+      // `trim` is special: an empty value means "trim IS NULL" so we
+      // must preserve it even when the value is "".
+      if (k === "trim" && searchParams.has("trim")) {
+        out.trim = searchParams.get("trim") || "";
+      } else if (searchParams.has(k)) {
+        const v = searchParams.get(k);
+        if (v !== "" && v != null) out[k] = v;
+      }
+    }
+    return out;
+  };
+
   const [page, setPage] = useState(1);
   const [ordering, setOrdering] = useState("-scraped_at");
-  const [filters, setFilters] = useState({});
-  const [committed, setCommitted] = useState({});
+  const [filters, setFilters] = useState(initialFromUrl);
+  const [committed, setCommitted] = useState(initialFromUrl);
   const debounceRef = useRef();
 
   const [data, setData] = useState({ count: 0, results: [] });
@@ -64,9 +109,28 @@ export default function Listings() {
     debounceRef.current = setTimeout(() => {
       setCommitted(filters);
       setPage(1);
+      // Reflect the active filters in the URL so a refresh / share
+      // preserves them. Empty-string trim is meaningful (matches
+      // trim IS NULL) and survives the trip.
+      const next = new URLSearchParams();
+      for (const k of URL_FILTER_KEYS) {
+        if (k === "trim" && filters.trim !== undefined) {
+          next.set("trim", filters.trim || "");
+        } else if (filters[k] !== "" && filters[k] != null) {
+          next.set(k, String(filters[k]));
+        }
+      }
+      setSearchParams(next, { replace: true });
     }, 300);
     return () => clearTimeout(debounceRef.current);
-  }, [filters]);
+  }, [filters, setSearchParams]);
+
+  const removeFilter = (key) => {
+    const next = { ...filters };
+    delete next[key];
+    setFilters(next);
+  };
+  const clearAllFilters = () => setFilters({});
 
   const params = useMemo(() => {
     const p = { page, ordering };
@@ -120,6 +184,12 @@ export default function Listings() {
           ))}
         </select>
       </header>
+
+      <ActiveFilterChips
+        filters={committed}
+        onRemove={removeFilter}
+        onClearAll={clearAllFilters}
+      />
 
       <FilterBar filters={filters} onChange={setFilters} />
 
@@ -309,6 +379,83 @@ function Pagination({ page, totalPages, onChange }) {
       </span>
       <button style={btn} disabled={page >= totalPages} onClick={() => onChange(page + 1)}>
         Next →
+      </button>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Active-filter chips — render the currently-applied URL filters as
+// removable pills above the filter bar. Makes drill-down state from
+// /cars or /dealers obvious + reversible.
+// ─────────────────────────────────────────────────────────────────────
+
+function ActiveFilterChips({ filters, onRemove, onClearAll }) {
+  // Display order roughly matches the natural reading: dealer first
+  // (where), then year/make/model/trim (what), then price (how much).
+  const order = ["source_id", "year", "make", "model", "trim",
+                 "year_min", "year_max", "price_min", "price_max"];
+  const entries = order
+    .filter((k) => k in filters)
+    .map((k) => [k, filters[k]]);
+
+  if (entries.length === 0) return null;
+
+  return (
+    <div style={{
+      display: "flex", flexWrap: "wrap", alignItems: "center",
+      gap: 8, marginBottom: 12,
+    }}>
+      <span style={{ fontSize: 13, color: "#666", fontWeight: 600 }}>
+        Filtered by:
+      </span>
+      {entries.map(([key, value]) => {
+        const label = FILTER_CHIP_LABEL[key] || key;
+        const display = value === "" ? "(no trim)" : String(value);
+        return (
+          <span
+            key={key}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              padding: "4px 6px 4px 10px",
+              borderRadius: 99,
+              background: "#eef2ff",
+              color: "#3730a3",
+              fontSize: 12, fontWeight: 600,
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            <span style={{ opacity: 0.7 }}>{label}:</span>
+            <span>{display}</span>
+            <button
+              type="button"
+              onClick={() => onRemove(key)}
+              aria-label={`Remove ${label} filter`}
+              title={`Remove ${label} filter`}
+              style={{
+                width: 18, height: 18, borderRadius: 99,
+                border: "none", background: "rgba(55,48,163,0.15)",
+                color: "#3730a3", cursor: "pointer",
+                fontSize: 14, lineHeight: 1, padding: 0,
+                display: "inline-flex", alignItems: "center", justifyContent: "center",
+              }}
+            >
+              ×
+            </button>
+          </span>
+        );
+      })}
+      <button
+        type="button"
+        onClick={onClearAll}
+        style={{
+          padding: "4px 10px", borderRadius: 99,
+          border: "1px solid rgba(0,0,0,0.10)",
+          background: "transparent", color: "#666",
+          fontSize: 12, fontWeight: 500, cursor: "pointer",
+        }}
+      >
+        Clear all
       </button>
     </div>
   );
