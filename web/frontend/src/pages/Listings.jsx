@@ -12,8 +12,18 @@
  * · dealer · scrape date · clickable open-in-new-tab to the dealer page.
  */
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { getJson } from "../api.js";
 import CarThumb from "../components/CarThumb.jsx";
+
+// Filter / sort / page keys that the /api/listings/ backend honors
+// AND that we want to read from the URL on mount. Deep-links like
+// /listings?make=Jeep&model=Grand%20Cherokee (from a row click on
+// /models or /makes) land here pre-filtered.
+const URL_FILTER_KEYS = [
+  "make", "model", "trim", "year_min", "year_max",
+  "price_min", "price_max", "source_id", "search",
+];
 
 const fmtPrice = (row) => {
   if (row.price_amount == null) return "—";
@@ -49,10 +59,35 @@ const inputStyle = {
 };
 
 export default function Listings() {
-  const [page, setPage] = useState(1);
-  const [ordering, setOrdering] = useState("-scraped_at");
-  const [filters, setFilters] = useState({});
-  const [committed, setCommitted] = useState({});
+  // Seed page / ordering / filters from URL query params so deep links
+  // like /listings?make=Jeep&model=Grand%20Cherokee land filtered.
+  const [urlParams] = useSearchParams();
+  const [page, setPage] = useState(() => {
+    const p = parseInt(urlParams.get("page") || "1", 10);
+    return Number.isFinite(p) && p > 0 ? p : 1;
+  });
+  const [ordering, setOrdering] = useState(
+    () => urlParams.get("ordering") || "-scraped_at",
+  );
+  const [filters, setFilters] = useState(() => {
+    const seed = {};
+    for (const k of URL_FILTER_KEYS) {
+      const v = urlParams.get(k);
+      if (v) seed[k] = v;
+    }
+    return seed;
+  });
+  const [committed, setCommitted] = useState(() => {
+    // Commit immediately on mount so the first API call already has
+    // the URL filters baked in (no flash of unfiltered "4,391
+    // listings indexed across all dealers" before the debounce fires).
+    const seed = {};
+    for (const k of URL_FILTER_KEYS) {
+      const v = urlParams.get(k);
+      if (v) seed[k] = v;
+    }
+    return seed;
+  });
   const debounceRef = useRef();
 
   const [data, setData] = useState({ count: 0, results: [] });
@@ -107,7 +142,10 @@ export default function Listings() {
             Listings
           </h1>
           <p style={{ margin: "4px 0 0", fontSize: 14, color: "#666" }}>
-            {data.count?.toLocaleString() ?? "—"} listings indexed across all dealers.
+            {data.count?.toLocaleString() ?? "—"}{" "}
+            {Object.keys(committed).length > 0
+              ? "listings match your filters."
+              : "listings indexed across all dealers."}
           </p>
         </div>
         <select

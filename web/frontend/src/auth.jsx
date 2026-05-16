@@ -22,6 +22,7 @@ import { Navigate, useLocation } from "react-router-dom";
 import {
   AUTH_STORAGE_KEY,
   getAuth,
+  login as apiLogin,
   logout as apiLogout,
   setAuth,
 } from "./api.js";
@@ -44,6 +45,40 @@ export function AuthProvider({ children }) {
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  // Dev-only auto-login. Skip the login form entirely when we're in
+  // Vite dev mode AND the opt-in env var is set. Reads credentials from
+  // VITE_DEV_LOGIN_EMAIL / VITE_DEV_LOGIN_PASSWORD in
+  // web/frontend/.env.local (gitignored). Production builds NEVER
+  // enter this branch — import.meta.env.DEV is hard-coded to false at
+  // Vite-build time.
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    if (import.meta.env.VITE_DEV_AUTOLOGIN !== "true") return;
+    if (auth && auth.access) return;  // already authed; nothing to do
+
+    const email = import.meta.env.VITE_DEV_LOGIN_EMAIL;
+    const password = import.meta.env.VITE_DEV_LOGIN_PASSWORD;
+    if (!email || !password) {
+      console.warn(
+        "[auth] VITE_DEV_AUTOLOGIN=true but VITE_DEV_LOGIN_EMAIL / " +
+        "VITE_DEV_LOGIN_PASSWORD are not set in .env.local — skipping.",
+      );
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const fresh = await apiLogin({ email, password });
+        if (!cancelled) setAuthState(fresh);
+        console.info("[auth] dev auto-login as", fresh.user?.email);
+      } catch (err) {
+        console.warn("[auth] dev auto-login failed:", err.message || err);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const signIn = useCallback((newAuth) => {
