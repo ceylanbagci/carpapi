@@ -42,6 +42,7 @@ import {
   sendTestNotification,
 } from "../api.js";
 import { PublicTopBar, PublicFooter } from "../components/PublicChrome.jsx";
+import { useTheme } from "../theme.jsx";
 
 // ─────────────────────────────────────────────────────────────────────
 // Small inline helpers (same visual language as Login.jsx)
@@ -156,6 +157,7 @@ export default function Settings() {
   const navigate = useNavigate();
   const [user, setUser] = useState(() => currentUser());
   const [toast, setToast] = useState(null);
+  const { theme } = useTheme();
 
   const refresh = () => setUser(currentUser());
   const ok = (m) => setToast({ msg: m, kind: "ok" });
@@ -173,7 +175,7 @@ export default function Settings() {
   };
 
   return (
-    <div className="d4-chat" data-theme="light">
+    <div className="d4-chat" data-theme={theme}>
       <PublicTopBar />
 
       <main className="d4-chat-scroller">
@@ -192,6 +194,7 @@ export default function Settings() {
             </p>
           </div>
 
+          <AppearanceCard />
           <ProfileCard user={user} refresh={refresh} ok={ok} err={err} />
           <PasswordCard ok={ok} err={err} />
           <PreferencesCard ok={ok} err={err} />
@@ -204,6 +207,90 @@ export default function Settings() {
 
       <Toast msg={toast?.msg} kind={toast?.kind} onClose={() => setToast(null)} />
     </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Section: Appearance
+//
+// Light / dark theme switch. Backed by the shared useTheme() hook,
+// which writes `<html data-theme="…">` and persists to localStorage
+// so the choice survives full reloads + applies app-wide.
+// ─────────────────────────────────────────────────────────────────────
+
+function AppearanceCard() {
+  const { theme, setTheme } = useTheme();
+  const options = [
+    { value: "light", label: "Light", icon: "bi-sun",
+      hint: "Default. White surfaces, dark text." },
+    { value: "dark",  label: "Dark",  icon: "bi-moon-stars-fill",
+      hint: "Easier on the eyes at night. Navy surfaces, light text." },
+  ];
+  return (
+    <section style={card}>
+      <header style={cardHead}>
+        <div>
+          <h2 style={cardTitle}>Appearance</h2>
+          <p style={cardSub}>
+            Choose how CarPapi looks. The preference persists across
+            sessions and devices that share this browser profile.
+          </p>
+        </div>
+      </header>
+      <div
+        role="radiogroup"
+        aria-label="Theme"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gap: 10,
+        }}
+      >
+        {options.map((opt) => {
+          const active = theme === opt.value;
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              onClick={() => setTheme(opt.value)}
+              style={{
+                textAlign: "left",
+                padding: "14px 16px",
+                borderRadius: 12,
+                border: active
+                  ? "2px solid #3699ff"
+                  : "1px solid rgba(0,0,0,0.10)",
+                background: active ? "rgba(54,153,255,0.06)" : "#fff",
+                cursor: "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              <div style={{
+                display: "flex", alignItems: "center", gap: 10,
+                fontWeight: 700, color: "#111", fontSize: 14,
+              }}>
+                <i className={`bi ${opt.icon}`} aria-hidden="true" />
+                {opt.label}
+                {active && (
+                  <span style={{
+                    marginLeft: "auto",
+                    fontSize: 11, fontWeight: 700,
+                    padding: "2px 8px", borderRadius: 99,
+                    background: "#3699ff", color: "#fff",
+                    letterSpacing: "0.04em", textTransform: "uppercase",
+                  }}>Active</span>
+                )}
+              </div>
+              <div style={{ marginTop: 4, fontSize: 12, color: "#666" }}>
+                {opt.hint}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 

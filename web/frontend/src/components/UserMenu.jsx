@@ -19,6 +19,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth.jsx";
+import { useTheme } from "../theme.jsx";
 
 function initialsOf(user) {
   const name = (user.full_name || "").trim();
@@ -72,6 +73,7 @@ const TONE_STYLES = {
 
 export default function UserMenu({ tone = "light" }) {
   const { user, signOut } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
@@ -159,9 +161,14 @@ export default function UserMenu({ tone = "light" }) {
           style={{
             ...s.pop,
             position: "absolute", right: 0, top: "calc(100% + 8px)",
-            minWidth: 220, borderRadius: 12, padding: 6, zIndex: 50,
+            minWidth: 240, borderRadius: 12, padding: 6, zIndex: 50,
           }}
         >
+          {/* Theme switch — always the first row so it's discoverable
+              from any signed-in page. Two-state segmented control rather
+              than a single button so the active mode is unambiguous. */}
+          <ThemeSwitch s={s} theme={theme} onChange={toggleTheme} />
+          <hr style={{ border: 0, borderTop: `1px solid ${s.divider}`, margin: "6px 0" }} />
           <div style={{ padding: "10px 12px", fontSize: 12, color: s.muted, whiteSpace: "nowrap" }}>
             <div style={{ color: s.pop.color, fontSize: 13, fontWeight: 600, marginBottom: 2 }}>
               {displayName}
@@ -194,6 +201,61 @@ export default function UserMenu({ tone = "light" }) {
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Two-state segmented control: ☀ Light  |  🌙 Dark.
+ * Clicking the inactive side flips the theme; the active side is a
+ * no-op so a deliberate keyboard focus loop doesn't accidentally
+ * toggle on re-entry.
+ */
+function ThemeSwitch({ s, theme, onChange }) {
+  const activeBg = s.pop.color === "#f6f7fb"
+    ? "rgba(255,255,255,0.10)"
+    : "rgba(0,0,0,0.06)";
+  const activeColor = s.pop.color;
+  const idleColor   = s.muted;
+  const opt = (val, label, icon) => {
+    const active = theme === val;
+    return (
+      <button
+        type="button"
+        role="menuitemradio"
+        aria-checked={active}
+        onClick={() => { if (!active) onChange(); }}
+        style={{
+          flex: 1,
+          display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+          padding: "6px 8px", borderRadius: 7,
+          background: active ? activeBg : "transparent",
+          color: active ? activeColor : idleColor,
+          border: "none", cursor: active ? "default" : "pointer",
+          fontSize: 12, fontWeight: 600, fontFamily: "inherit",
+        }}
+      >
+        <i className={`bi ${icon}`} aria-hidden="true" />
+        {label}
+      </button>
+    );
+  };
+  return (
+    <div
+      role="group"
+      aria-label="Theme"
+      style={{
+        display: "flex", gap: 4,
+        margin: "2px 4px 4px",
+        padding: 3, borderRadius: 9,
+        background: s.pop.color === "#f6f7fb"
+          ? "rgba(255,255,255,0.04)"
+          : "rgba(0,0,0,0.03)",
+        border: `1px solid ${s.divider}`,
+      }}
+    >
+      {opt("light", "Light", "bi-sun")}
+      {opt("dark",  "Dark",  "bi-moon-stars-fill")}
     </div>
   );
 }
