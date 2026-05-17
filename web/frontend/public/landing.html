@@ -271,7 +271,10 @@
         </a>
         <nav id="public-nav">
           <a href="/chat">Chat</a>
-          <a href="/dashboard">Inventory</a>
+          <!-- /dashboard is admin-only (StaffProtectedRoute). The
+               landing page is public, so the Inventory link is not
+               rendered here. Staff admins reach /dashboard via the
+               SPA's UserMenu after signing in. -->
           <a href="/pricing">Pricing</a>
           <!-- Auth slot: replaced at runtime by inline JS below.
                Default (logged-out) shows Sign in + Get started. -->
@@ -299,7 +302,9 @@
             <span aria-hidden="true">→</span>
           </a>
           <a class="btn secondary" href="/signup">Create an account</a>
-          <a class="btn secondary" href="/dashboard">Browse inventory</a>
+          <!-- "Browse inventory" used to link to /dashboard, which is
+               admin-only. Public visitors can search via /chat
+               instead — the primary CTA already points there. -->
         </div>
       </section>
 
@@ -384,7 +389,8 @@
             <h4>Product</h4>
             <ul>
               <li><a href="/chat">Chat search</a></li>
-              <li><a href="/dashboard">Inventory</a></li>
+              <!-- /dashboard is admin-only; the link is not surfaced
+                   on the public landing footer. -->
               <li><a href="/pricing">Pricing</a></li>
               <li><a href="/signup">Get started</a></li>
             </ul>
@@ -464,9 +470,11 @@
               <a class="usermenu-row" href="/chat" role="menuitem">
                 <span aria-hidden="true">💬</span> Chat
               </a>
+              ${user.is_staff ? `
               <a class="usermenu-row" href="/dashboard" role="menuitem">
                 <span aria-hidden="true">📊</span> Dashboard
               </a>
+              ` : ""}
               <a class="usermenu-row" href="/settings" role="menuitem">
                 <span aria-hidden="true">⚙️</span> Settings
               </a>

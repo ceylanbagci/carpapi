@@ -15,6 +15,7 @@
  */
 import { Link } from "react-router-dom";
 import UserMenu from "./UserMenu.jsx";
+import { useAuth } from "../auth.jsx";
 
 const navLinkStyle = {
   padding: "8px 14px",
@@ -52,6 +53,12 @@ function NavLink({ to, children, external = false }) {
 }
 
 export function PublicTopBar() {
+  // "Inventory" links to /dashboard, which is wrapped in
+  // StaffProtectedRoute. Showing the link to non-staff users would
+  // route them through a redirect to /settings on click — confusing
+  // UX. Hide the link entirely unless the visitor is staff.
+  const { user } = useAuth();
+  const isStaff = !!user?.is_staff;
   return (
     <header
       style={{
@@ -104,7 +111,7 @@ export function PublicTopBar() {
 
       <nav style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
         <NavLink to="/chat">Chat</NavLink>
-        <NavLink to="/dashboard">Inventory</NavLink>
+        {isStaff && <NavLink to="/dashboard">Inventory</NavLink>}
         <NavLink to="/pricing">Pricing</NavLink>
         <UserMenu tone="light" />
       </nav>
@@ -144,6 +151,10 @@ const colLink = {
  * is configurable today.
  */
 export function PublicFooter({ compact = false } = {}) {
+  // Same staff gate as the top-bar Inventory link — non-staff users
+  // shouldn't see /dashboard in the footer's Product column either.
+  const { user } = useAuth();
+  const isStaff = !!user?.is_staff;
   if (compact) {
     return (
       <footer
@@ -250,7 +261,9 @@ export function PublicFooter({ compact = false } = {}) {
             <h4 style={colHeading}>Product</h4>
             <ul style={colList}>
               <li style={colItem}><Link style={colLink} to="/chat">Chat search</Link></li>
-              <li style={colItem}><Link style={colLink} to="/dashboard">Inventory</Link></li>
+              {isStaff && (
+                <li style={colItem}><Link style={colLink} to="/dashboard">Inventory</Link></li>
+              )}
               <li style={colItem}><Link style={colLink} to="/pricing">Pricing</Link></li>
               <li style={colItem}><Link style={colLink} to="/register">Get started</Link></li>
             </ul>
