@@ -378,20 +378,39 @@ function RowActions({ agent, onRun, onOpenLogs }) {
   );
 }
 
-function runAgentManually(agent) {
-  // Real Lambda invocation needs a backend bridge — App Runner is
-  // VPC-bound and can't call lambda:InvokeFunction directly. The
-  // intended path: POST /api/agents/<slug>/run/ → Django writes a
-  // marker to s3://<bucket>/fleet/queue/<slug>.json → a dispatcher
-  // Lambda fans the marker into a real invocation. That endpoint
-  // doesn't exist yet, so we surface the limitation honestly rather
-  // than pretending. The user can use the Logs / Spec buttons today.
-  alert(
-    `Manual run for "${agent.slug}" needs the run-queue Lambda + ` +
-    `POST /api/agents/<slug>/run/ backend, which isn't wired up yet.\n\n` +
-    `Open Logs or Spec for now; full button hookup is queued as a ` +
-    `follow-up (App Runner can't call Lambda APIs directly from VPC).`
-  );
+async function runAgentManually(agent) {
+  // Full chain: Django POST → S3 marker → S3 event → dispatcher Lambda
+  // → agent Lambda. App Runner can't call lambda:InvokeFunction from
+  // VPC; the marker hop is what bridges that. The dispatcher fires
+  // async (InvocationType=Event) so this POST returns in <500 ms,
+  // and the dashboard surfaces the new last_event within ~30 s
+  // (next poll cycle).
+  try {
+    const r = await fetch(
+      (window.__CARPAPI_API_BASE__ || "https://api.carpappi.com/api") +
+        `/agents/${encodeURIComponent(agent.slug)}/run/`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      },
+    );
+    if (!r.ok) {
+      const body = await r.text();
+      throw new Error(`HTTP ${r.status}: ${body.slice(0, 200)}`);
+    }
+    const data = await r.json();
+    // Surface a non-blocking confirmation. (Browser alert is fine
+    // for this — the dashboard auto-refreshes within ~30 s and
+    // the user will see the new last_event there.)
+    alert(
+      `Queued ${agent.slug}.\n\n` +
+      `Marker: ${data.queue_key}\n` +
+      `Refresh /agents in ~15 s to see the new last_event.`
+    );
+  } catch (e) {
+    alert(`Couldn't queue ${agent.slug}: ${e.message || e}`);
+  }
 }
 
 // ── Roster table — one row per agent ─────────────────────────────────

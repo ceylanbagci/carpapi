@@ -33,6 +33,7 @@ from botocore.exceptions import ClientError
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework import status as drf_status
 
 log = logging.getLogger("carpapi.api.agents")
 
@@ -263,3 +264,102 @@ def _agents_overview_inner(request):
         "summary": summary,
         "as_of_utc": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
     })
+
+
+# ── Run queue (manual ▶ Run button) ──────────────────────────────────
+#
+# Background: App Runner runs in a VPC connector and only has VPC
+# endpoints for S3 (Gateway) and Bedrock. Calling
+# `lambda:InvokeFunction` from Django would Connect-timeout the same
+# way the agents view did before we pivoted to S3-only.
+#
+# Solution: Django writes a marker object to
+# `s3://carpapi-frontend-183617081338/fleet/queue/<slug>-<ts>.json`.
+# S3's NotificationConfiguration triggers
+# `carpapi-run-queue-dispatcher` on every PUT under that prefix; the
+# dispatcher reads the marker, calls Invoke on the right agent Lambda
+# asynchronously, and deletes the marker.
+#
+# That way:
+#   1. The request returns in <200ms (single S3 PutObject).
+#   2. The actual agent fire happens out-of-band.
+#   3. There's no Lambda-API call from inside the VPC.
+#
+# The marker payload is small but carries enough to audit later:
+#   { slug, queued_at_utc, queued_by, request_id, source_ip }
+
+QUEUE_PREFIX = os.environ.get("CARPAPI_QUEUE_PREFIX", "fleet/queue").strip("/")
+
+# Slugs the run queue will accept — locked to the static roster so a
+# malicious caller can't spam invocations of arbitrary functions.
+_ALLOWED_SLUGS = {e["slug"] for e in ROSTER}
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def agent_run(request, slug: str):
+    """POST /api/agents/<slug>/run/ — queue one manual invocation.
+
+    Returns 202 Accepted with the queue key on success. The actual
+    agent fire happens asynchronously via the dispatcher Lambda; the
+    SPA's next /api/agents/ poll will surface a new `last_event` from
+    the S3 fleet state once the dispatcher completes the invoke.
+    """
+    if slug not in _ALLOWED_SLUGS:
+        return Response(
+            {"error": f"unknown agent slug: {slug!r}"},
+            status=drf_status.HTTP_404_NOT_FOUND,
+        )
+
+    now = dt.datetime.now(dt.timezone.utc)
+    # Slug + millisecond timestamp keeps keys unique even under burst
+    # clicks. Sortable + greppable in S3 listings.
+    key = f"{QUEUE_PREFIX}/{slug}-{int(now.timestamp() * 1000)}.json"
+
+    payload = {
+        "slug": slug,
+        "queued_at_utc": now.isoformat(timespec="seconds"),
+        "queued_at_ms": int(now.timestamp() * 1000),
+        "queued_by": (
+            request.user.email if request.user.is_authenticated
+            else "anonymous"
+        ),
+        "request_id": getattr(request, "_request_id", None),
+        "source_ip": request.META.get("HTTP_X_FORWARDED_FOR")
+                     or request.META.get("REMOTE_ADDR"),
+        "schema_version": 1,
+    }
+
+    try:
+        _s3().put_object(
+            Bucket=FLEET_BUCKET,
+            Key=key,
+            Body=json.dumps(payload).encode("utf-8"),
+            ContentType="application/json",
+            # Markers are one-shot — no cache, expire on first read.
+            CacheControl="no-store",
+        )
+    except ClientError as exc:
+        log.error("queue put failed for %s: %s", slug, exc)
+        return Response(
+            {"error": "failed to enqueue run",
+             "detail": str(exc)[:200]},
+            status=drf_status.HTTP_502_BAD_GATEWAY,
+        )
+
+    return Response(
+        {
+            "ok": True,
+            "queued": True,
+            "agent_slug": slug,
+            "queue_key": key,
+            "queued_at_utc": payload["queued_at_utc"],
+            "note": (
+                "Marker written to S3. The dispatcher Lambda picks "
+                "this up via S3 ObjectCreated event and invokes the "
+                "agent asynchronously. Refresh /agents in 15-30 s "
+                "to see the new last_event."
+            ),
+        },
+        status=drf_status.HTTP_202_ACCEPTED,
+    )

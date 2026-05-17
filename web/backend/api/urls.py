@@ -24,5 +24,6 @@ urlpatterns = [
     # with live Lambda + EventBridge + CloudWatch data. Implementation
     # in api/views_agents.py.
     path("agents/", views_agents.agents_overview, name="agents-overview"),
+    path("agents/<slug:slug>/run/", views_agents.agent_run, name="agents-run"),
     path("", include(router.urls)),
 ]
