@@ -129,7 +129,67 @@ const colLink = {
   textDecoration: "none",
 };
 
-export function PublicFooter() {
+/**
+ * Site-wide footer.
+ *
+ * Two variants:
+ *  - default (4 columns + tagline) — used on the marketing pages
+ *    (Login, Register, Pricing).
+ *  - `compact` — a single horizontal bar with just the brand mark +
+ *    copyright + email. Used on dense data dashboards (Agents,
+ *    Settings) where the 200-300 px chrome footer eats too much
+ *    real estate at the bottom of a long scroll.
+ *
+ * Passing `<PublicFooter compact />` is the only knob; nothing else
+ * is configurable today.
+ */
+export function PublicFooter({ compact = false } = {}) {
+  if (compact) {
+    return (
+      <footer
+        style={{
+          background: "#fafafa",
+          borderTop: "1px solid rgba(0,0,0,0.08)",
+          marginTop: 32,
+          padding: "12px 24px",
+          fontSize: 13,
+          color: "#666",
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 1280,
+            margin: "0 auto",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 12,
+          }}
+        >
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <span
+              style={{
+                width: 20, height: 20, borderRadius: 6,
+                background: "#ffd86b", color: "#1a1c20",
+                display: "inline-flex", alignItems: "center",
+                justifyContent: "center", fontWeight: 800, fontSize: 11,
+              }}
+            >
+              C
+            </span>
+            <span>© 2026 CarPapi</span>
+          </div>
+          <a
+            href="mailto:info@carpappi.com"
+            style={{ color: "#666", textDecoration: "none" }}
+          >
+            info@carpappi.com
+          </a>
+        </div>
+      </footer>
+    );
+  }
   return (
     <footer
       style={{

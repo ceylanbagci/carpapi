@@ -327,7 +327,11 @@ export default function Agents() {
 
       {toast && <RunToast toast={toast} onDismiss={() => setToast(null)} />}
 
-      <PublicFooter />
+      {/* Compact footer — the 4-column marketing footer eats ~250 px
+          at the bottom and obscures the bottom of the roster on a
+          14-row table. Compact mode shows just © CarPapi · email in
+          a single ~50 px bar. */}
+      <PublicFooter compact />
 
       {/* Toast — surfaces when a Run completes (or times out). */}
       {toast && (
