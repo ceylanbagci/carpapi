@@ -17,7 +17,7 @@
  * configs and ARNs are stable values.) If we ever expose secret env
  * vars in the response, this needs IsAuthenticated.
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { getAgents, runAgent } from "../api.js";
 import { PublicTopBar, PublicFooter } from "../components/PublicChrome.jsx";
@@ -104,7 +104,84 @@ function fmtCron(expr) {
 }
 
 // ── Top-level page ───────────────────────────────────────────────────
+//
+// Wrapped in an ErrorBoundary below — a single render-throwing
+// component was previously dropping the whole /agents page to a
+// blank screen with no signal in the UI. The boundary now catches
+// the error and renders a readable card with the stack trace, so
+// the next regression is observable instead of invisible.
 export default function Agents() {
+  return (
+    <AgentsErrorBoundary>
+      <AgentsInner />
+    </AgentsErrorBoundary>
+  );
+}
+
+// React doesn't yet have a hooks-based error boundary, so this is a
+// minimal class component. Stays in this file (single-file rule
+// elsewhere applies — we don't want a parallel file just for this).
+class AgentsErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null, info: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  componentDidCatch(error, info) {
+    // eslint-disable-next-line no-console
+    console.error("[/agents] render error:", error, info);
+    this.setState({ info });
+  }
+  render() {
+    if (!this.state.error) return this.props.children;
+    const { error, info } = this.state;
+    return (
+      <div style={{
+        padding: 24, maxWidth: 920, margin: "40px auto",
+        background: "#fff", color: "#111",
+        borderRadius: 16, border: "1px solid rgba(220,38,38,0.20)",
+        fontFamily: "ui-monospace, SFMono-Regular, monospace",
+      }}>
+        <h2 style={{ margin: 0, fontSize: 18, color: "#b91c1c" }}>
+          /agents render crashed
+        </h2>
+        <p style={{ marginTop: 6, fontSize: 13, color: "#666" }}>
+          Showing the error so we can fix it. Send this whole card to
+          the engineer; they don't need a screenshot of devtools.
+        </p>
+        <pre style={{
+          marginTop: 12, padding: 12, borderRadius: 10,
+          background: "#fef2f2", color: "#7f1d1d",
+          fontSize: 12, whiteSpace: "pre-wrap", overflow: "auto",
+        }}>
+          {String(error?.stack || error?.message || error)}
+        </pre>
+        {info?.componentStack && (
+          <pre style={{
+            marginTop: 10, padding: 12, borderRadius: 10,
+            background: "#fafafa", color: "#444",
+            fontSize: 11, whiteSpace: "pre-wrap", overflow: "auto",
+          }}>
+            {info.componentStack}
+          </pre>
+        )}
+        <button
+          type="button"
+          onClick={() => location.reload()}
+          style={{
+            marginTop: 14, padding: "8px 14px",
+            borderRadius: 10, border: "1px solid rgba(0,0,0,0.12)",
+            background: "#fff", cursor: "pointer", fontSize: 13,
+          }}
+        >Reload</button>
+      </div>
+    );
+  }
+}
+
+function AgentsInner() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
