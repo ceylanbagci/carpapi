@@ -25,14 +25,18 @@ const fmtRange = (row) => {
 
 /** Builds /listings?year=...&make=...&model=...&trim=... preserving the
  * trim=null convention as an empty `trim=` param so the drill-down
- * matches exactly the same set of rows that produced the count. */
-function listingsLink(row) {
+ * matches exactly the same set of rows that produced the count.
+ *
+ * Both the count cell (Link) and the row-level rowHref use this href —
+ * they navigate to the same place, just from different click targets.
+ */
+function listingsHref(row) {
   const p = new URLSearchParams();
   if (row.year != null) p.set("year", String(row.year));
   if (row.make) p.set("make", row.make);
   if (row.model) p.set("model", row.model);
   // Always include the trim key — empty string carries meaning here
-  // (matches trim IS NULL on the backend).
+  // (matches trim IS NULL on the backend's _apply_listing_filters).
   p.set("trim", row.trim || "");
   return `/listings?${p.toString()}`;
 }
@@ -54,7 +58,7 @@ const countCell = (row) => {
   }
   return (
     <Link
-      to={listingsLink(row)}
+      to={listingsHref(row)}
       title={label}
       className="d4-pill"
       style={{
@@ -103,6 +107,7 @@ export default function Cars() {
       endpoint="/cars/"
       columns={columns}
       filters={filters}
+      rowHref={(r) => (r.count > 0 && r.make && r.model ? listingsHref(r) : null)}
     />
   );
 }

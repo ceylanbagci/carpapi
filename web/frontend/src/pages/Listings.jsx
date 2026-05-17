@@ -19,9 +19,10 @@ import CarThumb from "../components/CarThumb.jsx";
 // Keys the page recognizes from the URL query string. The drill-down
 // from /cars sends year + make + model + trim; the drill-down from
 // /dealers sends source_id; everything else is filter-bar input.
+// `search` is a free-text matcher passed through to the backend.
 const URL_FILTER_KEYS = [
   "make", "model", "year", "year_min", "year_max",
-  "price_min", "price_max", "trim", "source_id",
+  "price_min", "price_max", "trim", "source_id", "search",
 ];
 
 // Pretty labels for the active-filter chips at the top of the grid.
@@ -35,8 +36,8 @@ const FILTER_CHIP_LABEL = {
   price_max: "Price ≤",
   trim:      "Trim",
   source_id: "Dealer",
+  search:    "Search",
 };
-
 const fmtPrice = (row) => {
   if (row.price_amount == null) return "—";
   return new Intl.NumberFormat("en-US", {
@@ -94,8 +95,15 @@ export default function Listings() {
     return out;
   };
 
-  const [page, setPage] = useState(1);
-  const [ordering, setOrdering] = useState("-scraped_at");
+  // Seed page / ordering from the URL too so deep links like
+  // /listings?make=Jeep&page=3&ordering=-price_amount survive a refresh.
+  const [page, setPage] = useState(() => {
+    const p = parseInt(searchParams.get("page") || "1", 10);
+    return Number.isFinite(p) && p > 0 ? p : 1;
+  });
+  const [ordering, setOrdering] = useState(
+    () => searchParams.get("ordering") || "-scraped_at",
+  );
   const [filters, setFilters] = useState(initialFromUrl);
   const [committed, setCommitted] = useState(initialFromUrl);
   const debounceRef = useRef();
@@ -171,7 +179,10 @@ export default function Listings() {
             Listings
           </h1>
           <p style={{ margin: "4px 0 0", fontSize: 14, color: "#666" }}>
-            {data.count?.toLocaleString() ?? "—"} listings indexed across all dealers.
+            {data.count?.toLocaleString() ?? "—"}{" "}
+            {Object.keys(committed).length > 0
+              ? "listings match your filters."
+              : "listings indexed across all dealers."}
           </p>
         </div>
         <select

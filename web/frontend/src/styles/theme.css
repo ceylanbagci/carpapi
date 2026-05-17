@@ -20,7 +20,11 @@
 html,
 body,
 #root {
-  height: 100%;
+  /* min-height (not height) so long pages can grow past the viewport
+     and the document gets a natural vertical scrollbar. The few pages
+     that need to be viewport-locked (the .d4-chat shell) use
+     `position: fixed; inset: 0` and don't depend on body height. */
+  min-height: 100%;
   margin: 0;
 }
 

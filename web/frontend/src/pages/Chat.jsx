@@ -11,6 +11,7 @@ import { SAMPLE_PROMPTS } from "../data/mockChat.js";
 import { AuthRequiredError, chat as chatApi } from "../api.js";
 import CarThumb from "../components/CarThumb.jsx";
 import UserMenu from "../components/UserMenu.jsx";
+import { useTheme } from "../theme.jsx";
 
 // One message in the thread.
 // id: stable key for React
@@ -28,21 +29,6 @@ function mkMsg(role, text, results) {
 }
 
 const STORAGE_KEY = "carpapi.chat.thread.v1";
-const THEME_KEY = "carpapi.chat.theme.v1";
-
-function initialTheme() {
-  if (typeof window === "undefined") return "light";
-  try {
-    const stored = localStorage.getItem(THEME_KEY);
-    if (stored === "light" || stored === "dark") return stored;
-  } catch {
-    /* ignore */
-  }
-  const prefersDark =
-    window.matchMedia &&
-    window.matchMedia("(prefers-color-scheme: dark)").matches;
-  return prefersDark ? "dark" : "light";
-}
 
 export default function Chat() {
   const navigate = useNavigate();
@@ -58,7 +44,7 @@ export default function Chat() {
   });
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
-  const [theme, setTheme] = useState(initialTheme);
+  const { theme, toggleTheme } = useTheme();
   const scrollerRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -79,32 +65,8 @@ export default function Chat() {
     inputRef.current?.focus();
   }, []);
 
-  // Persist the user's theme choice. Updating data-theme on the
-  // outer .d4-chat element is what swaps the colour tokens.
-  useEffect(() => {
-    try {
-      localStorage.setItem(THEME_KEY, theme);
-    } catch {
-      /* ignore */
-    }
-  }, [theme]);
-
-  // Follow system preference only when the user hasn't pinned a choice
-  // yet (no THEME_KEY in storage). Once they toggle, we stop listening.
-  useEffect(() => {
-    let stored = null;
-    try {
-      stored = localStorage.getItem(THEME_KEY);
-    } catch {
-      /* ignore */
-    }
-    if (stored) return;
-    if (!window.matchMedia) return;
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const handler = (e) => setTheme(e.matches ? "dark" : "light");
-    mq.addEventListener?.("change", handler);
-    return () => mq.removeEventListener?.("change", handler);
-  }, []);
+  // Theme persistence + system-preference subscription live in the
+  // shared useTheme() hook — Chat just reads the current value.
 
   const send = async (raw) => {
     const text = (raw ?? draft).trim();
@@ -160,7 +122,6 @@ export default function Chat() {
 
   const isEmpty = messages.length === 0 && !busy;
 
-  const toggleTheme = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
   const isDark = theme === "dark";
 
   return (

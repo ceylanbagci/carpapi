@@ -343,7 +343,11 @@ def agent_run(request, slug: str):
         log.error("queue put failed for %s: %s", slug, exc)
         return Response(
             {"error": "failed to enqueue run",
-             "detail": str(exc)[:200]},
+             "detail": str(exc)[:200],
+             "remedy": "App Runner instance role probably lacks "
+                       "s3:PutObject on fleet/queue/*. Apply the "
+                       "WriteFleetQueue statement from "
+                       "deploy/apprunner_fleet_read_policy.json."},
             status=drf_status.HTTP_502_BAD_GATEWAY,
         )
 

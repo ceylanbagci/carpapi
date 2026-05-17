@@ -10,7 +10,7 @@
  * endpoint — allauth handles the full OAuth dance and bounces
  * the user back to `?next=`.
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Link,
   useNavigate,
@@ -51,13 +51,20 @@ const buttonBase = {
 export default function Login() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const { signIn } = useAuth();
+  const { signIn, isAuthed } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
 
   const next = params.get("next") || "/chat";
+
+  // If the user is already authed when this page mounts (most commonly
+  // because the dev auto-login in AuthProvider just completed), don't
+  // show the form — bounce them to ?next= immediately.
+  useEffect(() => {
+    if (isAuthed) navigate(next, { replace: true });
+  }, [isAuthed, navigate, next]);
 
   const onSubmit = async (e) => {
     e.preventDefault();

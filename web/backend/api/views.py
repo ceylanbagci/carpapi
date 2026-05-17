@@ -47,6 +47,15 @@ def _apply_listing_filters(qs, params):
         qs = qs.filter(make__iexact=m)
     if (m := params.get("model")):
         qs = qs.filter(model__iexact=m)
+    # Drives the /cars row-click. The Cars view groups by (year, make,
+    # model, trim) so the row's listing count is trim-exact. To match,
+    # support trim__iexact AND a `__null__` sentinel for rows where
+    # `trim IS NULL` in the DB (rendered as "—" in the Cars table).
+    if (t := params.get("trim")) is not None:
+        if t == "__null__" or t == "":
+            qs = qs.filter(trim__isnull=True)
+        else:
+            qs = qs.filter(trim__iexact=t)
     if (s := params.get("source_id")):
         # Drives the "click the Listings count on /dealers" link.
         # listings.source_id is the dealer slug.
