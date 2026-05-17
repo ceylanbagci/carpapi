@@ -194,7 +194,15 @@ export default function Agents() {
     <div className="d4-chat" data-theme="light" style={{ background: "#f7f8fa" }}>
       <PublicTopBar />
 
-      <main style={{ maxWidth: 1280, margin: "0 auto", padding: "24px 24px 48px" }}>
+      {/* .d4-chat-scroller gives this <main> `flex: 1 1 auto; overflow-y:
+          auto`, which is what makes the page actually scroll inside the
+          fixed-viewport `.d4-chat` shell. Without this class the table
+          overflows but the user can't reach it. */}
+      <main
+        className="d4-chat-scroller"
+        style={{ padding: "24px 24px 48px" }}
+      >
+        <div style={{ maxWidth: 1280, margin: "0 auto" }}>
         <header style={{
           display: "flex", justifyContent: "space-between", alignItems: "flex-end",
           gap: 12, flexWrap: "wrap", marginBottom: 22,
@@ -281,6 +289,7 @@ export default function Agents() {
             <ActivityFeed agents={agents} />
           </>
         )}
+        </div>
       </main>
 
       {selected && (
