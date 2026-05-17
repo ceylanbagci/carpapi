@@ -17,7 +17,7 @@
  * configs and ARNs are stable values.) If we ever expose secret env
  * vars in the response, this needs IsAuthenticated.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { getAgents } from "../api.js";
 import { PublicTopBar, PublicFooter } from "../components/PublicChrome.jsx";
