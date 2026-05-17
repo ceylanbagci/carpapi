@@ -636,6 +636,19 @@ function RowActions({ agent, onRun, onOpenLogs, isRunning = false }) {
     textDecoration: "none",
     whiteSpace: "nowrap",
   };
+  // Disabled-Run style used when the agent has no Lambda deployed
+  // yet — clicking would queue a marker for a non-existent function.
+  // Visual cue: muted text, not-allowed cursor, no hover affordance.
+  // (Was previously referenced as `btnDisabled` without a definition,
+  // which crashed the whole page the moment any agent had
+  // deployed=false. Defining it as a real value here is the fix.)
+  const btnDisabled = {
+    ...btn,
+    color: "var(--fleet-text-faint)",
+    background: "transparent",
+    cursor: "not-allowed",
+    opacity: 0.5,
+  };
   // While the agent is in flight, swap the Run button for a spinner
   // pill so the user can see the action is mid-air (and can't
   // accidentally double-fire it).
