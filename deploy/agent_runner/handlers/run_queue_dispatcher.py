@@ -41,6 +41,9 @@ ALLOWED_SLUGS = {
     "maker-site-doctor", "scrape-watchdog", "data-quality-auditor",
     "price-anomaly-detector", "rds-steward", "ci-cd-doctor",
     "chat-quality-evaluator", "carpapi-deployer",
+    # NEW-listings-only scraper; spec at
+    # .claude/agents/listing_agents/listing_scrapper.md.
+    "listing-scrapper",
 }
 
 # Same naming convention used by the dashboard: Lambda name is
