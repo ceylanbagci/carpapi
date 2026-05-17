@@ -22,7 +22,16 @@ import { motion } from "framer-motion";
 import { getAgents } from "../api.js";
 import { PublicTopBar, PublicFooter } from "../components/PublicChrome.jsx";
 
+// Two cadences:
+//   - SLOW: normal dashboard heartbeat (30 s).
+//   - FAST: while at least one agent is in `running` state (the user
+//     just clicked ▶ Run and we're waiting for the dispatcher Lambda
+//     to fire + publish a new state file).
+// The fast-poll auto-times-out at RUN_TIMEOUT_MS — past that we
+// assume the dispatcher / agent silently failed and reset the row.
 const POLL_MS = 30_000;
+const POLL_MS_FAST = 1_500;
+const RUN_TIMEOUT_MS = 60_000;
 
 // ── Visual tokens ────────────────────────────────────────────────────
 const card = {
@@ -71,13 +80,61 @@ export default function Agents() {
   const [refreshing, setRefreshing] = useState(false);
   const [tierFilter, setTierFilter] = useState("ALL");
   const [selectedSlug, setSelectedSlug] = useState(null);
+  // `running` is the set of slugs awaiting their next state-file
+  // publish. Shape: `{ slug: { queued_at_ms, started_at_ms } }`.
+  // The fast-poll watches each running slug's `last_event.ts_ms`
+  // — when it exceeds queued_at_ms, the run is done and the slug
+  // is removed from this map.
+  const [running, setRunning] = useState({});
+  const [toast, setToast] = useState(null);
 
-  const refresh = async (initial = false) => {
-    if (initial) setLoading(true); else setRefreshing(true);
+  const refreshRef = useRef(null);
+
+  const refresh = async (opts = {}) => {
+    const { initial = false, silent = false } = opts;
+    if (initial) setLoading(true);
+    else if (!silent) setRefreshing(true);
     try {
       const d = await getAgents();
       setData(d);
       setError(null);
+      // Resolve any running slugs whose state file is now fresher
+      // than queued_at_ms. (Hoisted out of the closure so the toast
+      // text can name the agent + elapsed wall-clock seconds.)
+      setRunning((prev) => {
+        if (!Object.keys(prev).length) return prev;
+        const next = { ...prev };
+        for (const a of d.agents || []) {
+          const r = next[a.slug];
+          if (!r) continue;
+          const ts = a.last_event?.ts_ms;
+          if (ts && ts >= r.queued_at_ms) {
+            const wall = Math.max(1, Math.round((Date.now() - r.started_at_ms) / 1000));
+            setToast({
+              kind: a.last_event.event === "handler_raised" ? "err" : "ok",
+              msg: a.last_event.event === "handler_raised"
+                ? `${a.slug} raised after ${wall}s`
+                : `${a.slug} ran in ${wall}s`,
+            });
+            delete next[a.slug];
+          }
+        }
+        // Timeout sweep — anything older than RUN_TIMEOUT_MS gets
+        // dropped with a stale-state warning so the row doesn't
+        // spin forever.
+        const now = Date.now();
+        for (const [slug, r] of Object.entries(next)) {
+          if (now - r.started_at_ms > RUN_TIMEOUT_MS) {
+            setToast({
+              kind: "warn",
+              msg: `${slug} didn't publish a fresh state within ${
+                RUN_TIMEOUT_MS / 1000}s — check Logs.`,
+            });
+            delete next[slug];
+          }
+        }
+        return next;
+      });
     } catch (e) {
       setError(String(e.message || e));
     } finally {
@@ -85,12 +142,38 @@ export default function Agents() {
       setRefreshing(false);
     }
   };
+  refreshRef.current = refresh;
+
+  // Polling cadence flips between FAST and SLOW depending on whether
+  // anything is in the `running` map. Effect re-runs whenever the
+  // set of running slugs changes — when it becomes empty, the
+  // interval slows back down.
+  useEffect(() => {
+    refresh({ initial: true });
+  }, []);
 
   useEffect(() => {
-    refresh(true);
-    const t = setInterval(() => refresh(false), POLL_MS);
+    const hasRunning = Object.keys(running).length > 0;
+    const interval = hasRunning ? POLL_MS_FAST : POLL_MS;
+    const t = setInterval(() => refreshRef.current({ silent: hasRunning }), interval);
     return () => clearInterval(t);
-  }, []);
+  }, [running]);
+
+  // Auto-dismiss the run-result toast after 5 s so a successful run
+  // doesn't permanently cover the bottom-right of the dashboard.
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 5_000);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  // Public hook used by the Run button below.
+  const markRunning = (slug, queuedAtMs) => {
+    setRunning((prev) => ({
+      ...prev,
+      [slug]: { queued_at_ms: queuedAtMs, started_at_ms: Date.now() },
+    }));
+  };
 
   const agents = data?.agents || [];
   const summary = data?.summary || {};
@@ -165,6 +248,35 @@ export default function Agents() {
               agents={filtered}
               onSelect={setSelectedSlug}
               onOpenLogs={setSelectedSlug}
+              running={running}
+              onRun={(agent) => {
+                // Optimistic: mark the row as "running…" instantly
+                // (Date.now() is a sufficient queued_at_ms guess
+                // until the backend response replaces it).
+                const optimisticTs = Date.now();
+                markRunning(agent.slug, optimisticTs);
+                runAgentManually(agent, {
+                  onQueued: (queuedAtMs) => {
+                    // Replace with the authoritative ms from the
+                    // backend so we don't false-positive-resolve on
+                    // a clock skew.
+                    markRunning(agent.slug, queuedAtMs ?? optimisticTs);
+                  },
+                  onError: (msg) => {
+                    // Drop the row out of "running" and show an
+                    // error toast.
+                    setRunning((prev) => {
+                      const next = { ...prev };
+                      delete next[agent.slug];
+                      return next;
+                    });
+                    setToast({
+                      kind: "err",
+                      msg: `Couldn't queue ${agent.slug}: ${msg}`,
+                    });
+                  },
+                });
+              }}
             />
             <ActivityFeed agents={agents} />
           </>
@@ -177,14 +289,53 @@ export default function Agents() {
 
       <PublicFooter />
 
-      {/* Spin animation for the refresh icon. */}
+      {/* Toast — surfaces when a Run completes (or times out). */}
+      {toast && (
+        <div
+          role="status"
+          onClick={() => setToast(null)}
+          style={{
+            position: "fixed", bottom: 24, right: 24,
+            padding: "12px 16px", borderRadius: 12,
+            background:
+              toast.kind === "ok"   ? "rgba(16,185,129,0.95)"
+            : toast.kind === "err"  ? "rgba(220,38,38,0.95)"
+            : /* warn */              "rgba(234,179,8,0.95)",
+            color: "#fff",
+            fontSize: 14, fontWeight: 600,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
+            cursor: "pointer",
+            zIndex: 200,
+            maxWidth: 360,
+            animation: "carpapi-toast-in 0.2s ease",
+          }}
+        >
+          {toast.msg}
+        </div>
+      )}
+
+      {/* Animations for the refresh-spin icon, the row "running" pill,
+          and the toast slide-in. */}
       <style>{`
         @keyframes carpapi-spin { to { transform: rotate(360deg); } }
         .spin { display: inline-block; animation: carpapi-spin 1s linear infinite; }
+        @keyframes carpapi-pulse {
+          0%, 100% { transform: scale(1);   opacity: 1; }
+          50%      { transform: scale(1.6); opacity: 0.5; }
+        }
+        @keyframes carpapi-toast-in {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
       `}</style>
     </div>
   );
 }
+
+// Auto-dismiss the toast after 5 seconds (declared at module scope so
+// it doesn't recreate per-render). Wrapped in a small effect-hook
+// component would be cleaner, but a one-line tail in setToast() above
+// would also work; opting for the smaller patch.
 
 // ── KPI strip — four cards at the top, demo4-style ───────────────────
 function KpiStrip({ summary, successRate }) {
@@ -310,7 +461,7 @@ function cloudwatchLogsUrl(slug) {
   );
 }
 
-function RowActions({ agent, onRun, onOpenLogs }) {
+function RowActions({ agent, onRun, onOpenLogs, isRunning = false }) {
   const deployed = agent.status !== "not_deployed";
   const stop = (e) => e.stopPropagation();
   const btn = {
@@ -328,22 +479,42 @@ function RowActions({ agent, onRun, onOpenLogs }) {
   const btnDisabled = {
     ...btn, color: "#aaa", cursor: "not-allowed", background: "#fafafa",
   };
+  // While the agent is in flight, swap the Run button for a spinner
+  // pill so the user can see the action is mid-air (and can't
+  // accidentally double-fire it).
+  const runCells = isRunning ? (
+    <button
+      type="button"
+      disabled
+      title={`Waiting for ${agent.slug} to publish a fresh state file…`}
+      style={{
+        ...btn, cursor: "wait",
+        color: "#854d0e", background: "rgba(234,179,8,0.10)",
+        borderColor: "rgba(234,179,8,0.40)",
+      }}
+    >
+      <span className="spin" style={{ display: "inline-block", marginRight: 4 }}>↻</span>
+      running…
+    </button>
+  ) : (
+    <button
+      type="button"
+      title={deployed
+        ? `Trigger one manual run of ${agent.slug} via the run-queue`
+        : `${agent.slug} is not deployed yet — nothing to run.`}
+      onClick={(e) => { stop(e); if (deployed) onRun(agent); }}
+      disabled={!deployed}
+      style={deployed ? btn : btnDisabled}
+    >
+      ▶ Run
+    </button>
+  );
   return (
     <div
       style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}
       onClick={stop}
     >
-      <button
-        type="button"
-        title={deployed
-          ? `Trigger one manual run of ${agent.slug} via the run-queue`
-          : `${agent.slug} is not deployed yet — nothing to run.`}
-        onClick={(e) => { stop(e); if (deployed) onRun(agent); }}
-        disabled={!deployed}
-        style={deployed ? btn : btnDisabled}
-      >
-        ▶ Run
-      </button>
+      {runCells}
       {/* Logs opens the in-app side drawer (same view as clicking the
           row) — shows Lambda config + schedule + 24h metrics + the
           most recent event JSON published by the agent runner.
@@ -378,13 +549,12 @@ function RowActions({ agent, onRun, onOpenLogs }) {
   );
 }
 
-async function runAgentManually(agent) {
-  // Full chain: Django POST → S3 marker → S3 event → dispatcher Lambda
-  // → agent Lambda. App Runner can't call lambda:InvokeFunction from
-  // VPC; the marker hop is what bridges that. The dispatcher fires
-  // async (InvocationType=Event) so this POST returns in <500 ms,
-  // and the dashboard surfaces the new last_event within ~30 s
-  // (next poll cycle).
+/** POSTs the run-queue marker, tells the page to start fast-polling
+ *  for the agent's next state-file publish. The page polls until
+ *  last_event.ts_ms exceeds queued_at_ms (run complete) or 60 s pass
+ *  (timeout). UX-wise this hides the underlying async chain.
+ */
+async function runAgentManually(agent, { onQueued, onError }) {
   try {
     const r = await fetch(
       (window.__CARPAPI_API_BASE__ || "https://api.carpappi.com/api") +
@@ -400,21 +570,14 @@ async function runAgentManually(agent) {
       throw new Error(`HTTP ${r.status}: ${body.slice(0, 200)}`);
     }
     const data = await r.json();
-    // Surface a non-blocking confirmation. (Browser alert is fine
-    // for this — the dashboard auto-refreshes within ~30 s and
-    // the user will see the new last_event there.)
-    alert(
-      `Queued ${agent.slug}.\n\n` +
-      `Marker: ${data.queue_key}\n` +
-      `Refresh /agents in ~15 s to see the new last_event.`
-    );
+    onQueued(data.queued_at_ms, data.queue_key);
   } catch (e) {
-    alert(`Couldn't queue ${agent.slug}: ${e.message || e}`);
+    onError(String(e.message || e));
   }
 }
 
 // ── Roster table — one row per agent ─────────────────────────────────
-function RosterTable({ agents, onSelect, onOpenLogs }) {
+function RosterTable({ agents, onSelect, onOpenLogs, onRun, running = {} }) {
   return (
     <div style={{ ...card, padding: 0, marginBottom: 18, overflow: "hidden" }}>
       <table style={{
@@ -498,21 +661,43 @@ function RosterTable({ agents, onSelect, onOpenLogs }) {
                     : a.cadence}
                 </Td>
                 <Td style={{ fontSize: 12, color: "#666" }}>
-                  {lastEv
-                    ? <>
-                        <span style={{
-                          color: lastEv.event === "handler_raised" ? "#b91c1c" : "#047857",
-                          fontWeight: 600,
-                        }}>
-                          {lastEv.event === "handler_raised" ? "✕" : "✓"}
-                        </span>
-                        {" "}
-                        {fmtRelative(lastEv.ts_ms)}
-                      </>
-                    : "—"}
+                  {running[a.slug] ? (
+                    // Running pill (yellow dot + "running…") replaces
+                    // the last-event cell while the agent is in flight.
+                    // The fast-poll resolves this within ~5-10 s.
+                    <span style={{
+                      display: "inline-flex", alignItems: "center", gap: 6,
+                      fontSize: 11, fontWeight: 700, padding: "3px 9px",
+                      borderRadius: 99,
+                      background: "rgba(234,179,8,0.12)", color: "#854d0e",
+                    }}>
+                      <span style={{
+                        width: 7, height: 7, borderRadius: 99,
+                        background: "#eab308",
+                        animation: "carpapi-pulse 1.2s ease-in-out infinite",
+                      }} />
+                      running…
+                    </span>
+                  ) : lastEv ? (
+                    <>
+                      <span style={{
+                        color: lastEv.event === "handler_raised" ? "#b91c1c" : "#047857",
+                        fontWeight: 600,
+                      }}>
+                        {lastEv.event === "handler_raised" ? "✕" : "✓"}
+                      </span>
+                      {" "}
+                      {fmtRelative(lastEv.ts_ms)}
+                    </>
+                  ) : "—"}
                 </Td>
                 <Td align="right">
-                  <RowActions agent={a} onRun={runAgentManually} onOpenLogs={onOpenLogs} />
+                  <RowActions
+                    agent={a}
+                    onRun={onRun}
+                    onOpenLogs={onOpenLogs}
+                    isRunning={!!running[a.slug]}
+                  />
                 </Td>
               </tr>
             );

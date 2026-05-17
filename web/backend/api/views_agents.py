@@ -354,11 +354,16 @@ def agent_run(request, slug: str):
             "agent_slug": slug,
             "queue_key": key,
             "queued_at_utc": payload["queued_at_utc"],
+            # ms timestamp the SPA can compare against
+            # `last_event.ts_ms` from /api/agents/. When the agent
+            # publishes a state file later than queued_at_ms, the SPA
+            # knows the run completed and can stop polling.
+            "queued_at_ms": payload["queued_at_ms"],
             "note": (
                 "Marker written to S3. The dispatcher Lambda picks "
                 "this up via S3 ObjectCreated event and invokes the "
-                "agent asynchronously. Refresh /agents in 15-30 s "
-                "to see the new last_event."
+                "agent asynchronously. The SPA tightens polling and "
+                "swaps in the fresh last_event within ~5-10 s."
             ),
         },
         status=drf_status.HTTP_202_ACCEPTED,
