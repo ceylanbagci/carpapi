@@ -67,6 +67,14 @@ ROSTER = [
     {"slug": "dealer-prospector",       "tier": "ingest",   "type": "interactive",
      "cadence": "weekly",
      "desc": "Discovers candidate dealers via discover_cms; opens a PR adding new dealers to the active roster."},
+    # Listing-only scraper — adds NEW rows to public.listings. Rotates
+    # across dealers (does not drain one), prioritizes unscraped
+    # dealers, 5s per-listing rate limit, blocks dealers on 403 /
+    # Cloudflare / robots disallow. Single-file agent: see
+    # .claude/agents/listing_agents/listing_scrapper.md.
+    {"slug": "listing-scrapper",        "tier": "ingest",   "type": "dual",
+     "cadence": "continuous",
+     "desc": "New-listings only: round-robins active dealers, skips URLs already in DB before fetching, 5s sleep between listings, blocks dealers that refuse (403/Cloudflare/robots)."},
     # Tier — ENRICH
     {"slug": "maker-enricher",          "tier": "enrich",   "type": "dual",
      "cadence": "daily 05:00 UTC",
