@@ -48,13 +48,37 @@ const card = {
   padding: "18px 20px",
 };
 
+// Status pills the table + drawer render. We deliberately collapse
+// the backend's `online | idle | degraded | failed | not_deployed`
+// taxonomy into just two user-facing buckets — RUNNING and STOPPED —
+// because the user wants the page to read like the right-side task
+// stream: an agent is either currently doing something or it isn't.
+//
+// `failed` is preserved as a separate pill (red) so a known-broken
+// agent doesn't masquerade as merely "stopped" — that signal is too
+// important to fold away.
 const STATUS_PILL = {
-  online:       { bg: "rgba(16,185,129,0.10)", fg: "#047857", label: "ONLINE",    dot: "#10b981" },
-  idle:         { bg: "rgba(100,116,139,0.10)", fg: "#475569", label: "IDLE",      dot: "#94a3b8" },
-  degraded:     { bg: "rgba(234,179,8,0.12)",   fg: "#854d0e", label: "DEGRADED", dot: "#eab308" },
-  failed:       { bg: "rgba(220,38,38,0.10)",  fg: "#b91c1c", label: "FAILED",    dot: "#ef4444" },
-  not_deployed: { bg: "rgba(0,0,0,0.04)",      fg: "#6b7280", label: "NOT DEPLOYED", dot: "#cbd5e1" },
+  running:      { bg: "rgba(16,185,129,0.12)", fg: "#047857", label: "RUNNING", dot: "#10b981" },
+  stopped:      { bg: "rgba(100,116,139,0.10)", fg: "#475569", label: "STOPPED", dot: "#94a3b8" },
+  failed:       { bg: "rgba(220,38,38,0.10)",  fg: "#b91c1c", label: "FAILED",  dot: "#ef4444" },
 };
+
+// An agent is considered RUNNING if either:
+//   (a) the user just clicked ▶ Run and we're awaiting the next state
+//       publish (tracked in the local `running` map), OR
+//   (b) it published a fresh state within the last RUN_RECENCY_MS —
+//       which for the 5-quality-agent loop fires every ~30 s, so a 5
+//       min window lights them up steadily during a continuous run
+//       and lets them lapse back to STOPPED a few minutes after the
+//       loop pauses.
+const RUN_RECENCY_MS = 5 * 60 * 1000;
+function runStatus(agent, running) {
+  if (running && running[agent.slug]) return "running";
+  if (agent.status === "failed") return "failed";
+  const ts = agent.last_event?.ts_ms;
+  if (ts && Date.now() - ts <= RUN_RECENCY_MS) return "running";
+  return "stopped";
+}
 
 const TIER_BADGE = {
   ingest:   { bg: "#eef2ff", fg: "#3730a3", label: "INGEST" },
@@ -279,7 +303,20 @@ export default function Agents() {
 
         {data && (
           <>
-            <KpiStrip summary={summary} successRate={successRate} />
+            <KpiStrip
+              summary={summary}
+              successRate={successRate}
+              // Same running-recency rule the roster row uses, so the
+              // "Agents running" tile and each row's status pill agree.
+              runningCount={agents.reduce(
+                (n, a) => n + (runStatus(a, running) === "running" ? 1 : 0),
+                0,
+              )}
+              stoppedCount={agents.reduce(
+                (n, a) => n + (runStatus(a, running) === "stopped" ? 1 : 0),
+                0,
+              )}
+            />
             <TierFilter active={tierFilter} onChange={setTierFilter} />
             <RosterTable
               agents={filtered}
@@ -322,7 +359,7 @@ export default function Agents() {
       </main>
 
       {selected && (
-        <AgentDrawer agent={selected} onClose={() => setSelectedSlug(null)} />
+        <AgentDrawer agent={selected} onClose={() => setSelectedSlug(null)} running={running} />
       )}
 
       {toast && <RunToast toast={toast} onDismiss={() => setToast(null)} />}
@@ -382,13 +419,13 @@ export default function Agents() {
 // would also work; opting for the smaller patch.
 
 // ── KPI strip — four cards at the top, demo4-style ───────────────────
-function KpiStrip({ summary, successRate }) {
+function KpiStrip({ summary, successRate, runningCount = 0, stoppedCount = 0 }) {
   const items = [
     {
-      label: "Agents online",
-      value: `${summary.online || 0} / ${summary.total || 0}`,
-      sub: `${summary.idle || 0} idle · ${summary.not_deployed || 0} unprovisioned`,
-      tone: summary.online >= 1 ? "green" : "neutral",
+      label: "Agents running",
+      value: `${runningCount} / ${summary.total || 0}`,
+      sub: `${stoppedCount} stopped · ${summary.failed || 0} failed`,
+      tone: runningCount >= 1 ? "green" : "neutral",
     },
     {
       label: "Invocations (24h)",
@@ -640,7 +677,8 @@ function RosterTable({ agents, onSelect, onOpenLogs, onRun, running = {} }) {
         </thead>
         <tbody>
           {agents.map((a) => {
-            const st = STATUS_PILL[a.status] || STATUS_PILL.not_deployed;
+            const rs = runStatus(a, running);
+            const st = STATUS_PILL[rs] || STATUS_PILL.stopped;
             const tier = TIER_BADGE[a.tier] || { bg: "#eee", fg: "#444", label: a.tier };
             const lastEv = a.last_event;
             return (
@@ -684,7 +722,13 @@ function RosterTable({ agents, onSelect, onOpenLogs, onRun, running = {} }) {
                   }}>
                     <span style={{
                       width: 7, height: 7, borderRadius: 99, background: st.dot,
-                      boxShadow: a.status === "online" ? `0 0 4px ${st.dot}` : "none",
+                      // Glow only on RUNNING — gives a subtle "live"
+                      // indicator without the noise of every row
+                      // glowing.
+                      boxShadow: rs === "running" ? `0 0 4px ${st.dot}` : "none",
+                      animation: rs === "running"
+                        ? "carpapi-pulse 1.6s ease-in-out infinite"
+                        : "none",
                     }} />
                     {st.label}
                   </span>
@@ -840,9 +884,13 @@ function ActivityFeed({ agents }) {
 // Demo4-style activity panel: hero header → KPI tiles → activity
 // timeline (or provisioning checklist when not deployed) → spec chips
 // → Lambda / Schedule callouts → collapsible raw event JSON.
-function AgentDrawer({ agent, onClose }) {
+function AgentDrawer({ agent, onClose, running = {} }) {
   const tier = TIER_BADGE[agent.tier] || { bg: "#eee", fg: "#444", label: agent.tier };
-  const st   = STATUS_PILL[agent.status] || STATUS_PILL.not_deployed;
+  // Same RUNNING / STOPPED / FAILED mapping the roster row uses, so
+  // opening the drawer doesn't surface a different status than what
+  // the user just clicked on.
+  const rs = runStatus(agent, running);
+  const st = STATUS_PILL[rs] || STATUS_PILL.stopped;
   const lastEv = agent.last_event;
   const deployed = agent.status !== "not_deployed";
 
@@ -901,7 +949,10 @@ function AgentDrawer({ agent, onClose }) {
             }}>
               <span style={{
                 width: 6, height: 6, borderRadius: 99, background: st.dot,
-                boxShadow: agent.status === "online" ? `0 0 4px ${st.dot}` : "none",
+                boxShadow: rs === "running" ? `0 0 4px ${st.dot}` : "none",
+                animation: rs === "running"
+                  ? "carpapi-pulse 1.6s ease-in-out infinite"
+                  : "none",
               }} />
               {st.label}
             </span>
